@@ -2,6 +2,12 @@
 
 >  Learning Notes for Modern C++ 
 
+- [Learning Modern C++](#learning-modern-c)
+  - [Installation on Ubuntu](#installation-on-ubuntu)
+  - [WSL Ubuntu](#wsl-ubuntu)
+  - [Online Complier](#online-complier)
+  - [Books](#books)
+
 ## Installation on Ubuntu
 
 ```bash
@@ -72,3 +78,12 @@ export https_proxy='http://10.101.253.101:7890'
 export all_proxy='socks5://10.101.253.101:7890'
 export ALL_PROXY='socks5://10.101.253.101:7890'
 ```
+
+## Online Complier
+
+- [Wandbox](https://wandbox.org/)
+- [Compiler Explorer](https://godbolt.org/)
+
+## Books
+
+- [Modern C++ Programming Cookbook - 2nd Edition](https://github.com/PacktPublishing/Modern-CPP-Programming-Cookbook-Second-Edition)
