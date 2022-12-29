@@ -2,14 +2,16 @@
 
 - [Modern C++ Introduction](#modern-c-introduction)
   - [auto](#auto)
-    - [auto一般用法](#auto一般用法)
-    - [auto with lambda](#auto-with-lambda)
-    - [auto 注意事项](#auto-注意事项)
-  - [uniform initialization](#uniform-initialization)
+    - [`auto` basic usage](#auto-basic-usage)
+    - [`auto` with lambda](#auto-with-lambda)
+    - [`auto` attention](#auto-attention)
+  - [initializer\_list](#initializer_list)
+    - [initializer\_list basic](#initializer_list-basic)
+    - [initializer\_list attention](#initializer_list-attention)
 
 ## auto
 
-### auto一般用法
+### `auto` basic usage
 
 ```cpp
 #include <iostream>
@@ -67,7 +69,7 @@ int main()
 }
 ```
 
-### auto with lambda
+### `auto` with lambda
 
 > [位于成员函数尾部的const](https://blog.csdn.net/qq_55621259/article/details/126322634)
 
@@ -117,7 +119,7 @@ int main()
 }
 ```
 
-### auto 注意事项
+### `auto` attention
 
 ```cpp
 #include <iostream>
@@ -145,12 +147,14 @@ int main()
 }
 ```
 
-## uniform initialization
+## initializer_list
 
 ```cpp
 T object{other}; // direct-list-initialization
 T object={other}; // copy-list-initialization 
 ```
+
+### initializer_list basic
 
 ```cpp
 #include <iostream>
@@ -232,5 +236,87 @@ int main()
     std::map<int, std::string> m2={{12, "grey12"}, {22, "grey22"}}; 
     // auto m3={{12, "grey12"}, {22, "grey22"}};//error
     for(auto&& p:m2){std::cout<<p.first<<':'<<p.second<<std::endl;}
+}
+```
+
+high priority of `initializer_list`
+
+```cpp
+#include <iostream>
+
+class foo
+{
+    int a_;
+    double b_;
+public:
+    foo():a_(0), b_(0) {}
+    foo(int a, double b = 0.0):a_(a), b_(b) {}
+    foo(std::initializer_list<int> l) {} // high priority
+    void print_value(){std::cout<<a_<<", "<<b_<<std::endl;}
+};
+
+void func(int const a, int const b, int const c)
+{
+    std::cout<<"call 1st overload function\n";
+    std::cout<<a<<' '<<b<<' '<<c<<std::endl;
+}
+
+void func(std::initializer_list<int> l)
+{
+    std::cout<<"call 2nd overload function\n";
+    for(auto&& i:l){std::cout<<i<<", ";}
+}
+
+int main()
+{
+    // initializer_list in ctor
+    foo f1={1, 2, 3};
+    f1.print_value(); // 1640197152, 2.07463e-317
+    foo f2{1, 2};
+    f1.print_value(); // 1640197152, 2.07463e-317
+    foo f3(10, 20);
+    f3.print_value(); // 10 20
+
+    // initializer_list in normal function
+    func(1, 2, 3); // 1st
+    func({1, 2, 3}); // 2nd
+}
+```
+
+### initializer_list attention
+
+```cpp
+#include <iostream>
+#include <vector>
+
+void print_vector(auto const v)
+{
+    for(auto&& i:v){std::cout<<i<<", ";}
+}
+
+int main()
+{
+    // attention1: vector
+    std::vector<int> v1{5}; // size=1
+    print_vector(v1); // 5, 
+    std::vector<int> v2(5); // size=5
+    print_vector(v2); // 0, 0, 0, 0, 0, 
+
+    // attention2: implicit conversion
+    // int i{1.2}; // error
+    int i{static_cast<int>(1.2)};
+    double d=47/13; 
+    std::cout<<typeid(d).name()<<", "<<d<<std::endl; // double, 3
+    // float f{d}; // error
+    float f{static_cast<float>(d)};
+
+    // attention3: auto deduce, since c++17
+    auto a1={10};
+    std::cout<<typeid(a1).name()<<std::endl; // initializer_list
+    auto a2{20};
+    std::cout<<typeid(a2).name()<<std::endl; // int
+    auto a3={30, 31, 32};
+    std::cout<<typeid(a3).name()<<std::endl; // initializer_list
+    // auto a4{40, 41, 42}; // error
 }
 ```
