@@ -8,6 +8,8 @@
   - [initializer\_list](#initializer_list)
     - [initializer\_list basic](#initializer_list-basic)
     - [initializer\_list attention](#initializer_list-attention)
+  - [`virtual`, `override`, `final`](#virtual-override-final)
+    - [basic usage](#basic-usage)
 
 ## auto
 
@@ -318,5 +320,71 @@ int main()
     auto a3={30, 31, 32};
     std::cout<<typeid(a3).name()<<std::endl; // initializer_list
     // auto a4{40, 41, 42}; // error
+}
+```
+
+## `virtual`, `override`, `final`
+
+### basic usage
+
+```cpp
+#include <iostream>
+
+class Base
+{
+public:
+    // 只要有virtual xxx=0, 就是纯虚函数，该类不允许实例化
+    virtual void foo()=0;
+    // 单纯的virtual虚函数表示可以用父类指针指向子类实例
+    virtual void bar(){std::cout<<"Base bar() func.\n";}
+    virtual void foobar()=0;
+};
+
+void Base::foobar(){
+    std::cout<<"Base foobar() func.\n";
+}
+
+class Derived1: public Base
+{
+public:
+    virtual void foo() override=0;
+    // virtual void bar() override {std::cout<<"Derived1 bar() func.\n";} // 简化写法
+    virtual void bar() override;
+    virtual void foobar() override {std::cout<<"Derived1 foobar() func.\n";}
+};
+
+// void Derived1::bar() override // error, override只能在class的definition里面
+void Derived1::bar()
+{
+    std::cout<<"Derived1 bar() func.\n";
+}
+
+class Derived2: public Derived1
+{
+public:
+    virtual void foo() final {std::cout<<"Derived2 foo() func.\n";}
+};
+
+class Derived3 final: public Derived2
+{
+public:
+    // virtual void foo(){} // error, 因为Derived2.foo已经final
+    void bar() override {std::cout<<"Derived3 bar() func.\n";}
+};
+
+// class Derived4: public Derived3 {}; // error, 因为Derived3已经final
+
+
+int main()
+{
+    // Base b{}; // error
+    // Derived1 d1{}; // error
+    Derived2 d2{};
+    d2.foo();
+    d2.bar();
+    d2.foobar();
+
+    Derived3 d3{};
+    d3.bar();
 }
 ```
