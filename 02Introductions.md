@@ -14,6 +14,8 @@
   - [range-base loop](#range-base-loop)
     - [range-based loop basic usage](#range-based-loop-basic-usage)
     - [custom range-base class](#custom-range-base-class)
+  - [explicit](#explicit)
+    - [basic usage](#basic-usage-1)
 
 ## const
 
@@ -587,5 +589,120 @@ int main(){
     }
 
     print_dummy_array(arr);
+}
+```
+
+## explicit
+
+### basic usage
+
+without `explicit`
+
+```cpp
+#include <iostream>
+
+struct foo{
+    foo() { std::cout << "foo" << '\n'; }
+    foo(int const a) { std::cout << "foo(a)\n"; }
+    foo(int const a, double const b) { std::cout << "foo(a, b)\n"; }
+    //// 如果使用这一句，下面的f8, f9都会报错 double to int
+    //// 因为initializer_list的类型需要一致为int
+    // foo(std::initializer_list<int> l){std::cout<<"foo(l)\n";} 
+
+    operator bool() const { return true; }
+};
+
+void bar(foo const f){}
+
+int main(){
+    foo f1;
+    foo f2{};
+
+    foo f3(1);
+    foo f4=1; // 传统方式，不推荐; foo(a)
+    foo f5{1};
+    foo f6={1};
+
+    foo f7(1, 2.1);
+    foo f8{1, 2.2};
+    foo f9={1, 2.3};
+    
+    bar({}); // foo
+    bar(1); // 传统方式, foo(a)
+    bar({1, 2.4});// foo(a, b)
+
+    std::cout<< (f1==true)<<std::endl; // true
+}
+```
+
+with explicit
+
+```cpp
+#include <iostream>
+
+class foo{
+    int num;
+public:
+    // constructor
+    foo(int const n):num(n){std::cout<<"foo num="<<num<<std::endl;}
+    // convert object to bool
+    operator bool() const {
+        std::cout<<"foo conversion invoked: "<<num<<std::endl;
+        return num!=0;
+    }
+};
+
+class Demo{
+    int num;
+public:
+    explicit Demo(int const n):num(n){std::cout<<"Demo num="<<num<<std::endl;}
+    explicit operator bool() const {
+        std::cout<<"Demo conversion explicit invoked: "<<num<<std::endl;
+        return num!=0;
+    }
+};
+
+enum ItemSize{Small, Middle, Large}; // unscoped enumeration, not recommended
+
+int main(){
+    // without explicit, all working
+    foo f1(10);
+    foo f2('a'); // 97
+    foo f3=20;
+    foo f4='b';
+    foo f5{30};
+    foo f6{'c'};
+    foo f7={40};
+    foo f8={'d'};
+    foo f9={Small}; // 0
+    if(f1==f2) std::cout<<"bool equal\n"; // conversion invoked, bool equal
+    std::cout<<f1+f2<<std::endl; // conversion invoked, 2
+
+
+    // 三种方法可以: (),direct-initializer-list{},static_cast
+    Demo d1(10);
+    Demo d2('a');
+
+    // // error, conversion from int to Demo
+    // Demo d3=20;
+    // Demo d4='b';
+
+    Demo d5{30};
+    Demo d6{'c'};
+
+    //// error, conversion from int to Demo
+    // Demo d7={40};
+    // Demo d8={'d'};
+
+    Demo d9{Middle}; // 1, from enum to int
+
+    Demo d10 = static_cast<Demo>('e');
+    Demo d11 = static_cast<Demo>(Large);
+    Demo d12 = static_cast<Demo>(50);
+
+    // if(d1==d2){} // error: no match for 'operator=='
+    // std::cout<<d1+d2<<std::endl; // error: no match for 'operator+'
+    if(static_cast<bool>(d1)==static_cast<bool>(d2)) std::cout<<"bool equal\n"; // conversion explicit invoked
+    std::cout<< static_cast<bool>(d1) + static_cast<bool>(d2) <<std::endl;// 2
 }
 ```
