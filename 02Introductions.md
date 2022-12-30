@@ -1,6 +1,7 @@
 # Modern C++ Introduction
 
 - [Modern C++ Introduction](#modern-c-introduction)
+  - [const](#const)
   - [auto](#auto)
     - [`auto` basic usage](#auto-basic-usage)
     - [`auto` with lambda](#auto-with-lambda)
@@ -12,6 +13,28 @@
     - [basic usage](#basic-usage)
   - [range-base loop](#range-base-loop)
     - [range-based loop basic usage](#range-based-loop-basic-usage)
+
+## const
+
+To understand this, you read the declaration **from right to left**:
+- `int& const` : a constant (const) reference (&) to int. Since references refer to the same object since their creation, they are always constant. The const is redundant. Some compilers warn about it, other emit errors.
+- `int const&`: reference (&) to a constant (const) int. The integer can't be modified through the reference.
+- `const& int`: integer to a reference of const. This makes no sense. This is **illegal**.
+- `const int&` : a reference to an int object which happens to be const. **Equivalent to int const &**
+
+For pointers:
+
+```cpp
+int const *    // pointer to const int
+int * const    // const pointer to int
+int const * const   // const pointer to const int
+int * const * p3;   // pointer to const pointer to int
+const int * const * p4;       // pointer to const pointer to const int
+
+// Now the first const can be on either side of the type so:
+const int * == int const *
+const int * const == int const * const
+```
 
 ## auto
 
