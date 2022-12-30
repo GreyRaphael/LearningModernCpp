@@ -10,6 +10,8 @@
     - [initializer\_list attention](#initializer_list-attention)
   - [`virtual`, `override`, `final`](#virtual-override-final)
     - [basic usage](#basic-usage)
+  - [range-base loop](#range-base-loop)
+    - [range-based loop basic usage](#range-based-loop-basic-usage)
 
 ## auto
 
@@ -386,5 +388,79 @@ int main()
 
     Derived3 d3{};
     d3.bar();
+}
+```
+
+## range-base loop
+
+### range-based loop basic usage
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <map>
+
+void print(std::vector<int> v){
+    for(int i:v){std::cout<<i<<',';}
+    std::cout<<std::endl;
+}
+
+void print(std::multimap<bool,int> m){
+    for(auto&& [first, second]:m){std::cout<<first<<':'<<second<<"; ";}
+    std::cout<<std::endl;
+}
+
+auto getVector(){
+    return std::vector<int>{1, 1, 2, 3, 4, 5};
+}
+
+auto getMap(){
+    return std::multimap<bool,int>{
+        {true, 1},
+        {false, 2},
+        {true, 3},
+        {false, 4},
+        {true, 5},
+        {true, 6},
+    };
+}
+
+
+int main(){
+    auto v =getVector();
+    // int
+    for(int i:v){i*=2;} // 无法改变vector
+    print(v); // 1, 1, 2, 3, 4, 5, 
+
+    for(int& i:v){i*=2;} // 能够改变vector
+    print(v); // 2, 2, 4, 6, 8, 10, 
+    // auto 
+    for(auto& i:v){i*=2;}
+    print(v); // 4, 4, 8, 12, 16, 20, 
+
+    for(auto const & i:v){std::cout<<i<<'\t';} // const:read-only
+
+    for(auto&& i:v){i*=2;} // auto&&: universal
+    print(v); // 8, 8, 16, 24, 32, 40, 
+
+    // for(auto const && i:v){std::cout<<i<<"\t";} // error: cannot bind rvalue reference of type 'const int&&' to lvalue of type 'int'
+
+    // since c++17
+    auto m=getMap();
+    for(auto [first, second]:m){
+        if(first){second*=2;} // cannot change value
+    }
+    print(m); //0:2; 0:4; 1:1; 1:3; 1:5; 1:6; 
+
+
+    for(auto& [first, second]:m){
+        if(first){second*=2;}
+    }
+    print(m); // 0:2; 0:4; 1:2; 1:6; 1:10; 1:12; 
+
+    for(auto&& [first, second]:m){
+        if(first){second*=2;}
+    }
+    print(m); // 0:2; 0:4; 1:4; 1:12; 1:20; 1:24;
 }
 ```
