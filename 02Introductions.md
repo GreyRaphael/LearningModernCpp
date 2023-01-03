@@ -19,6 +19,7 @@
   - [unamed namespace for static globals](#unamed-namespace-for-static-globals)
   - [inline namespace for versioning](#inline-namespace-for-versioning)
   - [structured bindings for multi-return](#structured-bindings-for-multi-return)
+  - [template argument deduction](#template-argument-deduction)
 
 ## const
 
@@ -1063,5 +1064,61 @@ int main(){
     std::cout<<id<<'\t'<<name<<std::endl; // 1142 Jack
 
     std::cout<<f.id<<'\t'<<f.name<<std::endl; // 52 Tony
+}
+```
+
+## template argument deduction
+
+```cpp
+#include<iostream>
+#include<vector>
+
+template<typename T>
+class foo{
+    T data;
+public:
+    foo(T v):data(v){std::cout<<data<<std::endl;}
+};
+
+template<typename T>
+foo<T> make_foo(T&& value){
+    return foo{value};
+}
+
+int main(){
+    std::pair<int, char const *> p1{42, "demo"};
+    std::pair p2{43, "hello"}; // since c++17
+    auto p3=std::make_pair(44, "grey"); // before c++17
+
+    std::vector<int> v1{1, 2, 3};
+    std::vector v2{11, 22, 33}; // since c++17
+
+    foo<int> f1{100};
+    foo f2{200}; // since c++17
+    foo<float> f3{1.1};
+    foo f4{2.2};// since c++17
+    auto f5=make_foo(300); // before c++17
+}
+```
+
+example: 使得`std::pair p2{43, "hello"};`推断为`std::pair<int, std::string>`而不是`std::pair<int, char const*>`
+```cpp
+#include<iostream>
+
+namespace std {
+   template <class T>
+   pair(T&&, char const*)->pair<T, std::string>;
+
+   template <class T>
+   pair(char const*, T&&)->pair<std::string, T>;
+
+   pair(char const*, char const*)->pair<std::string, std::string>;
+}
+
+int main(){
+    std::pair p1{1, "hello"};
+    // std::pair<> p2{2, "world"}; // error
+    // std::pair<int> p3{3, "tom"}; // error
+    std::cout<<typeid(p1.second).name()<<std::endl; // basic_string
 }
 ```
