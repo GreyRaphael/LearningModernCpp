@@ -17,6 +17,7 @@
   - [explicit](#explicit)
     - [basic usage](#basic-usage-1)
   - [unamed namespace](#unamed-namespace)
+  - [inline namespace for versioning](#inline-namespace-for-versioning)
 
 ## const
 
@@ -873,4 +874,109 @@ namespace
 test<Size2> t2;
   
 int main(){}
+```
+
+## inline namespace for versioning
+
+> if a namespace, A, contains an inline namespace, B, that contains an inline namespace, C, then the members of C appear as they were members of both B and A and the members of B appear as they were members of A.
+
+```bash
+├── CMakeLists.txt
+├── main.cpp
+└── mylib1.h
+```
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.16.0)
+project(myproj VERSION 0.1.0)
+
+add_executable(
+    myproj
+    main.cpp
+    )
+```
+
+without `inline namespace`
+
+```h
+// mylib1.h
+#pragma once
+
+namespace modernlib
+{
+    // template只能放到hearder文件里面
+    template<typename T>
+    int test(T value){return 1;}
+}
+```
+
+```cpp
+// main.cpp
+#include <iostream>
+#include "mylib1.h"
+
+struct foo{int a;};
+
+namespace modernlib // 用户给库开发者写的modernlib增加自定义的功能
+{
+    template<>
+    int test(foo value){return value.a;}
+}
+
+int main(int argc, const char** argv) {
+    auto x=modernlib::test(42);
+    auto y=modernlib::test(foo{42});
+    std::cout<<x<<'\t'<<y<<std::endl; // 1 42
+    return 0;
+}
+```
+
+with `inline namespace`
+
+```h
+// mylib1.h
+// 库开发者更新版本，但是第一个版本的功能接口仍然提供
+#pragma once
+
+namespace modernlib
+{
+    #ifndef LIB_VERSION_2
+    inline namespace version_1
+    {
+        template<typename T>
+        int test(T value){return 1;}
+    }
+    #endif // LIB_VERSION_1
+
+    #ifdef LIB_VERSION_2
+    inline namespace version_2
+    {
+        template<typename T>
+        int test(T value){return 2;}
+    }
+    #endif // LIB_VERSION_2
+}
+```
+
+```cpp
+// main.cpp
+#include <iostream>
+#define LIB_VERSION_2
+#include "mylib1.h"
+
+struct foo{int a;};
+
+namespace modernlib
+{
+    template<>
+    int test(foo value){return value.a;}
+}
+
+int main(int argc, const char** argv) {
+    auto x=modernlib::test(42);
+    auto y=modernlib::test(foo{42});
+    std::cout<<x<<'\t'<<y<<std::endl; // 1 42
+    return 0;
+}
 ```
