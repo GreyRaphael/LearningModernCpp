@@ -18,6 +18,7 @@
     - [basic usage](#basic-usage-1)
   - [unamed namespace for static globals](#unamed-namespace-for-static-globals)
   - [inline namespace for versioning](#inline-namespace-for-versioning)
+  - [structured bindings for multi-return](#structured-bindings-for-multi-return)
 
 ## const
 
@@ -978,5 +979,89 @@ int main(int argc, const char** argv) {
     auto y=modernlib::test(foo{42});
     std::cout<<x<<'\t'<<y<<std::endl; // 1 42
     return 0;
+}
+```
+
+## structured bindings for multi-return
+
+```cpp
+#include<iostream>
+#include<map>
+
+int main(){
+    std::map<int, std::string> m;
+    {
+        // 采用code block{}是因为下面几个it, inserted变量名相同
+        // 如果要去掉{}; 要么采用不同的变量名，要么使用std::tie()
+        auto [it, inserted]=m.insert({1, "one"});
+        std::cout<<it->first<<':'<<it->second<<std::endl; // 1:one
+        std::cout<<inserted<<std::endl; // true
+    }
+    {
+        auto [it, inserted]=m.insert({1, "two"}); // insert fail
+        std::cout<<it->first<<':'<<it->second<<std::endl; // 1:one
+        std::cout<<inserted<<std::endl; // false
+    }
+    {
+        if(auto [it, inserted]=m.insert({1, "three"}); inserted){ // insert fail
+            std::cout<<it->first<<':'<<it->second<<std::endl; // 1:one
+        } else{
+            std::cout<<"insert fail\n";
+        }
+
+    }
+
+    std::map<int, std::string>::iterator it;
+    bool inserted;
+    std::tie(it, inserted)=m.insert({1, "four"});
+    std::cout<<it->first<<':'<<it->second<<std::endl; // 1:one
+    std::cout<<inserted<<std::endl; // false
+}
+```
+
+```cpp
+#include<iostream>
+
+struct foo{
+    int id;
+    std::string name;
+};
+
+int main(){
+    // for array
+    int arr[]={1, 2, 3};
+    auto [a, b, c]=arr;
+    auto& [x, y, z]=arr;
+    x+=10;
+    y+=20;
+    z+=30;
+    std::cout<<arr[0]<<'\t';// 11
+    std::cout<<arr[1]<<'\t';// 22
+    std::cout<<arr[2]<<"\n";// 33
+    std::cout<<a<<'\t'<<b<<'\t'<<c<<std::endl; // 1 2 3
+    std::cout<<x<<'\t'<<y<<'\t'<<z<<std::endl; // 11 22 33
+
+    // for class
+    foo f{42, "Peter"};
+    auto [id, name]=f;
+    auto& [r_id, r_name]=f;
+    r_id=52;
+    r_name="Tony";
+    std::cout<<id<<'\t'<<name<<std::endl; // 42 Peter
+    std::cout<<r_id<<'\t'<<r_name<<std::endl; // 52 Tony
+    std::cout<<f.id<<'\t'<<f.name<<std::endl; // 52 Tony
+    
+    // with lambda, since c++20
+    auto l1=[id]{std::cout<<id<<std::endl;};
+    l1(); // 42
+    auto l2=[=]{std::cout<<id<<','<<name<<std::endl;}; // implicitly capture all value by value
+    l2(); // 42,Peter
+    auto l3=[&id]{id+=100;};
+    l3(); 
+    auto l4=[&]{id+=1000;name="Jack";}; // implicitly capture all value by reference
+    l4(); 
+    std::cout<<id<<'\t'<<name<<std::endl; // 1142 Jack
+
+    std::cout<<f.id<<'\t'<<f.name<<std::endl; // 52 Tony
 }
 ```
