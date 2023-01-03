@@ -16,7 +16,7 @@
     - [custom range-base class](#custom-range-base-class)
   - [explicit](#explicit)
     - [basic usage](#basic-usage-1)
-  - [unamed namespace](#unamed-namespace)
+  - [unamed namespace for static globals](#unamed-namespace-for-static-globals)
   - [inline namespace for versioning](#inline-namespace-for-versioning)
 
 ## const
@@ -709,7 +709,7 @@ int main(){
 }
 ```
 
-## unamed namespace
+## unamed namespace for static globals
 
 ```bash
 ├── CMakeLists.txt
