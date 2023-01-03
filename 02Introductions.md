@@ -16,6 +16,7 @@
     - [custom range-base class](#custom-range-base-class)
   - [explicit](#explicit)
     - [basic usage](#basic-usage-1)
+  - [unamed namespace](#unamed-namespace)
 
 ## const
 
@@ -705,4 +706,171 @@ int main(){
     if(static_cast<bool>(d1)==static_cast<bool>(d2)) std::cout<<"bool equal\n"; // conversion explicit invoked
     std::cout<< static_cast<bool>(d1) + static_cast<bool>(d2) <<std::endl;// 2
 }
+```
+
+## unamed namespace
+
+```bash
+├── CMakeLists.txt
+├── main.cpp
+├── mylib1.cpp
+├── mylib1.h
+├── mylib2.cpp
+└── mylib2.h
+```
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.16.0)
+project(myproj VERSION 0.1.0)
+
+add_executable(
+    myproj
+    main.cpp
+    mylib1.cpp
+    mylib2.cpp
+    )
+```
+
+```h
+// mylib1.h
+#pragma once
+
+namespace myspace
+{
+    void file1_run();
+} // named namespace
+```
+
+```h
+// mylib2.h
+#pragma once
+
+namespace myspace
+{
+    void file2_run();
+} // named namespace
+```
+
+> mylib1.cpp使用全局的变量`a`和函数`print`，不再mylib2.cpp同名的变量`a`和函数`print`发生冲突
+>
+> C语言里面解决该问题的方式是每个文件里面的全局变量或函数使用`static`来修饰；C++里面使用`unamed namespace`
+
+```cpp
+// mylib1.cpp
+#include "mylib1.h"
+#include <iostream>
+
+namespace
+{
+    int a=100;
+    void print(std::string msg){std::cout<<"[file1] "<<msg<<','<<a<<std::endl;}
+} // unamed namespace
+
+namespace myspace
+{
+    void file1_run(){
+        print("run in file1");
+    }
+}
+```
+
+```cpp
+// mylib2.cpp
+#include "mylib2.h"
+#include <iostream>
+
+namespace
+{
+    int a=200;
+    void print(std::string msg){std::cout<<"[file2] "<<msg<<','<<a<<std::endl;}
+} // unamed namespace
+
+namespace myspace
+{
+    void file2_run(){
+        print("run in file2");
+    }
+}
+```
+
+```cpp
+// main.cpp
+#include "mylib1.h"
+#include "mylib2.h"
+
+using namespace myspace;
+
+int main(int argc, const char** argv) {
+    file1_run();
+    file2_run();
+    return 0;
+}
+```
+
+Template non-type argument(模板非类型参数)要求: 
+- Constant Expressions
+- Addresses of function or objects with external linkage
+- Addresses of static class members.
+
+```cpp
+#include <iostream>
+#include <vector>
+
+// swap two num 
+template <class T>
+void swap_(T* x, T* y){
+    T temp = *x;
+    *x = *y;
+    *y = temp;
+}
+  
+// Bubble Sort
+template <class T, int size> // int size就是template non-type argument
+void bubble_sort(T arr[]){
+    for (int i = 0; i < size - 1; i++) {
+        for (int j = 0; j < size - i - 1; j++) {
+            if (arr[j] > arr[j + 1]) {
+                swap_(&arr[j], &arr[j + 1]);
+            }
+        }
+    }
+}
+  
+// print an array
+template <class T, int size> // int size就是template non-type argument
+void printArray(T arr[]){
+    for (int i = 0; i < size - 1; i++) {
+        std::cout << arr[i] << ", ";
+    }
+    std::cout << arr[size - 1] << std::endl;
+}
+  
+int main(){
+    float arr[] = { 1.1, 1.2, 0.3, 4.55, 1.56, 0.6 };
+
+    const int size_arr = sizeof(arr) / sizeof(arr[0]); // 必须是const，使complier能够编译的时候确定
+    bubble_sort<float, size_arr>(arr);
+
+    std::cout << "Sorted Array is: ";
+    printArray<float, size_arr>(arr);
+}
+```
+
+```cpp
+// error example
+template <int const& Size>
+class test {};
+
+static int Size1 = 10;
+
+namespace
+{
+   int Size2 = 10;
+}
+
+// test<Size1> t1; // error, Size1 has internal linkage, 在VC++报错,Clang, GCC不报错
+test<Size2> t2;
+  
+int main(){}
 ```
