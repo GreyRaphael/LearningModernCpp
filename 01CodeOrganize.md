@@ -31,6 +31,15 @@ void myfunc();
 #endif // !MY_LIBRARY_H
 ```
 
+也可以采用`#pragma once` 代替`#ifndef`, `#pragma once`效果更佳
+
+```h
+// mylib.h
+#pragma once
+
+void myfunc();
+```
+
 ```cpp
 // mylib.cpp
 #include "mylib.h"
