@@ -1,8 +1,69 @@
 # Numbers and Strings
 
 - [Numbers and Strings](#numbers-and-strings)
+  - [custom literals](#custom-literals)
   - [raw string literals](#raw-string-literals)
     - [custom string with many functions](#custom-string-with-many-functions)
+
+## custom literals
+
+```cpp
+namespace units{
+    // unit types
+    enum class unit{us, ms, s};
+
+    // quantity class
+    template <unit U>
+    class quantity{
+        const double amount;
+    public:
+        constexpr explicit quantity(double const a):amount(a){}
+        explicit operator double() const { return amount; } // 为了static_cast能够成功
+    };
+
+    // template operator overload
+    template <unit U>
+    constexpr quantity<U> operator+ (quantity<U> const &q1, quantity<U> const &q2){
+        return quantity<U>(static_cast<double>(q1) + static_cast<double>(q2));
+    }
+
+    // unit literals
+    namespace unit_literals{
+        // for us
+        constexpr quantity<unit::us> operator "" _us(long double const amount)
+        {
+            return quantity<unit::us> {static_cast<double>(amount)};
+        }
+        constexpr quantity<unit::us> operator "" _us(unsigned long long const amount)
+        {
+            return quantity<unit::us> {static_cast<double>(amount)};
+        }
+        // for ms
+        constexpr quantity<unit::ms> operator "" _ms(long double const amount)
+        {
+            return quantity<unit::ms> {static_cast<double>(amount)};
+        }
+        // for s
+        constexpr quantity<unit::s> operator "" _s(unsigned long long const amount)
+        {
+            return quantity<unit::s> {static_cast<double>(amount)};
+        }
+    }
+}
+
+
+int main(){
+    using namespace units::unit_literals;
+    auto q1{1_us};
+    auto q2{2_us};
+    auto q3{3.0_ms};
+    auto q4{q1+q2};
+    
+    // auto q5{q1+q3}; // error
+    // auto q6{6_ms}; // error, ms must be double
+    // auto q7{7.0_s}; // error, s must be integer
+}
+```
 
 ## raw string literals
 
