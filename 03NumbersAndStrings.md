@@ -1,9 +1,34 @@
 # Numbers and Strings
 
 - [Numbers and Strings](#numbers-and-strings)
+  - [built-in literals](#built-in-literals)
   - [custom literals](#custom-literals)
+    - [raw user-defined literals](#raw-user-defined-literals)
   - [raw string literals](#raw-string-literals)
     - [custom string with many functions](#custom-string-with-many-functions)
+
+## built-in literals
+
+```cpp
+#include<iostream>
+#include<chrono>
+#include<string>
+
+int main(){
+    auto a{42u}; // unsigned int
+    auto b{42l}; // unsigned long
+    auto c{42.4f}; // float
+
+    using namespace std::chrono_literals;
+    auto my_timer{2h+42min+15s+1ms}; // std::chrono::duration<long long>
+    std::cout<<my_timer.count()<<std::endl; // 9735001
+
+    using namespace std::string_literals;
+    auto str1="你好"s;// std::string
+    std::cout<<str1.length()<<std::endl; // 6
+    std::cout<<str1.size()<<std::endl; // 6
+}
+```
 
 ## custom literals
 
@@ -62,6 +87,64 @@ int main(){
     // auto q5{q1+q3}; // error
     // auto q6{6_ms}; // error, ms must be double
     // auto q7{7.0_s}; // error, s must be integer
+}
+```
+
+### raw user-defined literals
+
+version1: 无法解决`2010_b8`中2的约束，比较直接的实现
+
+```cpp
+#include <iostream>
+
+namespace binary
+{
+    using byte8 = unsigned char;
+    namespace binary_literals
+    {
+        namespace binary_literals_internals
+        {
+            template <typename T, typename... Ts>
+            // 原理: 8*t0+4*t1+2*t2+1*t3
+            byte8 func(T t0, Ts... t)
+            {
+                auto const sz = sizeof...(t);
+                if constexpr (sz == 0) // c++17
+                {
+                    return t0 - '0';
+                }
+                else
+                {
+                    auto const value = (1 << sz) * (t0 - '0');
+                    std::cout << "t0=" << t0 << ',' << value << std::endl;
+                    return value + func(t...);
+                }
+            }
+        }
+
+        template <char... bits>
+        constexpr byte8 operator""_b8()
+        {
+            static_assert(
+                sizeof...(bits) <= 8,
+                "binary literal b8 must be up to 8 digits long");
+            // binary_literals_internals得放在前面
+            return binary_literals_internals::func(bits...); 
+        }
+    }
+}
+
+int main()
+{
+    // using namespace binary;
+    // using namespace binary_literals;
+    using namespace binary::binary_literals;
+
+    auto b1 = 1010_b8;
+    std::cout << (int)b1 << std::endl; // 10
+
+    auto b2 = 2010_b8;
+    std::cout << (int)b2 << std::endl; // 18
 }
 ```
 
