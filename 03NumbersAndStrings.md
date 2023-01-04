@@ -9,9 +9,9 @@
 ```cpp
 #include<iostream>
 
-using namespace std::string_literals;
-
 int main(){
+    using namespace std::string_literals;
+
     auto filename{ R"(C:\Users\Grey\你好\)"s };
     auto s1{ u8R"(C:\Users\Grey\你好\)"s }; // utf8 raw string
     std::cout<<filename<<std::endl;
