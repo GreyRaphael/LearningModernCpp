@@ -148,6 +148,205 @@ int main()
 }
 ```
 
+```cpp
+// modification1:
+// 原理: 8*t0+4*t1+2*t2+1*t3
+template <typename... Ts> // 因为每一个digit都是char, 所以去掉T
+byte8 func(char t0, Ts... t)
+{
+    if (t0!='0' &&  t0!='1')
+    {
+        throw std::invalid_argument("digit must be 0 or 1");
+    }
+    
+    auto const sz = sizeof...(t);
+    if constexpr (sz == 0) // c++17
+    {
+        return t0 - '0';
+    }
+    else
+    {
+        auto const value = (1 << sz) * (t0 - '0');
+        std::cout << "t0=" << t0 << ',' << value << std::endl;
+        return value + func(t...);
+    }
+}
+```
+
+```cpp
+// modification2:
+// 原理: 位运算
+template <typename... Ts>
+byte8 func(char t0, Ts... t)
+{
+    if (t0 != '0' && t0 != '1')
+    {
+        throw std::invalid_argument("digit must be 0 or 1");
+    }
+
+    auto const sz = sizeof...(t);
+    if constexpr (sz == 0)
+    {
+        return t0-'0';
+    }
+    else
+    {
+        if (t0 == '0')
+        {
+            return func(t...);
+        }
+        else // t0=='1'
+        {
+            return (1 << sz) | func(t...);
+        }
+    }
+}
+```
+
+```cpp
+// modification3: 返回值设置T
+// 原理: 位运算
+template <typename T, typename... Ts>
+T func(char t0, Ts... t)
+{
+    if (t0 != '0' && t0 != '1')
+    {
+        throw std::invalid_argument("digit must be 0 or 1");
+    }
+
+    auto const sz = sizeof...(t);
+    if constexpr (sz == 0)
+    {
+        return t0-'0';
+    }
+    else
+    {
+        if (t0 == '0')
+        {
+            return func<T>(t...);
+        }
+        else // t0=='1'
+        {
+            return (1 << sz) | func<T>(t...);
+        }
+    }
+}
+```
+
+```cpp
+// modification4: declaration, definition分开
+// 原理: 位运算
+template <typename T>
+T func();// declaration
+
+template <typename T, typename... Ts>
+T func(char t0, Ts... t)
+{
+    if (t0 != '0' && t0 != '1')
+    {
+        throw std::invalid_argument("digit must be 0 or 1");
+    }
+
+    if (t0 == '0')
+    {
+        return func<T>(t...);
+    }
+    else // t0=='1'
+    {
+        return (1 << sizeof...(t)) | func<T>(t...);
+    }
+}
+
+template<typename T>
+T func(){return 0;} //definition, 结束递归调用的最后一个
+```
+
+```cpp
+#include <iostream>
+
+namespace binary
+{
+    using byte8 = unsigned char;
+    using byte16 = unsigned short;
+    using byte32 = unsigned int;
+
+    namespace binary_literals
+    {
+        namespace binary_literals_internals
+        {
+            // 原理: 位运算
+            template<typename T>
+            T func(){return 0;} //直接definition结束递归调用
+
+            template <typename T, typename... Ts>
+            T func(char t0, Ts... t)
+            {
+                if (t0 != '0' && t0 != '1')
+                {
+                    throw std::invalid_argument("digit must be 0 or 1");
+                }
+
+                if (t0 == '0')
+                {
+                    return func<T>(t...);
+                }
+                else // t0=='1'
+                {
+                    return (1 << sizeof...(t)) | func<T>(t...);
+                }
+            }
+        }
+
+        template <char... bits>
+        constexpr byte8 operator""_b8()
+        {
+            static_assert(
+                sizeof...(bits) <= 8,
+                "binary literal b8 must be up to 8 digits long");
+            return binary_literals_internals::func<byte8>(bits...);
+        }
+
+        template <char... bits>
+        constexpr byte16 operator""_b16()
+        {
+            static_assert(
+                sizeof...(bits) <= 16,
+                "binary literal b16 must be up to 16 digits long");
+            return binary_literals_internals::func<byte16>(bits...);
+        }
+
+        template <char... bits>
+        constexpr byte32 operator""_b32()
+        {
+            static_assert(
+                sizeof...(bits) <= 32,
+                "binary literal b32 must be up to 32 digits long");
+            return binary_literals_internals::func<byte32>(bits...);
+        }
+    }
+}
+
+int main()
+{
+    using namespace binary::binary_literals;
+
+    auto b1 = 1010_b8;
+    std::cout << (int)b1 << std::endl; // 10
+
+    auto b2 = 1_b8;
+    std::cout << (int)b2 << std::endl; // 1
+
+    // auto b3 = 2010_b8;
+    // std::cout << (int)b3 << std::endl; // error
+
+    auto b4 = 101010101010_b16;
+    std::cout << b4 << std::endl; //2730
+
+    auto b5 = 10101010101010101010101_b32;
+    std::cout << b5 << std::endl; //5592405
+}
+```
+
 ## raw string literals
 
 ```cpp
