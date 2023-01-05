@@ -204,6 +204,20 @@ byte8 func(char t0, Ts... t)
 ```
 
 ```cpp
+// return type is T
+template <typename T, typename... Ts>
+T func(int x, Ts... xs)
+{
+    if constexpr (sizeof...(xs)==0){
+        return static_cast<T>(x);
+    }
+    else{
+        return static_cast<T>(x)+func<T>(xs...);
+    }
+}
+```
+
+```cpp
 // modification3: 返回值设置T
 // 原理: 位运算
 template <typename T, typename... Ts>
