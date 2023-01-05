@@ -275,6 +275,8 @@ template<typename T>
 T func(){return 0;} //definition, 结束递归调用的最后一个
 ```
 
+> raw user-defined literals by **function**
+
 ```cpp
 #include <iostream>
 
@@ -358,6 +360,80 @@ int main()
 
     auto b5 = 10101010101010101010101_b32;
     std::cout << b5 << std::endl; //5592405
+}
+```
+
+> raw user-defined literals by **struct**
+
+```cpp
+#include <iostream>
+
+namespace binary
+{
+    using byte8 = unsigned char;
+    using byte16 = unsigned short;
+    using byte32 = unsigned int;
+
+    namespace binary_literals
+    {
+        namespace binary_literals_internals
+        {
+            template <typename CharT, char... bits>
+            struct binary_struct; // declaration, 必须有
+
+            template <typename CharT>
+            struct binary_struct<CharT> // empty argument
+            {
+                static constexpr CharT value{0}; // 递归结束条件，采用了静态成员变量
+            };
+
+            template <typename CharT, char... bits>
+            struct binary_struct<CharT, '0', bits...> // specification, 0, x, x, x...
+            {
+                static constexpr CharT value{binary_struct<CharT, bits...>::value};
+            };
+
+            template <typename CharT, char... bits>
+            struct binary_struct<CharT, '1', bits...> // specification, 1, x, x, x...
+            {
+                static constexpr CharT value{static_cast<CharT>(1 << sizeof...(bits)) | binary_struct<CharT, bits...>::value};
+            };
+        }
+
+        template <char... bits>
+        constexpr byte8 operator""_b8()
+        {
+            static_assert(sizeof...(bits) <= 8, "binary literal b8 must be up to 8 digits long");
+            return binary_literals_internals::binary_struct<byte8, bits...>::value;
+        }
+
+        template <char... bits>
+        constexpr byte16 operator""_b16()
+        {
+            static_assert(sizeof...(bits) <= 16, "binary literal b16 must be up to 16 digits long");
+            return binary_literals_internals::binary_struct<byte16, bits...>::value;
+        }
+
+        template <char... bits>
+        constexpr byte32 operator""_b32()
+        {
+            static_assert(sizeof...(bits) <= 32, "binary literal b32 must be up to 32 digits long");
+            return binary_literals_internals::binary_struct<byte32, bits...>::value;
+        }
+    }
+}
+
+int main()
+{
+    using namespace binary;
+    using namespace binary_literals;
+
+    auto b1 = 1010_b8;
+    // auto b2 = 101010101010_b16;
+    // auto b3 = 10101010101010101010101_b32;
+    std::cout << b1 << std::endl;
+    // std::cout << b2 << std::endl;
+    // std::cout << b3 << std::endl;
 }
 ```
 
