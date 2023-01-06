@@ -7,6 +7,8 @@
   - [raw string literals](#raw-string-literals)
     - [custom string with many functions](#custom-string-with-many-functions)
   - [string\_view](#string_view)
+  - [std::format](#stdformat)
+    - [basic usage](#basic-usage)
 
 ## built-in literals
 
@@ -843,5 +845,45 @@ int main(){
     std::string s{sv1}; // from string_view to sting
     std::cout<<s<<std::endl;
     std::cout<<sv1<<std::endl;
+}
+```
+
+## std::format
+
+> since c++20
+
+### basic usage
+
+```cpp
+#include<iostream>
+#include<vector>
+#include<chrono>
+#include<format>
+
+int main(){
+    auto t1=std::format("{} is {}\n", "John", 32);
+    std::cout<<t1;
+
+    auto t2=std::format("{:08x}\n", 32);
+    std::cout<<t2; // 00000020
+
+    auto stamp = std::chrono::current_zone()->to_local(std::chrono::system_clock::now());
+    auto t3 = std::format("{:%Y-%m-%d %X}\n", stamp);
+    std::cout<<t3;
+
+    std::vector<char> buf;
+    // std::format_to(std::front_inserter(buf), "{} is {}", "John", 32); // error, vector has no member named 'push_front'
+    std::format_to(std::back_inserter(buf), "{} is {}", "John", 32);
+    for(auto&& i:buf){std::cout<<i<<',';}
+
+    auto sz=std::formatted_size("{} is {}", "John", 32);// length is 10
+    std::cout<<sz<<std::endl;
+
+    std::format_to(buf.data(), "{} is {}\n", "John", 23);
+    for(auto&& i:buf){std::cout<<i<<',';} // replace data as: J,o,h,n, ,i,s, ,2,3,
+
+    char buf2[6];
+    std::format_to_n(buf2, 4, "{}xx", 27);
+    std::cout<<std::string(buf2)<<std::endl;// 27xx
 }
 ```
