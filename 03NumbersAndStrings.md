@@ -6,6 +6,7 @@
     - [raw user-defined literals](#raw-user-defined-literals)
   - [raw string literals](#raw-string-literals)
     - [custom string with many functions](#custom-string-with-many-functions)
+  - [string\_view](#string_view)
 
 ## built-in literals
 
@@ -625,5 +626,222 @@ int main()
     {
         std::cout << i << ';';
     } // hello; 你好;
+}
+```
+
+## string_view
+
+cstring, std::string, std::string_view
+- cstring 性能高，不方便操作
+- std::string, 每个std::string都独自拥有一份字符串的拷贝
+- std::string_view 只是记录了自己对应的字符串的指针和偏移位置
+
+```cpp
+typedef basic_string<char> string
+typedef basic_string_view<char> string_view
+```
+
+```cpp
+// std::string constructor
+string(); //default ctor
+string (const string& str); // copy ctor
+string (const string& str, size_t pos, size_t len = npos); // substring
+string (const char* s); // from c-str
+string (const char* s, size_t n); // from buffer
+string (size_t n, char c); // fill
+template <class InputIterator>  string  (InputIterator first, InputIterator last); // range
+string (initializer_list<char> il); //initializer_list
+string (string&& str) noexcept; // move
+
+// std::string_view constructor
+string_view() noexcept; // default
+string_view(const string_view& other) noexcept;
+string_view(const char* s); // from c-str
+string_view(const char* s, size_t n); // from buffer
+```
+
+```cpp
+// std::string操作更容易
+#include<iostream>
+#include<cstring>
+#include<string>
+
+int main(){
+    char cstr1[]{'h', 'e', 'l', 'l', 'o', '\0'};
+    char cstr2[6];
+    strcpy(cstr2, cstr1);
+    std::cout<<cstr2<<std::endl;
+    
+    std::string str1{"world"};
+    std::string str2{str1};
+    std::cout<<str2<<std::endl;
+}
+```
+
+```cpp
+// std::string_view ctor
+#include<iostream>
+#include<string>
+#include<string_view>
+
+int main(){
+    const char* cstr{"hello,world"};
+    std::string_view sv1{cstr};
+    std::string_view sv2{cstr, 5};
+    std::string_view sv3{cstr+6, 5};
+    std::cout<<sv1<<'|'<<sv2<<std::endl; // hello,world|hello
+    std::cout<<sv1<<'|'<<sv3<<std::endl; // hello,world|world
+
+    std::string str{"hello,world"};
+    std::string_view sv4{str.c_str()};
+    std::string_view sv5{str.c_str(), 5};
+    std::string_view sv6{str.c_str()+6, 5};
+    std::string_view sv7{str}; // std::string数据交给std::string_view
+    std::cout<<sv4<<'|'<<sv5<<std::endl; // hello,world|hello
+    std::cout<<sv4<<'|'<<sv6<<std::endl; // hello,world|world
+    std::cout<<sv7<<std::endl; // hello,world
+}
+```
+
+```cpp
+// std::string const &, std::string_view性能比较
+#include <iostream>
+#include <chrono>
+#include <string>
+#include <string_view>
+
+class Timer
+{
+    std::string title;
+    std::chrono::high_resolution_clock::time_point m_start, m_stop;
+
+public:
+    Timer(const std::string &name) : title{name}
+    {
+        m_start = std::chrono::high_resolution_clock::now();
+    }
+    ~Timer() { stop(); }
+    void stop()
+    {
+        m_stop = std::chrono::high_resolution_clock::now();
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(m_stop - m_start);
+        std::cout << title << ':' << ms.count() << "ms\n";
+    }
+};
+
+void func1(std::string const &str1) { str1.find_first_of('i'); } // heap反复创建销毁std::string
+void func2(std::string_view sv1) { sv1.find_first_of('i'); } // std::string_view采用值传递不用ref传递
+
+int main()
+{
+    {
+        Timer timer("std::string");
+        std::string name{"XiaoMing"};
+        for (int i = 0; i < 1e7; i++)
+        {
+            auto firstName = name.substr(0, 4); // Xiao
+            auto lastName = name.substr(4, 4);  // Ming
+            func1(firstName);
+            func1(lastName);
+        }
+    } // std::string:368ms
+    // 仅仅func1与func2不同
+    {
+        Timer timer("std::string_view");
+        std::string name{"XiaoMing"};
+        for (int i = 0; i < 1e7; i++)
+        {
+            auto firstName = name.substr(0, 4);
+            auto lastName = name.substr(4, 4); 
+            func2(firstName);// std::string_view能够高效替代std::string const &
+            func2(lastName);
+        }
+    } // std::string:158ms
+}
+```
+
+```cpp
+// std::string创建销毁耗时
+auto longStr= std::string(1000, 'a'); // 1000个a组成的字符串
+auto longCStr=longStr.c_str();
+{
+    Timer timer("std::string");
+    for (int i = 0; i < 1e7; i++)
+    {
+        std::string name{longStr}; // 反复创建销毁std::string对象
+    }
+} // std::string:585ms
+{
+    Timer timer("std::string_view");
+    for (int i = 0; i < 1e7; i++)
+    {
+        std::string_view name{longCStr};
+    }
+} // std::string:0ms
+```
+
+```cpp
+// substr会创建临时std::string对象
+{
+    Timer timer("std::string");
+    std::string name{"XiaoMing"};
+    for (int i = 0; i < 1e7; i++)
+    {
+        // substr过程中反复创建销毁std::string
+        auto firstName = name.substr(0, 4); // std::string
+        auto lastName = name.substr(4, 4); 
+    }
+} // std::string:110ms
+{
+    Timer timer("std::string_view");
+    std::string_view name{"XiaoMing"}; // 仅仅初始变量不同
+    for (int i = 0; i < 1e7; i++)
+    {
+        auto firstName = name.substr(0, 4); // std::string_view
+        auto lastName = name.substr(4, 4);  
+    }
+} // std::string:0ms
+```
+
+```cpp
+// std::string无法使用被销毁的对象
+#include <iostream>
+#include <string>
+#include <string_view>
+
+std::string_view GetStringView()
+{
+    std::string name = "xunwu";
+    // 将std::string交给std::string_view
+    return std::string_view(name);// 离开作用域时，name已经被回收销毁
+}
+
+int main()
+{
+    auto stringView = GetStringView();
+    std::cout << stringView << std::endl; // 烫烫
+}
+```
+
+```cpp
+// std::string_view特有的两个函数remove_prefix和remove_suffix
+#include<iostream>
+#include<string>
+#include<string_view>
+
+std::string_view trim_view(std::string_view sv){
+    auto const pos1{sv.find_first_not_of(" ")};
+    auto const pos2{sv.find_last_not_of(" ")};
+    std::cout<<pos1<<','<<pos2<<std::endl;
+    sv.remove_prefix(pos1); // Moves the start of the view forward by n characters.
+    sv.remove_suffix(sv.size()-pos2-1); //Moves the end of the view back by n characters.
+    return sv;
+}
+
+int main(){
+    auto sv1{trim_view("   sample   ")};
+    std::string s{sv1}; // from string_view to sting
+    std::cout<<s<<std::endl;
+    std::cout<<sv1<<std::endl;
 }
 ```
