@@ -9,6 +9,7 @@
   - [string\_view](#string_view)
   - [std::format](#stdformat)
     - [basic usage](#basic-usage)
+    - [std::format with user-defined types](#stdformat-with-user-defined-types)
 
 ## built-in literals
 
@@ -885,5 +886,43 @@ int main(){
     char buf2[6];
     std::format_to_n(buf2, 4, "{}xx", 27);
     std::cout<<std::string(buf2)<<std::endl;// 27xx
+}
+```
+
+### std::format with user-defined types
+
+user-defined without format specifier
+
+```cpp
+#include <iostream>
+#include <format>
+
+namespace v1
+{
+    struct employee
+    {
+        int id;
+        std::string firstName;
+        std::string lastName;
+    };
+}
+
+template <>
+struct std::formatter<v1::employee>
+{
+    constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+
+    auto format(v1::employee const &e, format_context &ctx)
+    {
+        return std::format_to(ctx.out(), "[{}] {} {}", e.id, e.firstName, e.lastName);
+    }
+};
+
+int main()
+{
+    v1::employee e1{12, "John", "Doe"};
+    auto s1 = std::format("{}", e1);
+    // auto s2 = std::format("{:L}", e1); // error, cannot parse L
+    std::cout << s1 << std::endl; // [12] John Doe
 }
 ```
