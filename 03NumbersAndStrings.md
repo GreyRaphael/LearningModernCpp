@@ -891,6 +891,8 @@ int main(){
 
 ### std::format with user-defined types
 
+> [Custom types and std::format from C++20](https://www.cppstories.com/2022/custom-stdformat-cpp20/)
+
 user-defined without format specifier
 
 ```cpp
@@ -924,5 +926,60 @@ int main()
     auto s1 = std::format("{}", e1);
     // auto s2 = std::format("{:L}", e1); // error, cannot parse L
     std::cout << s1 << std::endl; // [12] John Doe
+}
+```
+
+user-defined with format specifier
+
+```cpp
+#include <iostream>
+#include <format>
+
+namespace v2
+{
+    struct employee
+    {
+        int id;
+        std::string firstName;
+        std::string lastName;
+    };
+}
+
+template <>
+struct std::formatter<v2::employee>
+{
+    bool lexicographic_order = false;
+
+    constexpr auto parse(std::format_parse_context &ctx)
+    {
+        auto pos = ctx.begin();
+        while (pos != ctx.end() && *pos != '}')
+        {
+            if (*pos == 'h' || *pos == 'H')
+                lexicographic_order = true;
+            ++pos;
+        }
+        return pos; // expect `}` at this position, otherwise it's error! exception!
+    }
+
+    auto format(const v2::employee &e, std::format_context &ctx)
+    {
+        if (lexicographic_order)
+            return std::format_to(ctx.out(), "[{}] {}, {}", e.id, e.lastName, e.firstName);
+
+        return std::format_to(ctx.out(), "[{}] {} {}", e.id, e.firstName, e.lastName);
+    }
+};
+
+int main()
+{
+    v2::employee e2{12, "John", "Doe"};
+    auto s1 = std::format("{}", e2);
+    auto s2 = std::format("{:h}", e2);
+    // auto s3 = std::format("{:A}", e2); // error, cannot parse A
+    auto s4 = std::format("{:hello}", e2);
+    std::cout << s1 << std::endl; // [12] John Doe
+    std::cout << s2 << std::endl; // [12] Doe, John
+    std::cout << s4 << std::endl; // [12] Doe, John
 }
 ```
