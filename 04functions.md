@@ -5,6 +5,7 @@
   - [Lambda](#lambda)
     - [basic usage](#basic-usage)
     - [lambda with template](#lambda-with-template)
+  - [variadic function arguments](#variadic-function-arguments)
 
 ## default & delete function
 
@@ -239,3 +240,46 @@ int main()
 }
 ```
 
+## variadic function arguments
+
+```cpp
+#include <iostream>
+
+template <typename T>
+T add(T value){return value;}
+
+template <typename T, typename... Ts>
+// T add(T first, Ts... rest){
+auto add(T first, Ts... rest){
+   return first+add(rest...);
+}
+
+int main()
+{
+   std::cout << add(1, 2, 3) << std::endl;
+   using namespace std::string_literals;
+   std::cout << add("hello"s, " "s, "world"s) << std::endl; // 当没有char类型的时候，可以使用 T add
+   std::cout << add("hello"s, ' ', "world"s) << std::endl; // 当有char类型的时候，应该使用auto add
+}
+```
+
+```cpp
+#include <iostream>
+
+template <typename... T>
+auto make_even_tuple(T... args){
+   static_assert(sizeof...(args) % 2 ==0, "expected an even number of arguments");
+   std::tuple<T...> t{args...};
+   return t;
+}
+
+int main()
+{
+   auto t1=make_even_tuple(1, 2.2, 3, "hello");
+//    auto t1=make_even_tuple(1, 2.2, "hello"); // error
+
+   auto [a, b, c, d]=t1;
+   std::cout<<std::get<1>(t1)<<std::endl;// 2.2
+   std::cout<<d<<std::endl; // hello
+}
+```
