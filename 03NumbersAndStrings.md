@@ -940,6 +940,7 @@ int main(){
 
 ```cpp
 // The parse() function has to return the iterator to the closing bracket
+"{}"       // ctx.begin() points to ctx.end()
 "{0}"      // ctx.begin() points to `}`
 "{0:d}"    // ctx.begin() points to `d`, begin-end is "d}"
 "{:hello}" // ctx.begin points to 'h' and begin-end is "hello}"
@@ -1044,6 +1045,58 @@ int main()
 ```
 
 user-defined with format specifier
+
+```cpp
+#include <iostream>
+#include <format>
+#include <string_view>
+
+namespace v2
+{
+    struct employee
+    {
+        int id;
+        std::string firstName;
+        std::string lastName;
+    };
+}
+
+template <>
+struct std::formatter<v2::employee>
+{
+    bool lexicographic_order = false;
+
+    constexpr auto parse(std::format_parse_context &ctx)
+    {
+        auto pos = ctx.begin();
+        if (pos!=ctx.end() && *pos!='}'){
+            switch(*pos){
+                case 'L':lexicographic_order = true; return ++pos;
+                default: throw std::format_error("invalid format");
+            }
+        }else{
+            return pos;
+        }
+    }
+
+    auto format(v2::employee const &e, std::format_context &ctx)
+    {
+        if (lexicographic_order)
+            return std::format_to(ctx.out(), "[{}] {}, {}", e.id, e.lastName, e.firstName);
+
+        return std::format_to(ctx.out(), "[{}] {} {}", e.id, e.firstName, e.lastName);
+    }
+};
+
+int main()
+{
+    v2::employee e1{12, "John", "Doe"};
+    auto s1 = std::format("{}", e1);
+    auto s2 = std::format("{:L}", e1);
+    std::cout << s1 << std::endl; // [12] John Doe
+    std::cout << s2 << std::endl; // [12] Doe, John
+}
+```
 
 ```cpp
 #include <iostream>
