@@ -6,6 +6,8 @@
     - [basic usage](#basic-usage)
     - [lambda with template](#lambda-with-template)
   - [variadic function arguments](#variadic-function-arguments)
+  - [high-order functions](#high-order-functions)
+    - [mapf](#mapf)
 
 ## default & delete function
 
@@ -343,5 +345,39 @@ int main()
     // return is int
    std::cout << min(2, 3, 4) << std::endl; // 2
    std::cout << min(4, 3, 2) << std::endl; // 2
+}
+```
+
+## high-order functions
+
+- map: 对容器里面每一个元素调用一下func
+- fold: applies a combining function to the elements of the range to produce a single result.
+
+### mapf
+
+```cpp
+#include <iostream>
+#include <algorithm>
+#include <vector>
+
+template <typename F, typename R>
+R mapf(F&& func, R range){
+    std::transform(
+        std::begin(range), std::end(range),
+        std::begin(range),
+        std::forward<F>(func)
+    );
+    return range;
+}
+
+int main()
+{
+    std::vector<int> v1{1, -2, 3, -4};
+    auto lfunc1=[](int const i){ return std::abs(i);}; // lambda
+    auto lfunc2=[](int const i){ return i*i;}; 
+    auto result1=mapf(lfunc1, v1);
+    auto result2=mapf(lfunc2, v1);
+    for(auto&& i:result1){std::cout<<i<<',';} // 1,2,3,4,
+    for(auto&& i:result2){std::cout<<i<<',';} // 1,4,9,16,
 }
 ```
