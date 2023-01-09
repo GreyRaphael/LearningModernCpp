@@ -15,6 +15,8 @@
 
 ## Lambda
 
+> lambdas are basically syntactic sugar for unnamed function objects, which are classes that implement the call operator
+
 ### basic usage
 
 ```cpp
@@ -61,6 +63,36 @@ int main()
    foo obj{10, "grey"};
    auto func=obj.print();
    func(); // 10 grey
+}
+```
+
+```cpp
+#include <iostream>
+#include <algorithm>
+#include <numeric>
+
+int main()
+{
+   std::vector<int> v1{1, 2, 3, 4, 5};
+   std::vector<std::string> v2{"hello", "world", "china", "today"};
+
+   auto lsum=[](auto const a, auto const b){return a+b;};
+
+   auto s1=std::accumulate(
+      std::begin(v1),
+      std::end(v1),
+      0,
+      lsum
+   );
+   std::cout<<s1<<std::endl; // 15
+
+   auto s2=std::accumulate(
+      std::begin(v2),
+      std::end(v2),
+      std::string(""),
+      lsum
+   );
+   std::cout<<s2<<std::endl; // helloworldchinatoday
 }
 ```
 
