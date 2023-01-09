@@ -868,22 +868,30 @@ int main(){
     auto t2=std::format("{:08x}\n", 32);
     std::cout<<t2; // 00000020
 
-    auto stamp = std::chrono::current_zone()->to_local(std::chrono::system_clock::now());
-    auto t3 = std::format("{:%Y-%m-%d %X}\n", stamp);
-    std::cout<<t3;
+    int val =10;
+    auto t3=std::format("val = {}, &val = {}\n", val, static_cast<void*>(&val)); // 必须转换成void*才能输出地址
+    std::cout<<t3; // val = 10, &val = 0xaffc98
+
+    auto now = std::chrono::system_clock::now();
+    auto stamp = std::format("Today is {:%Y-%m-%d %X}\n", now);
+    std::cout<<stamp;
+
+    auto date=std::chrono::year { 2023 } / std::chrono::month{1} / std::chrono::day{9};
+    auto msg = std::format("{:*^10}, {:*>10}, in{}!\n", "hello", "world", date);
+    std::cout<<msg;// **hello***, *****world, in2023-01-09!
 
     std::vector<char> buf;
     // std::format_to(std::front_inserter(buf), "{} is {}", "John", 32); // error, vector has no member named 'push_front'
     std::format_to(std::back_inserter(buf), "{} is {}", "John", 32);
     for(auto&& i:buf){std::cout<<i<<',';}
 
-    auto sz=std::formatted_size("{} is {}", "John", 32);// length is 10
-    std::cout<<sz<<std::endl;
+    auto sz=std::formatted_size("{} is {}", "John", 32);
+    std::cout<<sz<<std::endl; // 10
 
     std::format_to(buf.data(), "{} is {}\n", "John", 23);
     for(auto&& i:buf){std::cout<<i<<',';} // replace data as: J,o,h,n, ,i,s, ,2,3,
 
-    char buf2[6];
+    char buf2[6]{0};
     std::format_to_n(buf2, 4, "{}xx", 27);
     std::cout<<std::string(buf2)<<std::endl;// 27xx
 }
