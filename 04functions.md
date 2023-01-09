@@ -4,6 +4,7 @@
   - [default \& delete function](#default--delete-function)
   - [Lambda](#lambda)
     - [basic usage](#basic-usage)
+    - [lambda with template](#lambda-with-template)
 
 ## default & delete function
 
@@ -93,6 +94,148 @@ int main()
       lsum
    );
    std::cout<<s2<<std::endl; // helloworldchinatoday
+}
+```
+
+### lambda with template
+
+example: make sure that two parameters of the lambda have the same type.
+
+```cpp
+#include <iostream>
+#include <vector>
+
+int main()
+{
+   auto func1 = []<typename T>(std::vector<T> const &vec)
+   {
+      std::cout << std::size(vec) << std::endl;
+   };
+
+   std::vector<int> v1{1, 2, 3, 4, 5};
+   func1(v1); // 5
+   // func1(10); // cannot resolve type int
+
+   auto func2 = []<typename T>(T x, T y){ return x + y; }; // since c++20
+   std::cout << func2(10, 20) << std::endl; // 30
+   // std::cout << func2(1.0, 20) << std::endl;// error, must be the same type
+   std::cout << func2(1.0, 2.0) << std::endl; // 3.0
+}
+```
+
+example: when you need to know the type of a parameter so that you can create instances of that type or invoke static members of it.
+
+```cpp
+// before c++20
+#include <iostream>
+
+struct foo
+{
+   foo(int x){std::cout << "call foo-"<< x << std::endl;}
+   static void static_func(){std::cout << "message" << std::endl;}
+};
+
+int main()
+{
+   auto func=[](auto x){
+      using T=std::decay_t<decltype(x)>;
+      T other{20};
+      T::static_func();
+   };
+
+   foo obj1{10};
+   func(obj1);
+}
+```
+
+```cpp
+// since c++20
+#include <iostream>
+
+struct foo
+{
+   foo(int x){std::cout << "call foo-"<< x << std::endl;}
+   static void static_func(){std::cout << "message" << std::endl;}
+};
+
+int main()
+{
+   auto func=[]<typename T>(T x){
+      T other{20};
+      T::static_func();
+   };
+
+   foo obj1{10};
+   func(obj1);
+}
+```
+
+example: perfect forwarding
+
+[reference collapsing rules](http://thbecker.net/articles/rvalue_references/section_08.html):
+- A& & becomes A&: reference to A& is A&
+- A& && becomes A&: 
+- A&& & becomes A&: 
+- A&& && becomes A&&: 
+
+```cpp
+#include <iostream>
+
+void myFunction(int &&myNum)
+{
+   std::cout << "rvalue reference overload: myFunction(int&&): " << myNum << std::endl;
+}
+void myFunction(int &myNum)
+{
+   std::cout << "lvalue reference overload: myFunction(int&): " << myNum << std::endl;
+}
+
+auto l1 = [](auto &&myNum)
+{ myFunction(std::forward<decltype(myNum)>(myNum)); };
+
+// since c++20
+auto l2 = []<typename T>(T &&myNum)
+{ myFunction(std::forward<T>(myNum)); };
+
+int main()
+{
+   int someNum{121};          // lvalue
+   int &anotherNum = someNum; // lvalue reference
+
+   l1(someNum);               // calls lvalue reference overload
+   l1(anotherNum);            // calls lvalue reference overload
+   l1(2);                     // calls rvalue reference overload
+   l1(std::move(anotherNum)); // calls rvalue reference overload
+
+   l2(someNum);               // calls lvalue reference overload
+   l2(anotherNum);            // calls lvalue reference overload
+   l2(2);                     // calls rvalue reference overload
+   l2(std::move(anotherNum)); // calls rvalue reference overload
+}
+```
+
+```cpp
+#include <iostream>
+
+template<typename... T>
+void foo(T&&... args){
+    std::cout<<sizeof...(args)<<std::endl;
+}
+
+auto func1=[](auto&& ...args){
+    return foo(std::forward<decltype(args)>(args)...);
+};
+
+// since c++20
+auto func2=[]<typename... T>(T&&... args){
+    return foo(std::forward<T>(args)...);
+};
+
+int main()
+{
+    foo(1, 2.1, "hello");//3
+    func1(1, 2, 2.1, "world", "today"); //5
+    func2(1, 2.1, "world", "today"); //4
 }
 ```
 
