@@ -283,3 +283,65 @@ int main()
    std::cout<<d<<std::endl; // hello
 }
 ```
+
+example: fold expression to simplify variadict function template
+
+```cpp
+#include <iostream>
+
+template <typename... Ts>
+auto add(Ts... args){
+   return (args + ...);
+}
+
+int main()
+{
+   std::cout << add(1, 2, 3) << std::endl;
+   using namespace std::string_literals;
+   std::cout << add("hello"s, ' ', "world"s) << std::endl; 
+}
+```
+
+example: custom wrapper for fold expression
+
+```cpp
+#include <iostream>
+
+template <typename... Ts>
+constexpr auto min(Ts... args){
+   return (args < ...); // warning, unsafe use of type 'bool' in operation
+}
+
+int main()
+{
+    // return is bool
+   std::cout << min(1, 2, 3) << std::endl; // false
+   std::cout << min(3, 2, 1) << std::endl; // false
+}
+```
+
+```cpp
+#include <iostream>
+
+template<typename T>
+struct wrapper{
+    T const & value;
+};
+
+template<typename T>
+constexpr auto operator<(wrapper<T> const & lhs, wrapper<T> const & rhs){
+    return wrapper<T>{lhs.value<rhs.value ? lhs.value : rhs.value};
+}
+
+template<typename... Ts>
+constexpr auto min(Ts&&... args){
+    return (wrapper<Ts>(args) < ...).value;
+}
+
+int main()
+{
+    // return is int
+   std::cout << min(2, 3, 4) << std::endl; // 2
+   std::cout << min(4, 3, 2) << std::endl; // 2
+}
+```
