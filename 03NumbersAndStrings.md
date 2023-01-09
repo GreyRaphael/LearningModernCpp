@@ -10,6 +10,8 @@
   - [std::format](#stdformat)
     - [basic usage](#basic-usage)
     - [std::format with user-defined types](#stdformat-with-user-defined-types)
+      - [user-defined formatter with single value](#user-defined-formatter-with-single-value)
+      - [user-defined formatter with multiple values](#user-defined-formatter-with-multiple-values)
 
 ## built-in literals
 
@@ -900,6 +902,75 @@ int main(){
 ### std::format with user-defined types
 
 > [Custom types and std::format from C++20](https://www.cppstories.com/2022/custom-stdformat-cpp20/)
+
+需要实现`parse`和`format`两个函数
+
+#### user-defined formatter with single value
+
+```cpp
+#include<iostream>
+#include<format>
+
+struct Index{
+    unsigned int id_{0};
+};
+
+template<>
+struct std::formatter<Index>{
+    // ctor
+    formatter(){std::cout<<"begin format\n";}
+
+    constexpr auto parse(std::format_parse_context& ctx){
+        return ctx.begin();
+    }
+
+    auto format(Index const & obj, std::format_context& ctx){
+        return std::format_to(ctx.out(), "{}", obj.id_);
+    }
+};
+
+int main(){
+    Index obj{100};
+    // 调用1次ctor
+    std::cout<<std::format("obj={}\n", obj);// obj=100
+    // 调用2次ctor
+    std::cout<<std::format("obj={0},{0}\n", obj); // obj=100,100
+}
+```
+
+```cpp
+// The parse() function has to return the iterator to the closing bracket
+"{0}"      // ctx.begin() points to `}`
+"{0:d}"    // ctx.begin() points to `d`, begin-end is "d}"
+"{:hello}" // ctx.begin points to 'h' and begin-end is "hello}"
+```
+
+```cpp
+#include<iostream>
+#include<format>
+
+struct Index{
+    unsigned int id_{0};
+};
+
+template<>
+// 只有一个参数的class,struct可以继承标准的类型进行输出
+struct std::formatter<Index>:std::formatter<int>{ 
+    auto format(Index const & obj, std::format_context& ctx){
+        return std::formatter<int>::format(obj.id_, ctx);
+    }
+};
+
+int main(){
+    Index obj{200};
+    std::cout<<std::format("obj={}\n", obj);// obj=200
+    std::cout<<std::format("obj={0},{0}\n", obj); // obj=200,200
+    // 继承复杂的format
+    std::cout << std::format("obj={:*>11d}\n", obj);//obj=********200
+}
+```
+
+#### user-defined formatter with multiple values
 
 user-defined without format specifier
 
