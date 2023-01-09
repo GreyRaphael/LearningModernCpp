@@ -991,11 +991,46 @@ namespace v1
 template <>
 struct std::formatter<v1::employee>
 {
-    constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+    constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 
-    auto format(v1::employee const &e, format_context &ctx)
+    auto format(v1::employee const &e, std::format_context &ctx)
     {
         return std::format_to(ctx.out(), "[{}] {} {}", e.id, e.firstName, e.lastName);
+    }
+};
+
+int main()
+{
+    v1::employee e1{12, "John", "Doe"};
+    auto s1 = std::format("{}", e1);
+    // auto s2 = std::format("{:L}", e1); // error, cannot parse L
+    std::cout << s1 << std::endl; // [12] John Doe
+}
+```
+
+```cpp
+#include <iostream>
+#include <format>
+#include <string_view>
+
+namespace v1
+{
+    struct employee
+    {
+        int id;
+        std::string firstName;
+        std::string lastName;
+    };
+}
+
+template <>
+// rely on the predefined string_view formatter
+struct std::formatter<v1::employee>:std::formatter<string_view>
+{
+    auto format(v1::employee const &e, std::format_context &ctx)
+    {
+        auto temp= std::format("[{}] {} {}", e.id, e.firstName, e.lastName);
+        return std::formatter<std::string_view>::format(temp, ctx);
     }
 };
 
