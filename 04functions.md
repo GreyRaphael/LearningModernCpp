@@ -428,6 +428,50 @@ int main()
 }
 ```
 
+example: specify type
+
+```cpp
+#include <iostream>
+#include <algorithm>
+#include <vector>
+
+template <typename F, typename R>
+R mapf(F&& func, R range){
+    std::transform(
+        std::begin(range), std::end(range),
+        std::begin(range),
+        std::forward<F>(func)
+    );
+    return range;
+}
+
+template<class T = double>
+struct fround
+{
+    typename std::enable_if_t<std::is_floating_point_v<T>, T>
+    // function object
+    operator()(const T& value) const
+    {
+        return std::round(value);
+    }
+};
+
+int main()
+{
+    auto lfunc=[](auto const i){return std::round(i);};
+    std::vector<double> v1{1.1, 3.3, 5.5, 6.6};
+
+    auto result1=mapf(lfunc, v1);
+    for(auto&& i:result1){std::cout<<i<<' ';}
+
+    auto result2=mapf(fround<>(), v1);
+    for(auto&& i:result2){std::cout<<i<<' ';}
+
+    // std::vector<float> v1{1.1, 3.3, 5.5, 6.6};
+    // auto result3=mapf(fround<>(), v1); // error
+}
+```
+
 ### foldl and foldr
 
 ```cpp
@@ -439,7 +483,7 @@ int main()
 
 // range, fold from left to right
 template <typename F, typename R, typename T>
-constexpr T foldl(F&& func, R&& range, T first){
+constexpr T foldl(F&& func, R&& range, T first){ // R&&是为了后面的chars[], R&也行
     return std::accumulate(
         std::begin(range), std::end(range),
         std::move(first),
