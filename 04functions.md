@@ -8,6 +8,7 @@
   - [variadic function arguments](#variadic-function-arguments)
   - [high-order functions](#high-order-functions)
     - [mapf](#mapf)
+    - [foldl and foldr](#foldl-and-foldr)
 
 ## default & delete function
 
@@ -424,5 +425,85 @@ int main()
         std::cout<<result4.front()<<' ';
         result4.pop();
     } // 1 1 2 2
+}
+```
+
+### foldl and foldr
+
+```cpp
+#include <iostream>
+#include <numeric>
+#include <vector>
+#include <map>
+#include <queue>
+
+// range, fold from left to right
+template <typename F, typename R, typename T>
+constexpr T foldl(F&& func, R&& range, T first){
+    return std::accumulate(
+        std::begin(range), std::end(range),
+        std::move(first),
+        std::forward<F>(func)
+    );
+}
+
+// range, fold from right to left
+template <typename F, typename R, typename T>
+constexpr T foldr(F&& func, R&& range, T first){
+    return std::accumulate(
+        std::rbegin(range), std::rend(range),
+        std::move(first),
+        std::forward<F>(func)
+    );
+}
+
+template <typename F, typename T>
+constexpr T foldl(F&& func, std::queue<T> q, T first){
+    while (!q.empty()){
+        first=func(first, q.front());
+        q.pop();
+    }
+    return first;
+}
+
+int main()
+{
+    auto lfunc1=[](auto const a, auto const b){
+        std::cout<<"a="<<a<<std::endl;
+        return a+b;
+    };
+
+    std::vector<int> v1{1, -2, 3, -4};
+    auto result1=foldl(lfunc1, v1, 0);
+    std::cout<<result1<<std::endl;// -2
+
+    std::vector<int> v2{1, -2, 3, -4};
+    auto result2=foldl(std::plus<>(), v1, 0);
+    std::cout<<result2<<std::endl;// -2
+    
+    std::vector<std::string> v3{"hello", "world", "grey", "what"};
+    auto result3=foldl(lfunc1, v3, std::string(""));
+    std::cout<<result3<<std::endl;// helloworldgreywhat
+
+    std::vector<std::string> v4{"hello", "world", "grey", "what"};
+    auto result4=foldl(lfunc1, v4, std::string(""));
+    std::cout<<result4<<std::endl;// helloworldgreywhat
+
+    char chars[]{'h','e', 'l', 'l', 'o'};
+    auto str1=foldl(lfunc1, chars, std::string(""));
+    std::cout<<str1<<std::endl; // hello
+
+    std::map<std::string, int> dict{{"one", 1}, {"two", 2}, {"three", 3}};
+    auto lfunc2=[](int const sum, std::pair<std::string, int> const kv){
+        std::cout<<"sum="<<sum<<std::endl;
+        return sum+kv.second;
+    };
+    auto count=foldl(lfunc2, dict, 0);
+    std::cout<<count<<std::endl; // 6
+
+    // queue
+    std::queue<int> q({11, 22, 33, 44});
+    auto result5=foldl(lfunc1, q, 0);
+    std::cout<<result5<<std::endl;// 110
 }
 ```
