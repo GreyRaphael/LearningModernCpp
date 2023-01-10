@@ -9,6 +9,7 @@
   - [high-order functions](#high-order-functions)
     - [mapf](#mapf)
     - [foldl and foldr](#foldl-and-foldr)
+    - [high-order functions combination](#high-order-functions-combination)
 
 ## default & delete function
 
@@ -620,5 +621,109 @@ int main()
    
     // auto result3=foldl(std::plus<>(), 1);
     // std::cout<<result3<<std::endl; // error, too few arguments
+}
+```
+
+### high-order functions combination
+
+example: combine 2 functions
+
+```cpp
+#include <iostream>
+#include <string>
+
+template <typename F, typename G>
+auto compose(F&& f, G&& g){
+    return [&](auto x){return f(g(x));};
+}
+
+int main()
+{
+    auto v=compose(
+        [](int const n){return std::to_string(n);},
+        [](int const n){return n*n;}
+    );
+    std::cout<<v(3)<<std::endl; // 9
+}
+```
+
+example: combine functions recursively
+
+```cpp
+#include <iostream>
+#include <string>
+
+template <typename F, typename G>
+auto compose(F&& f, G&& g){
+    return [&](auto x){return f(g(x));};
+}
+
+template <typename F, typename... R>
+auto compose(F&& f, R&& ... r){
+    auto func=[&](auto x){return f(compose(r...)(x));};
+    return func;
+}
+
+int main()
+{
+    auto v=compose(
+        [](int const n){return std::to_string(n);},
+        [](int const n){return n*n;},
+        [](int const n){return n+n;},
+        [](int const n){return std::abs(n);}
+    );
+    std::cout<<v(-3)<<std::endl; // 36
+}
+```
+
+example: lambda combinations
+
+```cpp
+#include <iostream>
+#include <numeric>
+#include <algorithm>
+#include <vector>
+
+template <typename F, typename R>
+R mapf(F&& func, R range){
+    std::transform(
+        std::begin(range), std::end(range),
+        std::begin(range),
+        std::forward<F>(func)
+    );
+    return range;
+}
+
+template <typename F, typename R, typename T>
+constexpr T foldl(F&& func, R&& range, T first){
+    return std::accumulate(
+        std::begin(range), std::end(range),
+        std::move(first),
+        std::forward<F>(func)
+    );
+}
+
+template <typename F, typename G>
+auto compose(F&& f, G&& g){
+    return [&](auto x){return f(g(x));};
+}
+
+template <typename F, typename... R>
+auto compose(F&& f, R&& ... r){
+    auto func=[&](auto x){return f(compose(r...)(x));};
+    return func;
+}
+
+int main()
+{
+    auto v=compose(
+        [](auto const v){return foldl(std::plus<>(), v, 0);},
+        [](auto const v){return mapf(
+            [](auto const i){ return i*i;}, v);}, // lambda in lambda
+        [](auto const v){return mapf(
+            [](auto const i){ return std::abs(i);}, v);}
+    );
+    std::vector v1{1, 2, 3, -1, -2, -3};
+    std::cout<<v(v1)<<std::endl; // 28
 }
 ```
