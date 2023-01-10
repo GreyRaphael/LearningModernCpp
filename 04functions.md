@@ -727,3 +727,72 @@ int main()
     std::cout<<v(v1)<<std::endl; // 28
 }
 ```
+
+example: lambda combinations with `operator*`
+
+```cpp
+#include <iostream>
+#include <numeric>
+#include <algorithm>
+#include <vector>
+#include <string>
+
+template <typename F, typename R>
+R mapf(F&& func, R range){
+    std::transform(
+        std::begin(range), std::end(range),
+        std::begin(range),
+        std::forward<F>(func)
+    );
+    return range;
+}
+
+template <typename F, typename R, typename T>
+constexpr T foldl(F&& func, R&& range, T first){
+    return std::accumulate(
+        std::begin(range), std::end(range),
+        std::move(first),
+        std::forward<F>(func)
+    );
+}
+
+template <typename F, typename G>
+auto compose(F&& f, G&& g){
+    return [&](auto x){return f(g(x));};
+}
+
+template <typename F, typename... R>
+auto compose(F&& f, R&& ... r){
+    auto func=[&](auto x){return f(compose(r...)(x));};
+    return func;
+}
+
+// new operator
+template <typename F, typename G>
+auto operator*(F&& f, G&& g){
+    return compose(std::forward<F>(f), std::forward<G>(g));
+}
+
+template <typename F, typename... R>
+auto operator*(F&& f, R&&... r){
+    return operator*(std::forward<F>(f), r...);
+}
+
+int main()
+{
+    auto v=[](auto const v){return foldl(std::plus<>(), v, 0);}
+            *
+           [](auto const v){return mapf(
+                [](auto const i){ return i*i;}, v);}
+            *
+           [](auto const v){return mapf(
+            [](auto const i){ return std::abs(i);}, v);};
+    std::vector v1{1, 2, 3, -1, -2, -3};
+    std::cout<<v(v1)<<std::endl; // 28
+
+    auto n= [](auto const n){return std::to_string(n);} *
+            [](auto const n){return n+n;} *
+            [](auto const n){return std::abs(n);};
+    std::cout<<n(-3)<<std::endl;// 6
+}
+```
