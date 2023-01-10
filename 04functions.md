@@ -530,8 +530,8 @@ int main()
     std::cout<<result3<<std::endl;// helloworldgreywhat
 
     std::vector<std::string> v4{"hello", "world", "grey", "what"};
-    auto result4=foldl(lfunc1, v4, std::string(""));
-    std::cout<<result4<<std::endl;// helloworldgreywhat
+    auto result4=foldr(lfunc1, v4, std::string("xxx"));
+    std::cout<<result4<<std::endl;// xxxwhatgreyworldhello
 
     char chars[]{'h','e', 'l', 'l', 'o'};
     auto str1=foldl(lfunc1, chars, std::string(""));
