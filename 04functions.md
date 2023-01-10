@@ -359,7 +359,10 @@ int main()
 #include <iostream>
 #include <algorithm>
 #include <vector>
+#include <map>
+#include <queue>
 
+// range
 template <typename F, typename R>
 R mapf(F&& func, R range){
     std::transform(
@@ -370,14 +373,56 @@ R mapf(F&& func, R range){
     return range;
 }
 
+// map
+template <typename F, typename T, typename U>
+auto mapf(F&& func, std::map<T,U> const & m){
+    std::map<T,U> r; // new map
+    for(auto&& i: m){r.insert(func(i));}
+    return r;
+}
+
+// queue
+template <typename F, typename T>
+auto mapf(F&& func, std::queue<T> q){
+    std::queue<T> r; // new queue
+    while(!q.empty()){
+        r.push(func(q.front()));
+        q.pop(); // return is void
+    }
+    return r;
+}
+
 int main()
 {
+    // range
     std::vector<int> v1{1, -2, 3, -4};
     auto lfunc1=[](int const i){ return std::abs(i);}; // lambda
     auto lfunc2=[](int const i){ return i*i;}; 
     auto result1=mapf(lfunc1, v1);
     auto result2=mapf(lfunc2, v1);
     for(auto&& i:result1){std::cout<<i<<',';} // 1,2,3,4,
+    for(auto&& i:v1){std::cout<<i<<',';} // 1,-2,3,-4
     for(auto&& i:result2){std::cout<<i<<',';} // 1,4,9,16,
+    for(auto&& i:v1){std::cout<<i<<',';} // 1,-2,3,-4
+
+    // map
+    std::map<std::string, int> dict{{"one", 1}, {"two", 2}, {"three", 3}};
+    auto lfunc3=[](auto const kv){
+        return std::make_pair(
+            mapf(std::toupper, kv.first), 
+            kv.second
+        );
+    };
+    auto result3=mapf(lfunc3, dict);
+    for(auto&& kv:result3){std::cout<<kv.first<<':'<<kv.second<<' ';} // ONE:1 THREE:3 TWO:2 
+
+    // queue
+    std::queue<int> q({11, 22, 33, 44}); // 也可以q.push逐个加入
+    auto lfunc4=[](auto const i){return i>30? 2:1;};
+    auto result4=mapf(lfunc4, q);
+    while(!result4.empty()){
+        std::cout<<result4.front()<<' ';
+        result4.pop();
+    } // 1 1 2 2
 }
 ```
