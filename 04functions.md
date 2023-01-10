@@ -10,6 +10,7 @@
     - [mapf](#mapf)
     - [foldl and foldr](#foldl-and-foldr)
     - [high-order functions combination](#high-order-functions-combination)
+  - [`std::invoke`](#stdinvoke)
 
 ## default & delete function
 
@@ -794,5 +795,95 @@ int main()
             [](auto const n){return n+n;} *
             [](auto const n){return std::abs(n);};
     std::cout<<n(-3)<<std::endl;// 6
+}
+```
+
+## `std::invoke`
+
+>  useful in template metaprogramming for implementing various library functions
+
+examle: call function methods
+
+```cpp
+#include <iostream>
+#include <functional>
+
+int add(int const a, int const b) { return a + b; }
+
+struct foo
+{
+   int x = 0;
+   void increment_by(int const n){x += n;}
+   void msg(){std::cout << "x=" << x << std::endl;}
+};
+
+int main()
+{
+    // direct call
+    auto a1=add(1, 2);
+    
+    // by pointer
+    int (*padd1)(int const, int const)=&add;
+    auto a2=padd1(2, 3);
+    // auto pointer
+    auto padd2=&add;
+    auto a3=padd2(3, 4);
+
+    foo f;
+    f.increment_by(100);
+    auto x1=f.x; // 100
+
+    // by pointer
+    void (foo::*pfunc1)(int const) = &foo::increment_by;
+    (f.*pfunc1)(10);
+    std::cout<<f.x<<std::endl; // 110
+
+    // auto pointer
+    auto pfunc2=&foo::increment_by;
+    (f.*pfunc2)(3);
+    std::cout<<f.x<<std::endl; // 113
+}
+```
+
+example: call function by `std::invoke`
+
+```cpp
+#include <iostream>
+#include <functional>
+
+int add(int const a, int const b) { return a + b; }
+
+struct foo
+{
+   int x = 0;
+   void increment_by(int const n){x += n;}
+   void msg(){std::cout << "x=" << x << std::endl;}
+};
+
+int main()
+{
+   std::cout << std::invoke(add, 1, 2) << std::endl;
+   std::cout << std::invoke(&add, 1, 2) << std::endl;
+
+   int (*fadd)(int const, int const) = &add;
+   std::cout << std::invoke(fadd, 1, 2) << std::endl;
+
+   foo f1;
+   std::invoke(&foo::increment_by, f1, 10); 
+   f1.msg(); // x=10
+
+   foo f2;
+   auto x2 = std::invoke(&foo::x, f2);
+   f2.msg(); // x=0
+   std::cout<<x2<<std::endl;// 0
+
+   // function obj
+   foo f3;
+   auto x3=std::invoke(std::plus<>(), std::invoke(&foo::x, f3), 11);
+   std::cout<<x3<<std::endl;
+
+   // lambda
+   auto lfunc=[](auto const a, auto const b){return a+b;};
+   auto x4=std::invoke(lfunc, 2, 4);// 6
 }
 ```
