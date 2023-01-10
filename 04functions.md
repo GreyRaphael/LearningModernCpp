@@ -551,3 +551,74 @@ int main()
     std::cout<<result5<<std::endl;// 110
 }
 ```
+
+example: cascade `mapf`, `foldf`
+
+```cpp
+#include <iostream>
+#include <numeric>
+#include <algorithm>
+#include <vector>
+
+template <typename F, typename R>
+R mapf(F&& func, R range){
+    std::transform(
+        std::begin(range), std::end(range),
+        std::begin(range),
+        std::forward<F>(func)
+    );
+    return range;
+}
+
+template <typename F, typename R, typename T>
+constexpr T foldl(F&& func, R&& range, T first){
+    return std::accumulate(
+        std::begin(range), std::end(range),
+        std::move(first),
+        std::forward<F>(func)
+    );
+}
+
+int main()
+{
+    std::vector v1{1, 2, 3, -1, -2, -3};
+    auto lfunc1=[](auto const i){ return i*i;};
+    auto lfunc2=[](auto const i){ return std::abs(i);};
+
+    auto result=foldl(
+        std::plus<>(), 
+        mapf(lfunc1, mapf(lfunc2, v1)
+        ),
+        0
+    );
+    std::cout<<result<<std::endl; // 28
+}
+```
+
+example: variadic `fold`
+
+```cpp
+#include <iostream>
+
+template <typename F, typename T1, typename T2>
+auto foldl(F&& func, T1 v1, T2 v2){
+    return func(v1, v2);
+}
+
+template <typename F, typename T, typename... Ts>
+auto foldl(F&& func, T head, Ts... rest){
+    return func(head, foldl(std::forward<F>(func), rest...));
+}
+
+int main()
+{
+    auto result1=foldl(std::plus<>(), 1, 2, 3, 4);
+    std::cout<<result1<<std::endl; // 10
+    
+    auto result2=foldl(std::plus<>(), 1.1, 2, 3, 4);
+    std::cout<<result2<<std::endl; // 10.1
+   
+    // auto result3=foldl(std::plus<>(), 1);
+    // std::cout<<result3<<std::endl; // error, too few arguments
+}
+```
