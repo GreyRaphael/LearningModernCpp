@@ -4,6 +4,7 @@
   - [Conditional Compilaton](#conditional-compilaton)
   - [stringification \& concatenation](#stringification--concatenation)
   - [`alignas`, `alignof`, `sizeof`](#alignas-alignof-sizeof)
+  - [`static_assert`](#static_assert)
 
 ## Conditional Compilaton
 
@@ -212,4 +213,59 @@ int main()
     std::cout<<sizeof(test3)<<','<<alignof(test3)<<std::endl; // 32, 16
     std::cout<<sizeof(test4)<<','<<alignof(test4)<<std::endl; // 32, 32
 }
+```
+
+## `static_assert`
+
+> `static_assert(condition, message)`, as of C++17, the message is optional.
+
+- runtime assertion: `assert`
+- compile-time assertion: `static_assert`, static assertion checks is with template metaprogramming
+
+example: `static_assert` used in a namespace
+
+```cpp
+struct alignas(8) item
+{
+    int      id;
+    bool     active;
+    double   value;
+}; // 4+1+3+8=16
+
+static_assert(sizeof(item)==16, "size of item must be 16 bytes");
+```
+
+example: `static_assert` used in a class
+
+```cpp
+#include <iostream>
+
+template <typename T>
+class pod_wrapper
+{
+    static_assert(std::is_floating_point_v<T>, "must be floating value!"); // since c++17
+    // static_assert(std::is_integral_v <T>, "must be integral value!"); // since c++17
+    T value;
+};
+
+pod_wrapper<double> p1;
+// pod_wrapper<int> p2; // error
+
+
+int main(){}
+```
+
+example: `static_assert` used in a block or function
+
+```cpp
+#include <iostream>
+
+template<typename T>
+auto mul(T const a, T const b)
+{
+    static_assert(std::is_integral_v<T>, "Integral type expected");
+    return a * b;
+}
+
+int main(){}
 ```
