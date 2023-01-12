@@ -131,11 +131,14 @@ int main()
 #define Jitterbug 3
 
 #define DECL_MAKE(x) DECL_MAKE2(x)
-#define DECL_MAKE2(x) x* make##_##x() { return new x(); }
+// 下划线_前后应该使用##分隔开
+// #define DECL_MAKE2(x) x* make##_##x() { return new x(); }
+#define DECL_MAKE2(x) x* make_##x() { return new x(); }
 
-struct bar {};
-struct foo {};
+struct bar {int x=10;};
+struct foo {double y=2;};
 
+// creat instance of each classes
 DECL_MAKE(foo)
 DECL_MAKE(bar)
 
@@ -143,9 +146,15 @@ int main()
 {
     std::string s1=MAKE_STR2(apple);
     std::cout<<s1<<std::endl; //apple
-    
     std::string s2=MAKE_STR(hello);
     std::cout<<s2<<std::endl; //hello
+
+    #define NUMBER 42
+    std::string s3=MAKE_STR2(NUMBER);
+    std::cout<<s3<<std::endl; //NUMBER
+    // attention, 嵌套之后，变成了42而不是NUMBER
+    std::string s4=MAKE_STR(NUMBER);
+    std::cout<<s4<<std::endl; //42
 
     auto MERGE2(variable, 2) = 10;
     std::cout<<variable2<<std::endl; //10
@@ -153,8 +162,10 @@ int main()
     auto a = MERGE(Jitter, bug);
     std::cout<<a<<std::endl; //3
 
-    auto f = make_foo(); // f is a foo*
     auto b = make_bar(); // b is a bar*
+    auto f = make_foo(); // f is a foo*
+    std::cout<<b->x<<std::endl;
+    std::cout<<f->y<<std::endl;
 }
 ```
 
