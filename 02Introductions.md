@@ -711,6 +711,31 @@ int main(){
 }
 ```
 
+example: scoped enumeration
+
+```cpp
+#include <iostream>
+
+enum class Platform{
+    LDP,
+    SWAP,
+};
+
+void func(Platform p){
+    if(p==Platform::LDP){
+        std::cout<<"ldp"<<std::endl;
+    }else if(p==Platform::SWAP){
+        std::cout<<"swap"<<std::endl;
+    }
+}
+
+int main()
+{
+    auto p=Platform::SWAP;
+    func(p); // swap
+}
+```
+
 ## unamed namespace for static globals
 
 ```bash
