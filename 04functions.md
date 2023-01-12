@@ -469,8 +469,8 @@ int main()
     auto result2=mapf(fround<>(), v1);
     for(auto&& i:result2){std::cout<<i<<' ';}
 
-    // std::vector<float> v1{1.1, 3.3, 5.5, 6.6};
-    // auto result3=mapf(fround<>(), v1); // error
+    // std::vector<float> v2{1.1, 3.3, 5.5, 6.6};
+    // auto result3=mapf(fround<>(), v2); // error, conversion from 'double' to 'float', possible loss of data
 }
 ```
 
