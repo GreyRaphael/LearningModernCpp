@@ -440,3 +440,27 @@ int main()
 }
 ```
 
+example
+
+```cpp
+#include <iostream>
+
+template <typename T>
+using EnableIf = typename std::enable_if_t<T::value>;
+
+template <typename T>
+using DisableIf = typename std::enable_if_t<!T::value>;
+
+template <typename T, typename = EnableIf<std::is_integral<T>>>
+auto compute(T const a, T const b){ return a+b;}
+
+// 多加了一个typename=void, 避免redefinition
+template <typename T, typename = DisableIf<std::is_integral<T>>, typename = void>
+auto compute(T const a, T const b){ return a*b;}
+
+int main()
+{
+    std::cout<<compute(1, 2)<<std::endl; // 3
+    std::cout<<compute(1.1, 2.0)<<std::endl; // 2.2
+}
+```
