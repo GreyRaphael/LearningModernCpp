@@ -1,10 +1,11 @@
 # Preprocessing and Compilation
 
 - [Preprocessing and Compilation](#preprocessing-and-compilation)
-	- [Conditional Compilaton](#conditional-compilaton)
-	- [stringification \& concatenation](#stringification--concatenation)
-	- [`alignas`, `alignof`, `sizeof`](#alignas-alignof-sizeof)
-	- [`static_assert`](#static_assert)
+  - [Conditional Compilaton](#conditional-compilaton)
+  - [stringification \& concatenation](#stringification--concatenation)
+  - [`alignas`, `alignof`, `sizeof`](#alignas-alignof-sizeof)
+  - [`static_assert`](#static_assert)
+  - [`std::enable_if`](#stdenable_if)
 
 ## Conditional Compilaton
 
@@ -376,3 +377,66 @@ auto mul(T const a, T const b)
 
 int main(){}
 ```
+
+## `std::enable_if`
+
+> `enable_if`是为了constrain template, c++20引入concept之后，能够更好地constrain template
+
+`std::enable_if`的实现
+
+```cpp
+template <bool Cond, typename Result=void>
+struct enable_if { };
+
+template <typename Result>
+struct enable_if<true, Result> {
+    using type = Result;
+};
+```
+
+`enable_if<true, R>::type` is an alias for `R`, whereas `enable_if<false, T>::type` is ill-formed; 
+> `enable_if<true>::type` is an alias for `void`
+- `using type = Result;`中的`type`被当作static, 通过`::`来使用
+- `using enable_if_t = typename enable_if<B,T>::type;`, 其中 `enable_if_t`是语法糖(since c++14)
+- `typename=`也可以写成`class=`, `template <typename T>` 与`template <class T>`等价, [Reference](https://stackoverflow.com/questions/49408294/c-template-class-typename)
+
+```cpp
+#include <iostream>
+
+// overload1
+// 第二个typename没有template argument,只有默认值
+// 第三个typename只是为了显式说明这是一个type，可以省略
+template <typename F, typename= typename std::enable_if<std::is_floating_point<F>::value>::type>
+// template <class F, class= typename std::enable_if<std::is_floating_point<F>::value>::type>
+auto negate(F f){ return -f+1;}
+
+// overload2
+double negate(double i){return -i;}
+
+int main()
+{
+    std::cout<<negate(2.2)<<std::endl; // -2.2, 如果没有overload2, 那么结果为-1.2
+    std::cout<<negate<double>(2.2)<<std::endl; // -1.2
+}
+```
+
+语法糖(since c++17): `inline constexpr bool is_integral_v = is_integral<T>::value;`
+
+
+
+```cpp
+// 语法糖简化
+#include <iostream>
+
+// overload1
+template <typename F, typename= std::enable_if_t<std::is_floating_point_v<F>>>
+auto negate(F f){ return -f+1;}
+
+int main()
+{
+    std::cout<<negate(2.2)<<std::endl; // -1.2, 
+    std::cout<<negate<>(2.2)<<std::endl; //-1.2
+    std::cout<<negate<double>(2.2)<<std::endl; // -1.2
+}
+```
+
