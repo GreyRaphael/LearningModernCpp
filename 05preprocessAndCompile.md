@@ -6,6 +6,7 @@
   - [`alignas`, `alignof`, `sizeof`](#alignas-alignof-sizeof)
   - [`static_assert`](#static_assert)
   - [`std::enable_if`](#stdenable_if)
+  - [`constexpr`](#constexpr)
 
 ## Conditional Compilaton
 
@@ -462,5 +463,98 @@ int main()
 {
     std::cout<<compute(1, 2)<<std::endl; // 3
     std::cout<<compute(1.1, 2.0)<<std::endl; // 2.2
+}
+```
+
+## `constexpr`
+
+> since c++17
+
+> `constexpr` is for simplification of variadic templates and `std::enable_if`-based code, for **conditional compilation**
+
+example: 改写[上文例子](#stdenable_if)
+
+```cpp
+#include <iostream>
+
+template <typename T>
+auto compute(T const a, T const b){
+    if constexpr(std::is_integral_v<T>){
+        return a+b;
+    }else{
+        return a*b;
+    } 
+}
+
+int main()
+{
+    std::cout<<compute(1, 2)<<std::endl; // 3
+    std::cout<<compute(1.1, 2.0)<<std::endl; // 2.2
+}
+```
+
+example: 改写`byte8`, `byte16`, `byte32`[例子](03NumbersAndStrings.md#raw-user-defined-literals)
+
+```cpp
+// modification: struct with constexpr
+// 原理: 位运算
+#include <iostream>
+
+namespace binary
+{
+    using byte8 = unsigned char;
+    using byte16 = unsigned short;
+    using byte32 = unsigned int;
+
+    namespace binary_literals
+    {
+        namespace binary_literals_internals
+        {
+            template <typename CharT, char digit, char... bits>
+            constexpr CharT binary_eval(){
+                if constexpr (sizeof...(bits)==0){
+                    return static_cast<CharT>(digit-'0');
+                }else if constexpr (digit=='0'){
+                    return binary_eval<CharT, bits...>();
+                }else if constexpr (digit=='1'){
+                    return static_cast<CharT>(1<< sizeof...(bits) | binary_eval<CharT, bits...>());
+                }
+            }
+        }
+
+        template <char... bits>
+        constexpr byte8 operator""_b8()
+        {
+            static_assert(sizeof...(bits) <= 8, "binary literal b8 must be up to 8 digits long");
+            return binary_literals_internals::binary_eval<byte8, bits...>();
+        }
+
+        template <char... bits>
+        constexpr byte16 operator""_b16()
+        {
+            static_assert(sizeof...(bits) <= 16, "binary literal b16 must be up to 16 digits long");
+            return binary_literals_internals::binary_eval<byte16, bits...>();
+        }
+
+        template <char... bits>
+        constexpr byte32 operator""_b32()
+        {
+            static_assert(sizeof...(bits) <= 32, "binary literal b32 must be up to 32 digits long");
+            return binary_literals_internals::binary_eval<byte32, bits...>();
+        }
+    }
+}
+
+int main()
+{
+    using namespace binary;
+    using namespace binary_literals;
+
+    auto b1 = 1010_b8;
+    auto b2 = 101010101010_b16;
+    // auto b3 = 10101010101010101010101_b32;
+    std::cout << (int)b1 << std::endl; // 10
+    std::cout << b2 << std::endl; // 2730
+    // std::cout << b3 << std::endl;
 }
 ```
