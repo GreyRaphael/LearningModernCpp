@@ -127,10 +127,11 @@ example: ctor with two-arguments
 
 struct Item
 {
-   int x, y;
+   int x;
+   double y;
 
    Item() : x(0),y(0) { std::cout << "default ctor\n"; }
-   Item(int a, int b) : x(a), y(b) { std::cout << "simple ctor:"<< x << " at " << &(*this) << std::endl; }
+   Item(int a, double b) : x(a), y(b) { std::cout << "simple ctor:"<< x << " at " << &(*this) << std::endl; }
    Item(const Item &rhs) : x(rhs.x), y(rhs.y) { std::cout << "copy ctor:"<< x << " at " << &(*this) << std::endl; }
    Item(Item &&rhs) : x(rhs.x), y(rhs.y) { std::cout << "move ctor:"<< x << " at " << &(*this) << std::endl; }
    ~Item() { std::cout << "destructor:"<< x << " at " << &(*this) << std::endl; }
@@ -141,14 +142,15 @@ int main()
    std::vector<Item> v1;
    v1.reserve(5); 
 
-    // v1.push_back(1, 2); // error
-    v1.push_back({1, 2});
+    // v1.push_back(1, 2.2); // error
+    v1.push_back({1, 2.5});
     std::cout<<std::endl;
     
-    v1.emplace_back(11, 22);
-    // v1.emplace_back({11, 22}); // error
+    v1.emplace_back(11, 11.5);
+    // v1.emplace_back({11, 22.5}); // error
     std::cout<<std::endl;
 }
+
 // simple ctor:1 at 0000001CDDEFFA38
 // move ctor:1 at 00000158F02627F0
 // destructor:1 at 0000001CDDEFFA38
