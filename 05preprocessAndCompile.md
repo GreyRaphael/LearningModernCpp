@@ -472,6 +472,30 @@ int main()
 
 > `constexpr` is for simplification of variadic templates and `std::enable_if`-based code, for **conditional compilation**
 
+```cpp
+#include <iostream>
+
+template <typename T>
+auto value_of(T value){
+    if constexpr(std::is_pointer_v<T>){
+        return *value;
+    }else{
+        return value;
+    }
+}
+
+int main()
+{
+    auto v1=value_of(22);
+    std::cout<<v1<<std::endl; // 22
+
+    auto p=std::make_unique<int>(23);
+    std::cout<<p<<std::endl;// 0000020F30A83440
+    std::cout<<p.get()<<std::endl;// 0000020F30A83440
+    std::cout<<value_of(p.get())<<std::endl;// 23
+}
+```
+
 example: 改写[上文例子](#stdenable_if)
 
 ```cpp
