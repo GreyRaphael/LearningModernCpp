@@ -7,6 +7,7 @@
   - [`static_assert`](#static_assert)
   - [`std::enable_if`](#stdenable_if)
   - [`constexpr`](#constexpr)
+  - [Providing metadata to the compiler with attributes](#providing-metadata-to-the-compiler-with-attributes)
 
 ## Conditional Compilaton
 
@@ -581,4 +582,68 @@ int main()
     std::cout << b2 << std::endl; // 2730
     // std::cout << b3 << std::endl;
 }
+```
+
+## Providing metadata to the compiler with attributes
+
+- c++11: `[[noreturn]], [[carries_dependency]]`
+- c++14: `[[deprecated]], [[deprecated(text)]] `
+- c++17: `[[fallthrough]], [[nodiscard]], [[maybe_unused]]`
+- c++20: `[[nodiscard(text)]], [[likely]], [[unlikely]], [[no_unique_address]]`
+
+```cpp
+#include <iostream> 
+  
+// Driver Code 
+int main() 
+{ 
+    int n = 1; 
+  
+    // Switch Cases 
+    switch (n) { 
+    case 1: { 
+        std::cout << "work through one \n"; 
+        // 这个地方没有break, 从1执行到default, 编译器warning   
+    } 
+    case 2: { 
+        std::cout << "work through two \n"; 
+    } 
+    case 3: { 
+        std::cout << "work through three \n"; 
+    } 
+    default: { 
+        std::cout << "work through default \n"; 
+    } 
+    } 
+} 
+```
+
+```cpp
+#include <iostream> 
+  
+// Driver Code 
+int main() 
+{ 
+    int n = 1; 
+  
+    // Switch Cases 
+    switch (n) { 
+    case 1: { 
+        std::cout << "work through one \n"; 
+        // 这个地方没有break, 从1执行到default, 因为[[fallthrough]];, 编译器不warning   
+        [[fallthrough]];
+    } 
+    case 2: { 
+        std::cout << "work through two \n"; 
+        [[fallthrough]];
+    } 
+    case 3: { 
+        std::cout << "work through three \n"; 
+        [[fallthrough]];
+    } 
+    default: { 
+        std::cout << "work through default \n"; 
+    } 
+    } 
+} 
 ```
