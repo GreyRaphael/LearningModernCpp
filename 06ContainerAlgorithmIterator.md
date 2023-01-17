@@ -2,6 +2,7 @@
 
 - [Standard Library Containers, Algorithms, and Iterators](#standard-library-containers-algorithms-and-iterators)
   - [`std::vector`](#stdvector)
+  - [sort](#sort)
 
 C++ Standard Library core initially sat three main pillars: **containers**, **algorithms**,
 and **iterators**
@@ -159,4 +160,46 @@ int main()
 
 // destructor:1 at 00000158F02627F0
 // destructor:11 at 00000158F02627F8
+```
+
+## sort
+
+example: sort struct
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+struct Task{
+    int priority;
+    std::string name;
+};
+
+bool operator<(Task const & lhs, Task const & rhs){
+    return lhs.priority < rhs.priority;
+}
+
+bool operator>(Task const & lhs, Task const & rhs){
+    return lhs.priority > rhs.priority;
+}
+
+int main()
+{
+
+    std::vector<Task> v1{
+        {10, "Task1"}, 
+        {40, "Task2"}, 
+        {25, "Task3"}, 
+        {10, "Task4"}, 
+        {80, "Task5"}, 
+        {10, "Task6"}, 
+    };
+    std::sort(v1.begin(), v1.end());
+    for(auto&& i: v1){std::cout<<i.priority<<':'<<i.name<<std::endl;}
+
+    std::cout<<std::endl;
+    std::stable_sort(v1.begin(), v1.end());
+    for(auto&& i: v1){std::cout<<i.priority<<':'<<i.name<<std::endl;}
+}
 ```
