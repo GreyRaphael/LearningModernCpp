@@ -199,6 +199,7 @@ int main()
     for(auto&& i: v1){std::cout<<i.priority<<':'<<i.name<<std::endl;}
 
     std::cout<<std::endl;
+   //  sorting a range but keeping the order of the equal elements
     std::stable_sort(v1.begin(), v1.end());
     for(auto&& i: v1){std::cout<<i.priority<<':'<<i.name<<std::endl;}
 }
