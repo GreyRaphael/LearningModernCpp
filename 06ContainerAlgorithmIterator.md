@@ -3,6 +3,7 @@
 - [Standard Library Containers, Algorithms, and Iterators](#standard-library-containers-algorithms-and-iterators)
   - [`std::vector`](#stdvector)
   - [sort](#sort)
+  - [`find`](#find)
 
 C++ Standard Library core initially sat three main pillars: **containers**, **algorithms**,
 and **iterators**
@@ -202,5 +203,65 @@ int main()
    //  sorting a range but keeping the order of the equal elements
     std::stable_sort(v1.begin(), v1.end());
     for(auto&& i: v1){std::cout<<i.priority<<':'<<i.name<<std::endl;}
+}
+```
+
+## `find`
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+int main()
+{
+    std::vector v{1, 3, 2, 4, 6, 19};
+    auto it1=std::find(v.cbegin(), v.cend(), 7);
+    if(it1!=v.cend()){
+        std::cout<<"result="<<*it1
+        <<", index="<< std::distance(v.cbegin(), it1)
+        <<std::endl;
+    }else{
+        std::cout<<"no result\n";
+    } // no result
+
+    auto it2=std::find_if(v.cbegin(), v.cend(), [](int const n){return n>4;});
+    if(it2!=v.cend()){
+        std::cout<<"result="<<*it2
+        <<", index="<< std::distance(v.cbegin(), it2)
+        <<std::endl;
+    }else{
+        std::cout<<"no result\n";
+    } // result=6, index=4
+    
+    auto it3=std::find_if_not(v.cbegin(), v.cend(), [](int const n){return n>4;});
+    if(it3!=v.cend()){
+        std::cout<<"result="<<*it3
+        <<", index="<< std::distance(v.cbegin(), it3)
+        <<std::endl;
+    }else{
+        std::cout<<"no result\n";
+    } // result=1, index=0
+
+    std::vector p{4, 7, 11};
+    auto it4=std::find_first_of(v.cbegin(), v.cend(), p.cbegin(), p.cend());
+    if(it4!=v.cend()){
+        std::cout<<"result="<<*it4
+        <<", index="<< std::distance(v.cbegin(), it4)
+        <<std::endl;
+    }else{
+        std::cout<<"no result\n";
+    } // result=4, index=3
+
+    std::vector p2{2, 4, 6};
+    auto it5=std::find_end(v.cbegin(), v.cend(), p2.cbegin(), p2.cend());
+    if(it5!=v.cend()){
+        std::cout<<"result="<<*it5
+        <<", index="<< std::distance(v.cbegin(), it5)
+        <<std::endl;
+    }else{
+        std::cout<<"no result\n";
+    } // result=2, index=2
+
 }
 ```
