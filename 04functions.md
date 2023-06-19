@@ -325,6 +325,8 @@ int main()
 }
 ```
 
+example: 仅仅适用于同种类型
+
 ```cpp
 #include <iostream>
 
@@ -359,6 +361,114 @@ int main()
     // return is int
    std::cout << min(2, 3, 4) << std::endl; // 2
    std::cout << max(4, 3, 2) << std::endl; // 2
+   //std::cout << max(4, 3.1, 2) << std::endl; // error
+}
+```
+
+example: normale template
+> 尽量用`auto`，用T可能出现最大值为(9, 4.9)的情况
+
+```cpp
+template<typename T>
+T Max(T value) {
+    return value;
+}
+
+template<typename T, typename... Ts>
+T Max(T value, Ts... args) {
+    T next = Max(args...);
+    return (value > next) ? value : next;
+}
+
+template<typename T>
+T Min(T value) {
+    return value;
+}
+
+template<typename T, typename... Ts>
+T Min(T value, Ts... args) {
+    T next = Min(args...);
+    return (value < next) ? value : next;
+}
+```
+
+```cpp
+#include <iostream>
+
+template<typename T>
+auto Max(T value) {
+    return value;
+}
+
+template<typename T, typename... Ts>
+auto Max(T value, Ts... args) {
+    auto next = Max(args...);
+    return (value > next) ? value : next;
+}
+
+template<typename T>
+auto Min(T value) {
+    return value;
+}
+
+template<typename T, typename... Ts>
+auto Min(T value, Ts... args) {
+    auto next = Min(args...);
+    return (value < next) ? value : next;
+}
+
+int main() {
+    auto max1 = Max(2, 5, 9.1, 3, 1);
+    auto max2 = Max(2.5, 1.2, 3.7, 4.9);
+    std::cout<<max1<<','<<max2<<std::endl; //9.1, 4.9
+
+    auto min1 = Min(2, 5, 9.1, 3, 1);
+    auto min2 = Min(2.5, 1.2, 3.7, 4.9);
+    std::cout<<min1<<','<<min2<<std::endl; //1, 1.2
+    return 0;
+}
+```
+
+example：more elegang with constexpr in C++17
+
+```cpp
+#include <iostream>
+
+template <typename T, typename... Ts>
+auto Max(T value, Ts... args) {
+    if constexpr (sizeof...(args) > 0) {
+        auto next = Max(args...);
+        return (value > next) ? value : next;
+    } else {
+        return value;
+    }
+}
+
+template <typename T, typename... Ts>
+auto Min(T value, Ts... args) {
+    if constexpr (sizeof...(args) > 0) {
+        auto next = Min(args...);
+        return (value < next) ? value : next;
+    } else {
+        return value;
+    }
+}
+
+template <typename... Ts>
+auto Sum(Ts... args)
+{
+    return (args + ...);
+}
+
+int main() {
+    auto max1 = Max(2, 5, 9.1, 3, 1);
+    auto max2 = Max(2.5, 1.2, 3.7, 4.9);
+    std::cout<<max1<<','<<max2<<std::endl; //9, 4.9
+
+    auto min1 = Min(2, 5, 9.1, 3, 1);
+    auto min2 = Min(2.5, 1.2, 3.7, 4.9);
+    std::cout<<min1<<','<<min2<<std::endl; //1, 1.2
+    return 0;
 }
 ```
 
