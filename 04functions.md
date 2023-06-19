@@ -337,17 +337,28 @@ template<typename T>
 constexpr auto operator<(wrapper<T> const & lhs, wrapper<T> const & rhs){
     return wrapper<T>{lhs.value<rhs.value ? lhs.value : rhs.value};
 }
+template<typename T>
+constexpr auto operator>(wrapper<T> const & lhs, wrapper<T> const & rhs){
+    return wrapper<T>{lhs.value>rhs.value ? lhs.value : rhs.value};
+}
 
-template<typename... Ts>
-constexpr auto min(Ts&&... args){
-    return (wrapper<Ts>(args) < ...).value;
+template <typename... Ts>
+constexpr auto min(Ts... args)
+{
+    return (wrapper<Ts>{args} < ...).value;
+}
+
+template <typename... Ts>
+constexpr auto max(Ts... args)
+{
+    return (wrapper<Ts>{args} > ...).value;
 }
 
 int main()
 {
     // return is int
    std::cout << min(2, 3, 4) << std::endl; // 2
-   std::cout << min(4, 3, 2) << std::endl; // 2
+   std::cout << max(4, 3, 2) << std::endl; // 2
 }
 ```
 
