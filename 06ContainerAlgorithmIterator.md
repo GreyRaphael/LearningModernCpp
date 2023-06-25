@@ -43,24 +43,26 @@ int main() {
 // destructor:10 at 0x7fffc9534c4c
 ```
 
-push_back, emplace_back
+`push_back` vs `emplace_back`
 - push_back: 要调用构造函数和move构造函数。要先构造一个临时对象，然后把临时对象move到容器最后面
 - emplace_back: 直接在vector原地构造对象
-
 
 ```cpp
 #include <iostream>
 #include <vector>
 
-struct Item
-{
-   int x;
+struct Item {
+    int x;
 
-   Item() : x(0) { std::cout << "default ctor\n"; }
-   Item(int a) : x(a) { std::cout << "simple ctor:"<< x << " at " << &(*this) << std::endl; }
-   Item(const Item &rhs) : x(rhs.x) { std::cout << "copy ctor:"<< x << " at " << &(*this) << std::endl; }
-   Item(Item &&rhs) : x(rhs.x) { std::cout << "move ctor:"<< x << " at " << &(*this) << std::endl; }
-   ~Item() { std::cout << "destructor:"<< x << " at " << &(*this) << std::endl; }
+    Item() : x(0) { std::cout << "default ctor\n"; }
+    Item(int a) : x(a) { std::cout << "simple ctor:" << x << " at " << this << std::endl; }
+    Item(const Item &rhs) : x(rhs.x) {
+        std::cout << "copy ctor: " << &rhs << " => " << this << ", value=" << rhs.x << std::endl;
+    }
+    Item(Item &&rhs) : x(rhs.x) {
+        std::cout << "move ctor: " << &rhs << " => " << this << ", value=" << rhs.x << std::endl;
+    }
+    ~Item() { std::cout << "destructor:" << x << " at " << this << std::endl; }
 };
 
 int main()
@@ -90,33 +92,29 @@ int main()
    }
    for (auto &&i : v1){ std::cout << i.x << std::endl;} // 1 1 2 3
 }
-```
+// simple ctor:1 at 0x7fffeed7f76c
+// copy ctor: 0x7fffeed7f76c => 0x7fffe756aeb0, value=1
+// copy ctor: 0x7fffeed7f76c => 0x7fffe756aeb4, value=1
+// origin capacity: 5
 
-```bash
-# output
-simple ctor:1 at 0x7ffe897c534c
-copy ctor:1 at 0x1bd2eb0
-copy ctor:1 at 0x1bd2eb4
-origin capacity: 5
+// call emplace_back:
+// simple ctor:2 at 0x7fffe756aeb8
+// final capacity: 5
 
-call emplace_back:
-simple ctor:2 at 0x1bd2eb8
-final capacity: 5
-
-call push_back:
-simple ctor:3 at 0x7ffe897c5374
-move ctor:3 at 0x1bd2ebc
-destructor:3 at 0x7ffe897c5374
-final capacity: 5
-1
-1
-2
-3
-destructor:1 at 0x7ffe897c534c
-destructor:1 at 0x1bd2eb0
-destructor:1 at 0x1bd2eb4
-destructor:2 at 0x1bd2eb8
-destructor:3 at 0x1bd2ebc
+// call push_back:
+// simple ctor:3 at 0x7fffeed7f794
+// move ctor: 0x7fffeed7f794 => 0x7fffe756aebc, value=3
+// destructor:3 at 0x7fffeed7f794
+// final capacity: 5
+// 1
+// 1
+// 2
+// 3
+// destructor:1 at 0x7fffeed7f76c
+// destructor:1 at 0x7fffe756aeb0
+// destructor:1 at 0x7fffe756aeb4
+// destructor:2 at 0x7fffe756aeb8
+// destructor:3 at 0x7fffe756aebc
 ```
 
 example: ctor with two-arguments
