@@ -163,6 +163,64 @@ int main()
 // destructor:11 at 00000158F02627F8
 ```
 
+example: `emplace`
+> **operator asignment** is implicitly declared as deleted because ‘Item’ declares a **move constructor** or **move assignment operator**  
+> 所以需要实现`operator assignment`，或者直接`=default`
+
+```cpp
+#include <iostream>
+#include <vector>
+
+struct Item {
+    int x;
+    double y;
+
+    Item() : x(0), y(0) { std::cout << "default ctor\n"; }
+    Item(int a, double b) : x(a), y(b) { std::cout << "simple ctor:" << x << " at " << this << std::endl; }
+    Item(const Item &rhs) : x(rhs.x), y(rhs.y) {
+        std::cout << "copy ctor: " << &rhs << " => " << this << ", value=" << rhs.x << std::endl;
+    }
+    // Item &operator=(const Item &) = default; // another method
+    Item &operator=(const Item &rhs) {
+        std::cout << "operator=: " << &rhs << " => " << this << ", value=" << rhs.x << std::endl;
+        x = rhs.x + 1;
+        y = rhs.y;
+        return *this;
+    }
+    Item(Item &&rhs) : x(rhs.x), y(rhs.y) {
+        std::cout << "move ctor: " << &rhs << " => " << this << ", value=" << rhs.x << std::endl;
+    }
+    ~Item() {
+        std::cout << "destructor:" << x << " at " << this << std::endl;
+    }
+};
+
+int main() {
+    std::vector<Item> v1;
+    v1.reserve(5);
+    v1.emplace_back(10, 20.3);
+    v1.emplace(v1.end(), 20, 100.2);
+    v1.emplace(v1.begin(), 30, 40.5);
+
+    for (auto &&i : v1) {
+        std::cout << i.x << std::endl;
+    }
+}
+// simple ctor:10 at 0x7fffc04f9eb0
+// simple ctor:20 at 0x7fffc04f9ec0
+// simple ctor:30 at 0x7fffc8667a78
+// move ctor: 0x7fffc04f9ec0 => 0x7fffc04f9ed0, value=20
+// operator=: 0x7fffc04f9eb0 => 0x7fffc04f9ec0, value=10
+// operator=: 0x7fffc8667a78 => 0x7fffc04f9eb0, value=30
+// destructor:30 at 0x7fffc8667a78
+// 31
+// 11
+// 20
+// destructor:31 at 0x7fffc04f9eb0
+// destructor:11 at 0x7fffc04f9ec0
+// destructor:20 at 0x7fffc04f9ed0
+```
+
 ## sort
 
 example: sort struct
