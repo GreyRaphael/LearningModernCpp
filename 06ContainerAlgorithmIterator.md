@@ -6,6 +6,7 @@
     - [vector with object](#vector-with-object)
   - [sort](#sort)
   - [`find`](#find)
+  - [Initializing a range](#initializing-a-range)
 
 C++ Standard Library core initially sat three main pillars: **containers**, **algorithms**,
 and **iterators**
@@ -563,5 +564,79 @@ int main()
         std::cout<<"no result\n";
     } // result=2, index=2
 
+}
+```
+
+## Initializing a range
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <list>
+#include <random>
+#include <vector>
+
+template <typename T>
+void print_vect(std::vector<T> v) noexcept {
+    for (auto&& item : v) {
+        std::cout << item << ',';
+    }
+    std::cout << '\n';
+}
+template <typename T>
+void print_li(std::list<T> v) noexcept {
+    for (auto&& item : v) {
+        std::cout << item << ',';
+    }
+    std::cout << '\n';
+}
+
+int main() {
+    // simple fill
+    std::vector<int> v1(8);
+    std::fill(v1.begin(), v1.end(), 2);
+    std::fill_n(v1.begin(), 3, 42);
+    print_vect(v1);  // 42,42,42,2,2,2,2,2,
+
+    // generate uniform random
+    std::random_device rd;
+    std::mt19937 mt{rd()};
+    std::uniform_int_distribution<> ud{1, 10};
+    std::vector<int> v2(5);
+    std::generate(v2.begin(), v2.end(), [&ud, &mt] { return ud(mt); });
+    print_vect(v2);  // 1,4,7,5,6,
+
+    // generate simple
+    std::vector<int> v3(5);
+    int i = 1;
+    std::generate_n(v3.begin(), 3, [&i] { return i * i++; });
+    print_vect(v3);  // 1,4,9,0,0,
+
+    // iota
+    std::vector<int> v4(5);
+    std::iota(v4.begin(), v4.end(), 2);
+    print_vect(v4);  // 2,3,4,5,6,
+
+    // backinserter: container must have push_back
+    std::vector<int> v5(3, 1);
+    std::fill_n(std::back_inserter(v5), 3, 10);
+    // std::fill_n(std::front_inserter(v1), 3, 0); // error, vector has no push_front
+    print_vect(v5);  // 1,1,1,10,10,10,
+
+    // container must have push_front
+    std::list<int> li1{1, 2, 3};
+    std::fill_n(std::front_inserter(li1), 3, 0);  // 0,0,0,1,2,3,
+    print_li(li1);
+
+    std::vector<int> v6(5, 2);
+    std::fill_n(std::inserter(v6, v6.begin() + 2), 3, 7);
+    print_vect(v6);  // 2,2,7,7,7,2,2,2,
+
+    std::list<int> li2{1, 1, 1, 1};
+    // std::fill_n(std::inserter(li2, li2.begin() + 2), 3, 0); // list没有beigin()的operator+，只能advance
+    auto it = li2.begin();
+    std::advance(it, 3);
+    std::fill_n(std::inserter(li2, it), 3, 0);
+    print_li(li2);  // 1,1,1,0,0,0,1,
 }
 ```
