@@ -24,6 +24,16 @@
 
 > lambdas are basically syntactic sugar for unnamed function objects, which are classes that implement the call operator
 
+| Formula           | Usage                                              |
+|-------------------|----------------------------------------------------|
+| `[ ] ( ) { }`     | no captures                                        |
+| `[=] ( ) { }`     | captures everything by copy(not recommendded)      |
+| `[&] ( ) { }`     | captures everything by reference(not recommendded) |
+| `[x] ( ) { }`     | captures x by copy                                 |
+| `[&x] ( ) { }`    | captures x by reference                            |
+| `[&, x] ( ) { }`  | captures x by copy, everything else by reference   |
+| `[=, &x] ( ) { }` | captures x by reference, everything else by copy   |
+
 ### basic usage
 
 ```cpp
