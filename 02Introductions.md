@@ -4,7 +4,6 @@
   - [const](#const)
   - [auto](#auto)
     - [`auto` basic usage](#auto-basic-usage)
-    - [`auto` with lambda](#auto-with-lambda)
     - [`auto` attention](#auto-attention)
   - [initializer\_list](#initializer_list)
     - [initializer\_list basic](#initializer_list-basic)
@@ -53,6 +52,7 @@ const int * const == int const * const
 void func1(char const x)
 {
     // std::tolower返回值是int
+    // auto with lambda
     auto myupper =[](char const c){return std::tolower(c);};
     auto a=myupper(x);
     std::cout<<typeid(a).name()<<' '<<a<<std::endl;
@@ -102,8 +102,6 @@ int main()
     func3();
 }
 ```
-
-### `auto` with lambda
 
 > [位于成员函数尾部的const](https://blog.csdn.net/qq_55621259/article/details/126322634)
 
