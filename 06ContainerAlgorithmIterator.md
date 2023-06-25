@@ -15,34 +15,32 @@ example: ctor & destructor
 ```cpp
 #include <iostream>
 
-struct Item
-{
-   int x;
+struct Item {
+    int x;
 
-   Item() : x(0) { std::cout << "default ctor\n"; }
-   Item(int a) : x(a) { std::cout << "simple ctor:"<< x << " at " << &(*this) << std::endl; }
-   Item(const Item &rhs) : x(rhs.x) { std::cout << "copy ctor:"<< x << " at " << &(*this) << std::endl; }
-   Item(Item &&rhs) : x(rhs.x) { std::cout << "move ctor:"<< x << " at " << &(*this) << std::endl; }
-   ~Item() { std::cout << "destructor:"<< x << " at " << &(*this) << std::endl; }
+    Item() : x(0) { std::cout << "default ctor\n"; }
+    Item(int a) : x(a) { std::cout << "simple ctor:" << x << " at " << this << std::endl; }
+    Item(const Item &rhs) : x(rhs.x) {
+        std::cout << "copy ctor: " << &rhs << " => " << this << ", value=" << rhs.x << std::endl;
+    }
+    Item(Item &&rhs) : x(rhs.x) {
+        std::cout << "move ctor: " << &rhs << " => " << this << ", value=" << rhs.x << std::endl;
+    }
+    ~Item() { std::cout << "destructor:" << x << " at " << this << std::endl; }
 };
 
-int main()
-{
+int main() {
     Item a{10};
     {
         Item b{std::move(a)};
-    } // 出了这个block, b失效，控制权重新回到a
-    std::cout<<a.x<<std::endl;
-} 
-```
-
-```bash
-# output
-simple ctor:10 at 0x7ffeb2ff8ab0
-move ctor:10 at 0x7ffeb2ff8ab4
-destructor:10 at 0x7ffeb2ff8ab4
-10
-destructor:10 at 0x7ffeb2ff8ab0
+    }  // 出了这个block, b失效，控制权重新回到a
+    std::cout << a.x << std::endl;
+}
+// simple ctor:10 at 0x7fffc9534c4c
+// move ctor: 0x7fffc9534c4c => 0x7fffc9534c48, value=10
+// destructor:10 at 0x7fffc9534c48
+// 10
+// destructor:10 at 0x7fffc9534c4c
 ```
 
 push_back, emplace_back
