@@ -92,6 +92,49 @@ int main() {
 // 1       4       5       6       7       8
 ```
 
+example: get the pointer from vector
+
+```cpp
+#include <iostream>
+#include <vector>
+
+template <typename T>
+void print_vect(std::vector<T> v) noexcept {
+    for (auto&& item : v) {
+        std::cout << item << '\t';
+    }
+    std::cout << '\n';
+}
+
+void print_array(int const* const arr, int const size) {
+    for (unsigned i = 0; i < size; ++i) {
+        std::cout << arr[i] << ',';
+    }
+    std::cout << '\n';
+}
+
+int main() {
+    std::vector<int> v{1, 2, 3, 4, 5};
+    int* ptr = v.data();  // a pointer to the first element
+
+    for (unsigned i = 0; i < 5; ++i) {
+        *ptr += 100;
+        ptr++;
+    }
+    print_vect(v);
+    // get a pointer to the first element
+    print_array(v.data(), v.size());
+    print_array(&v.front(), v.size());
+    print_array(&v[0], v.size());
+    print_array(&*v.begin(), v.size());
+}
+// 101     102     103     104     105
+// 101,102,103,104,105,
+// 101,102,103,104,105,
+// 101,102,103,104,105,
+// 101,102,103,104,105,
+```
+
 ### vector with object
 
 example: ctor & destructor
