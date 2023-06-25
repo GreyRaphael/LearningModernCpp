@@ -123,40 +123,51 @@ example: ctor with two-arguments
 #include <iostream>
 #include <vector>
 
-struct Item
-{
-   int x;
-   double y;
+struct Item {
+    int x;
+    double y;
 
-   Item() : x(0),y(0) { std::cout << "default ctor\n"; }
-   Item(int a, double b) : x(a), y(b) { std::cout << "simple ctor:"<< x << " at " << &(*this) << std::endl; }
-   Item(const Item &rhs) : x(rhs.x), y(rhs.y) { std::cout << "copy ctor:"<< x << " at " << &(*this) << std::endl; }
-   Item(Item &&rhs) : x(rhs.x), y(rhs.y) { std::cout << "move ctor:"<< x << " at " << &(*this) << std::endl; }
-   ~Item() { std::cout << "destructor:"<< x << " at " << &(*this) << std::endl; }
+    Item() : x(0), y(0) { std::cout << "default ctor\n"; }
+    Item(int a, double b) : x(a), y(b) { std::cout << "simple ctor:" << x << " at " << this << std::endl; }
+    Item(const Item &rhs) : x(rhs.x), y(rhs.y) {
+        std::cout << "copy ctor: " << &rhs << " => " << this << ", value=" << rhs.x << std::endl;
+    }
+    // Item &operator=(const Item &) = default; // another method
+    Item &operator=(const Item &rhs) {
+        std::cout << "operator=: " << &rhs << " => " << this << ", value=" << rhs.x << std::endl;
+        x = rhs.x + 1;
+        y = rhs.y;
+        return *this;
+    }
+    Item(Item &&rhs) : x(rhs.x), y(rhs.y) {
+        std::cout << "move ctor: " << &rhs << " => " << this << ", value=" << rhs.x << std::endl;
+    }
+    ~Item() {
+        std::cout << "destructor:" << x << " at " << this << std::endl;
+    }
 };
 
-int main()
-{
-   std::vector<Item> v1;
-   v1.reserve(5); 
+int main() {
+    std::vector<Item> v1;
+    v1.reserve(5);
 
     // v1.push_back(1, 2.2); // error
     v1.push_back({1, 2.5});
-    std::cout<<std::endl;
-    
+    std::cout << std::endl;
+
     v1.emplace_back(11, 11.5);
     // v1.emplace_back({11, 22.5}); // error
-    std::cout<<std::endl;
+    std::cout << std::endl;
 }
 
-// simple ctor:1 at 0000001CDDEFFA38
-// move ctor:1 at 00000158F02627F0
-// destructor:1 at 0000001CDDEFFA38
+// simple ctor:1 at 0x7fffe4d0ddf0
+// move ctor: 0x7fffe4d0ddf0 => 0x7fffdcb69eb0, value=1
+// destructor:1 at 0x7fffe4d0ddf0
 
-// simple ctor:11 at 00000158F02627F8
+// simple ctor:11 at 0x7fffdcb69ec0
 
-// destructor:1 at 00000158F02627F0
-// destructor:11 at 00000158F02627F8
+// destructor:1 at 0x7fffdcb69eb0
+// destructor:11 at 0x7fffdcb69ec0
 ```
 
 example: `emplace`
