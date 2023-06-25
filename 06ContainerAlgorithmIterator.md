@@ -2,6 +2,8 @@
 
 - [Standard Library Containers, Algorithms, and Iterators](#standard-library-containers-algorithms-and-iterators)
   - [`std::vector`](#stdvector)
+    - [basic operation](#basic-operation)
+    - [vector with object](#vector-with-object)
   - [sort](#sort)
   - [`find`](#find)
 
@@ -9,6 +11,88 @@ C++ Standard Library core initially sat three main pillars: **containers**, **al
 and **iterators**
 
 ## `std::vector`
+
+### basic operation
+
+```cpp
+#include <iostream>
+#include <list>
+#include <vector>
+
+template <typename T>
+void print_vect(std::vector<T> v) noexcept {
+    for (auto &&item : v) {
+        std::cout << item << '\t';
+    }
+    std::cout << '\n';
+}
+
+int main() {
+    // double static_array[4] = {1, 2, 3, 4};
+    double static_array[] = {1, 2, 3, 4};
+    int *dynamic_array = new int[4]{11, 22, 33, 44};
+    // only for staitc_array
+    for (auto &&i : static_array) {
+        std::cout << i << '\t';
+    }
+    std::cout << '\n';
+
+    // for static_array + dynamci_array
+    for (unsigned i = 0; i < 4; ++i) {
+        std::cout << dynamic_array[i] << '\t';
+    }
+    std::cout << '\n';
+    for (unsigned i = 0; i < 4; ++i) {
+        std::cout << static_array[i] << '\t';
+    }
+    std::cout << '\n';
+
+    // 1. from initialize-list
+    std::vector<int> v10{10, 20, 30, 40};
+    std::vector<int> v11 = {11, 21, 31, 41};
+    std::vector v12{12, 22, 32, 42};
+    std::vector v13 = {13, 23, 33, 43};
+    // auto il1{5, 6, 7, 8}; // error
+    auto il1 = {5, 6, 7, 8};
+    std::cout << typeid(il1).name() << '\n';  // type is initialize-list
+
+    // 2. from array
+    std::vector<int> v2(static_array, static_array + 3);
+    std::vector<int> v3(dynamic_array, dynamic_array + 3);
+    // 3. from std::list
+    std::list<int> l1{100, 200, 300};
+    std::vector<int> v4(l1.begin(), l1.end());
+    print_vect(v4);
+
+    // 4. from count
+    std::vector<int> v5(4, 6);
+    print_vect(v5);
+
+    // 5. insert
+    std::vector<int> v6;
+    v6.insert(v6.end(), static_array, static_array + 4);
+    v6.insert(v6.begin(), dynamic_array, dynamic_array + 4);
+    print_vect(v6);
+
+    // 6. erase
+    std::vector<int> v7{1, 2, 3, 4, 5, 6, 7, 8};
+    v7.erase(v7.begin() + 1, v7.begin() + 3);
+    print_vect(v7);
+
+    // 7.clear
+    v7.clear()
+}
+// 1       2       3       4
+// 11      22      33      44
+// 1       2       3       4
+// St16initializer_listIiE
+// 100     200     300
+// 6       6       6       6
+// 11      22      33      44      1       2       3       4
+// 1       4       5       6       7       8
+```
+
+### vector with object
 
 example: ctor & destructor
 
@@ -226,6 +310,114 @@ int main() {
 // destructor:31 at 0x7fffc04f9eb0
 // destructor:11 at 0x7fffc04f9ec0
 // destructor:20 at 0x7fffc04f9ed0
+```
+
+example: `std::vector` basic operation
+
+```cpp
+#include <iostream>
+#include <vector>
+
+struct Item {
+    int x;
+    double y;
+
+    Item() : x(0), y(0) { std::cout << "default ctor\n"; }
+    Item(int a, double b) : x(a), y(b) { std::cout << "simple ctor:" << x << " at " << this << std::endl; }
+    Item(const Item &rhs) : x(rhs.x), y(rhs.y) {
+        std::cout << "copy ctor: " << &rhs << " => " << this << ", value=" << rhs.x << std::endl;
+    }
+    // Item &operator=(const Item &) = default; // another method
+    Item &operator=(const Item &rhs) {
+        std::cout << "operator=: " << &rhs << " => " << this << ", value=" << rhs.x << std::endl;
+        x = rhs.x + 1;
+        y = rhs.y;
+        return *this;
+    }
+    Item(Item &&rhs) : x(rhs.x), y(rhs.y) {
+        std::cout << "move ctor: " << &rhs << " => " << this << ", value=" << rhs.x << std::endl;
+    }
+    ~Item() {
+        std::cout << "destructor:" << x << " at " << this << std::endl;
+    }
+};
+
+int main() {
+    std::vector<Item> v1;
+    v1.reserve(5);
+    for (unsigned i = 0; i < 3; ++i) {
+        v1.emplace_back(i, 1.1 + i);
+    }
+
+    // method1: copy all
+    std::vector<Item> v2;
+    v2 = v1;
+    for (auto &&item : v2) {
+        std::cout << item.x << std::endl;
+    }
+    // method2: copy all
+    std::vector<Item> v3;
+    v3.assign(v1.begin(), v1.end());
+    for (auto &&item : v3) {
+        std::cout << item.x << std::endl;
+    }
+    // swap
+    // batch create
+    std::vector<Item> v4(5, {233, 6});
+    for (auto &&item : v4) {
+        std::cout << item.x << std::endl;
+    }
+    v4.swap(v1);
+    for (auto &&item : v4) {
+        std::cout << item.x << std::endl;
+    }
+    // clear all
+    v1.clear();
+}
+// simple ctor:0 at 0x7fffe5228eb0
+// simple ctor:1 at 0x7fffe5228ec0
+// simple ctor:2 at 0x7fffe5228ed0
+// copy ctor: 0x7fffe5228eb0 => 0x7fffe5229320, value=0
+// copy ctor: 0x7fffe5228ec0 => 0x7fffe5229330, value=1
+// copy ctor: 0x7fffe5228ed0 => 0x7fffe5229340, value=2
+// 0
+// 1
+// 2
+// copy ctor: 0x7fffe5228eb0 => 0x7fffe5229360, value=0
+// copy ctor: 0x7fffe5228ec0 => 0x7fffe5229370, value=1
+// copy ctor: 0x7fffe5228ed0 => 0x7fffe5229380, value=2
+// 0
+// 1
+// 2
+// simple ctor:233 at 0x7fffec8ad0e0
+// copy ctor: 0x7fffec8ad0e0 => 0x7fffe52293a0, value=233
+// copy ctor: 0x7fffec8ad0e0 => 0x7fffe52293b0, value=233
+// copy ctor: 0x7fffec8ad0e0 => 0x7fffe52293c0, value=233
+// copy ctor: 0x7fffec8ad0e0 => 0x7fffe52293d0, value=233
+// copy ctor: 0x7fffec8ad0e0 => 0x7fffe52293e0, value=233
+// destructor:233 at 0x7fffec8ad0e0
+// 233
+// 233
+// 233
+// 233
+// 233
+// 0
+// 1
+// 2
+// destructor:233 at 0x7fffe52293a0
+// destructor:233 at 0x7fffe52293b0
+// destructor:233 at 0x7fffe52293c0
+// destructor:233 at 0x7fffe52293d0
+// destructor:233 at 0x7fffe52293e0
+// destructor:0 at 0x7fffe5228eb0
+// destructor:1 at 0x7fffe5228ec0
+// destructor:2 at 0x7fffe5228ed0
+// destructor:0 at 0x7fffe5229360
+// destructor:1 at 0x7fffe5229370
+// destructor:2 at 0x7fffe5229380
+// destructor:0 at 0x7fffe5229320
+// destructor:1 at 0x7fffe5229330
+// destructor:2 at 0x7fffe5229340
 ```
 
 ## sort
