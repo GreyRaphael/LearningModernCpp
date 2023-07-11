@@ -507,6 +507,66 @@ int main()
 }
 ```
 
+example: sort with lambda for structs
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+struct Task {
+    int priority;
+    std::string name;
+};
+
+int main() {
+    std::vector<Task> v1{
+        {10, "Task1"},
+        {40, "Task2"},
+        {25, "Task3"},
+        {10, "Task4"},
+        {80, "Task5"},
+        {10, "Task6"},
+    };
+
+    auto compare = [](const auto& a, const auto& b) {
+        return a.priority < b.priority;
+    };
+    std::sort(v1.begin(), v1.end(), compare);
+    for (auto&& i : v1) {
+        std::cout << i.priority << ':' << i.name << std::endl;
+    }
+}
+```
+
+example: sort with lambda for `tuple`s
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <tuple>
+#include <vector>
+
+int main() {
+    std::vector<std::tuple<int, std::string>> v1{
+        {10, "Task1"},
+        {40, "Task2"},
+        {25, "Task3"},
+        {10, "Task4"},
+        {80, "Task5"},
+        {10, "Task6"},
+    };
+
+    auto compare = [](const auto& a, const auto& b) {
+        return std::get<0>(a) < std::get<0>(b);
+    };
+    std::sort(v1.begin(), v1.end(), compare);
+    for (auto& [val, str] : v1) {
+        std::cout << val << ':' << str << '\n';
+    }
+}
+```
+
 ## `find`
 
 ```cpp
