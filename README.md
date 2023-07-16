@@ -8,6 +8,7 @@
   - [wsl use conda](#wsl-use-conda)
 - [Development Environment in Debian](#development-environment-in-debian)
   - [GCC \& Clang in VSCode](#gcc--clang-in-vscode)
+  - [LLDB in VSCode](#lldb-in-vscode)
 - [Development Environment Online](#development-environment-online)
 - [Othre configuration](#othre-configuration)
   - [linux locale config](#linux-locale-config)
@@ -164,6 +165,52 @@ windows下的MinGw可以使用如下配置
       "D:/Dev/llvm-mingw/bin",
       // "D:/Dev/winlibs-mingw64/bin",
   ],
+}
+```
+
+### LLDB in VSCode
+
+> 在Linux下需要提前编译lldb-mi，在windows下使用llvm-mingw自带的lldb-mi.exe即可
+
+1. Install [CodeLLDB](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb) extensions
+2. Add `launch.json`
+3. Add **breakpoints** and debug
+
+```json
+// launch.json in windows
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Win-Debug",
+            "program": "${workspaceFolder}/build/bin/proj1",
+            "args": [],
+            "cwd": "${workspaceFolder}/build/bin",
+            "env": {
+                // lldb-mi.exe必须在下面PATH
+                // Linux必须手动编译lldb-mi
+                "PATH": "D:/Dev/llvm-mingw/bin"
+            }
+        }
+    ]
+}
+```
+
+```json
+// 或者直接修改settings.json
+{
+    "cmake.cmakePath": "/usr/bin/cmake",
+    "cmake.generator": "Ninja",
+    "cmake.configureSettings": {
+        "CMAKE_MAKE_PROGRAM": "/usr/bin/ninja"
+    },
+    "cmake.debugConfig": {
+        "MIMode": "lldb",
+        // "miDebuggerPath": "/usr/bin/lldb-mi"
+        "miDebuggerPath": "D:/Dev/llvm-mingw/bin/lldb-mi.exe"
+    }
 }
 ```
 
