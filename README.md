@@ -7,6 +7,7 @@
   - [wsl use windows proxy](#wsl-use-windows-proxy)
   - [wsl use conda](#wsl-use-conda)
 - [Development Environment in Debian](#development-environment-in-debian)
+  - [GCC \& Clang in VSCode](#gcc--clang-in-vscode)
 - [Development Environment Online](#development-environment-online)
 - [Othre configuration](#othre-configuration)
   - [linux locale config](#linux-locale-config)
@@ -106,6 +107,64 @@ config git proxy
 git config --global user.name "yourname"
 git config --global user.email "yourmail"
 git config --global http.proxy http://192.168.0.108:7890
+```
+
+### GCC & Clang in VSCode
+
+```bash
+# 安装gcc, g++, Debian12默认gcc是version 12
+sudo apt install build-essential
+# 安装clang-15
+sudo apt install clang-15
+# 安装gdb
+sudo apt install gdb
+
+# 如果安装更高版本gcc13, 先add source，然后使用proxy安装
+sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+sudo http_proxy=http://192.168.0.108:7890 apt install gcc-13
+```
+
+install **C/C++ Extension Pack** in vscode extensions
+
+config `setttings.json` in linux
+> gcc-12和clang-15都能使用gdb来调试
+
+```json
+// setings.json in linux
+{
+    "cmake.cmakePath": "/usr/bin/cmake",
+    "cmake.generator": "Ninja",
+    "cmake.configureSettings": {
+        "CMAKE_MAKE_PROGRAM": "/usr/bin/ninja"
+    },
+    "cmake.debugConfig": {
+        "MIMode": "gdb",
+        "miDebuggerPath": "/usr/bin/gdb"
+    }
+}
+```
+
+windows下的MinGw可以使用如下配置
+
+```json
+// settings.json in windows of MingW by gcc and llvm
+{
+  "cmake.cmakePath": "D:/Dev/cmake/bin/cmake.exe",
+  "cmake.generator": "Ninja",
+  "cmake.configureSettings": {
+      "CMAKE_MAKE_PROGRAM": "D:/Dev/Ninja/ninja.exe"
+  },
+  "cmake.debugConfig": {
+      "MIMode": "gdb",
+      "miDebuggerPath": "D:/Dev/w64devkit/bin/gdb.exe"
+  },
+  // 给vscode提供其他compiler列表
+  "cmake.additionalCompilerSearchDirs": [
+      "D:/Dev/w64devkit/bin",
+      "D:/Dev/llvm-mingw/bin",
+      // "D:/Dev/winlibs-mingw64/bin",
+  ],
+}
 ```
 
 ## Development Environment Online
