@@ -99,6 +99,15 @@ sudo apt install build-essential
 sudo apt install git cmake ninja-build -y
 ```
 
+config git proxy
+
+```bash
+# the config is saved in ~/.gitconfig
+git config --global user.name "yourname"
+git config --global user.email "yourmail"
+git config --global http.proxy http://192.168.0.108:7890
+```
+
 ## Development Environment Online
 
 - [Wandbox](https://wandbox.org/)
