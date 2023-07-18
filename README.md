@@ -110,6 +110,9 @@ git config --global user.email "yourmail"
 git config --global http.proxy http://192.168.0.108:7890
 ```
 
+Debian11->12 problems
+- [solution](https://github.com/microsoft/WSL/issues/4279#issuecomment-1639165782) for problem: `mv: cannot move '/lib/x86_64-linux-gnu/security' to '/usr/lib/x86_64-linux-gnu/security': Permission denied`
+
 ### GCC & Clang in VSCode
 
 ```bash
