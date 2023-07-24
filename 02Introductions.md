@@ -574,6 +574,8 @@ inline auto end(dummy_array<T, Size> const & collection){
 }
 
 template <typename T, const size_t Size>
+// 这里有dummy_array<T, Size> const &
+// 所以需要实现对应的begin,end的dummy_array<T, Size> const &
 void print_dummy_array(dummy_array<T, Size> const & arr)
 {
     std::cout<<std::endl;
