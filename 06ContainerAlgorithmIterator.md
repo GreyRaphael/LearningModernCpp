@@ -7,6 +7,7 @@
   - [sort](#sort)
   - [`find`](#find)
   - [Initializing a range](#initializing-a-range)
+  - [custom random-access iterator](#custom-random-access-iterator)
 
 C++ Standard Library core initially sat three main pillars: **containers**, **algorithms**,
 and **iterators**
@@ -700,3 +701,7 @@ int main() {
     print_li(li2);  // 1,1,1,0,0,0,1,
 }
 ```
+
+## custom random-access iterator
+
+We implement [range-base class](02Introductions.md#custom-range-base-class) in the previous chapter. Here we implement a [standard iterator](examples/ch06-iterator.cc) for random-access.
