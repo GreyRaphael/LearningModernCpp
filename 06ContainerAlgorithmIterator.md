@@ -704,4 +704,6 @@ int main() {
 
 ## custom random-access iterator
 
+First we show a simple example with [begin-end](examples/ch06-begin-end.cc)
+
 We implement [range-base class](02Introductions.md#custom-range-base-class) in the previous chapter. Here we implement a [standard iterator](examples/ch06-iterator.cc) for random-access.
