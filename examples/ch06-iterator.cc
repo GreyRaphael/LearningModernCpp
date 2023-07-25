@@ -1,9 +1,10 @@
-#include <algorithm>   // std::transform
+#include <algorithm>   // std::transform, std::for_each
 #include <cassert>     // assert()
 #include <functional>  // bad_function_call()
 #include <iostream>
 #include <iterator>  // reverse_iterator
 #include <memory>    // make_unique
+#include <string>
 
 template <typename Type, size_t const Size>
 class dummy_array {
@@ -257,9 +258,41 @@ void test_example4() {
     std::cout << '\n';
 }
 
+void test_example5() {
+    dummy_array<std::string, 3> s_arr;
+    s_arr[0] = "100";
+    s_arr[1] = "200";
+    s_arr[2] = "300";
+    dummy_array<int, 3> num_arr;
+    std::transform(s_arr.begin(), s_arr.end(), num_arr.begin(), [](std::string const& s) { return std::stoi(s); });
+    print_dummy_array(num_arr);
+}
+
+template <typename F, typename C>
+void process(F&& func, C const& container) {
+    std::for_each(std::begin(container), std::end(container), std::forward<F>(func));
+}
+
+void test_example6() {
+    auto func = [](auto const e) { std::cout << e << '\t'; };
+
+    std::vector v = {1, 2, 3, 4, 5};
+    process(func, v);
+    std::cout << '\n';
+
+    dummy_array<std::string, 3> s_arr;
+    s_arr[0] = "100";
+    s_arr[1] = "200";
+    s_arr[2] = "300";
+    process(func, s_arr);
+    std::cout << '\n';
+}
+
 int main() {
     test_example1();
     test_example2();
     test_example3();
     test_example4();
+    test_example5();
+    test_example6();
 }
