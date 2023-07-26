@@ -13,10 +13,11 @@ simple usage of `<chrono>`
 
 int main() {
     using namespace std::chrono_literals;
+    std::cout << (12345s).count() << '\n';  // 12345
 
-    // auto total_seconds = 12345s; // simple way
+    // auto total_seconds = 12345s;  // simple way
     std::chrono::seconds total_seconds{12345};
-    
+
     // low precision-> high precision
     std::chrono::milliseconds total_milliseconds{total_seconds};
     std::cout << total_milliseconds.count() << '\n';  // 12345000
@@ -32,5 +33,10 @@ int main() {
     auto d1 = 1h + 23min + 45s;
     auto d2 = 3h + 12min + 50s;
     std::cout << (d1 < d2) << '\n';  // 1
+
+    std::chrono::duration<double, std::ratio<1>> seconds1{20};
+    std::chrono::duration<double, std::ratio<10>> seconds2{20};
+    std::cout << std::chrono::duration_cast<std::chrono::seconds>(seconds1) << '\n';  // 20s
+    std::cout << std::chrono::duration_cast<std::chrono::seconds>(seconds2) << '\n';  // 200s
 }
 ```
