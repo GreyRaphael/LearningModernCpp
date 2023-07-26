@@ -3,6 +3,7 @@
 - [Modern C++ datetime](#modern-c-datetime)
   - [chrono](#chrono)
     - [`strftime` \& `strptime`](#strftime--strptime)
+    - [Measure exection time](#measure-exection-time)
 
 ## chrono
 
@@ -124,5 +125,87 @@ int main() {
     } catch (const std::exception& e) {
         std::cout << "Error: " << e.what() << std::endl;
     }
+}
+```
+
+### Measure exection time
+
+simple example
+
+```cpp
+#include <chrono>
+#include <iostream>
+
+void task(int const N = 100000000) {
+    for (int i = 0; i < N; ++i);
+}
+
+int main() {
+    auto start_tp = std::chrono::high_resolution_clock::now();
+    task();
+    auto diff = std::chrono::high_resolution_clock::now() - start_tp;
+    std::cout << std::chrono::duration<double, std::milli>(diff).count() << "milliseconds\n";  // 469.718milliseconds
+    std::cout << std::chrono::duration<double, std::nano>(diff) << "\n";                       // 4.69718e+08ns
+}
+```
+
+wrap into a struct
+
+```cpp
+#include <chrono>
+#include <functional>  // std::invoke
+#include <iostream>
+
+void task(int const N = 100000000) {
+    for (int i = 0; i < N; ++i)
+        ;
+}
+
+struct perf_timer {
+    template <typename F, typename... Args>
+    static std::chrono::microseconds duration(F&& f, Args... args) {
+        auto start = std::chrono::high_resolution_clock::now();
+        std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
+        auto end = std::chrono::high_resolution_clock::now();
+        return std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    }
+};
+
+int main() {
+    auto start_tp = std::chrono::high_resolution_clock::now();
+    auto d = perf_timer::duration(task, 100000000);
+    std::cout << d << '\n';                                             // 485352µs
+    std::cout << std::chrono::duration<double, std::milli>(d) << '\n';  // 485.352ms
+}
+```
+
+wrap with template
+
+```cpp
+#include <chrono>
+#include <functional>  // std::invoke
+#include <iostream>
+
+void task(int const N = 100000000) {
+    for (int i = 0; i < N; ++i);
+}
+
+// easy to change duration units & clock type
+template <typename Time = std::chrono::microseconds, typename Clock = std::chrono::high_resolution_clock>
+struct perf_timer {
+    template <typename F, typename... Args>
+    static Time duration(F&& f, Args... args) {
+        auto start = Clock::now();
+        std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
+        auto end = Clock::now();
+        return std::chrono::duration_cast<Time>(end - start);
+    }
+};
+
+int main() {
+    auto start_tp = std::chrono::high_resolution_clock::now();
+    auto d = perf_timer<>::duration(task, 100000000);
+    std::cout << d << '\n';                                             // 485352µs
+    std::cout << std::chrono::duration<double, std::milli>(d) << '\n';  // 485.352ms
 }
 ```
