@@ -9,6 +9,7 @@
   - [Initializing a range](#initializing-a-range)
   - [custom random-access iterator](#custom-random-access-iterator)
   - [`std::any`](#stdany)
+  - [`std::optional`](#stdoptional)
 
 C++ Standard Library core initially sat three main pillars: **containers**, **algorithms**,
 and **iterators**
@@ -711,6 +712,7 @@ We implement [range-base class](02Introductions.md#custom-range-base-class) in t
 
 ## `std::any`
 
+> `std::any` can hold a single value of any type.
 
 ```cpp
 #include <any>
@@ -759,3 +761,7 @@ int main() {
     }
 }
 ```
+
+## `std::optional`
+
+> `std::optional` is a template container for storing a value that may or may not exist.
