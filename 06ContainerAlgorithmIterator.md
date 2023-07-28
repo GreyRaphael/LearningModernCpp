@@ -8,6 +8,8 @@
   - [`find`](#find)
   - [Initializing a range](#initializing-a-range)
   - [custom random-access iterator](#custom-random-access-iterator)
+  - [`std::any`](#stdany)
+  - [`std::optional`](#stdoptional)
 
 C++ Standard Library core initially sat three main pillars: **containers**, **algorithms**,
 and **iterators**
@@ -707,3 +709,59 @@ int main() {
 First we show a simple example with [begin-end](examples/ch06-begin-end.cc)
 
 We implement [range-base class](02Introductions.md#custom-range-base-class) in the previous chapter. Here we implement a [standard iterator](examples/ch06-iterator.cc) for random-access.
+
+## `std::any`
+
+> `std::any` can hold a single value of any type.
+
+```cpp
+#include <any>
+#include <chrono>
+#include <iomanip>  // std::put_time
+#include <iostream>
+#include <vector>
+
+void log(std::any const& value) {
+    if (value.has_value()) {
+        auto const& tv = value.type();
+        if (tv == typeid(int)) {
+            std::cout << std::any_cast<int>(value) << '\n';
+        } else if (tv == typeid(char)) {
+            std::cout << std::any_cast<char>(value) << '\n';
+        } else if (tv == typeid(std::string)) {
+            std::cout << std::any_cast<std::string>(value) << '\n';
+        } else if (tv == typeid(std::chrono::time_point<std::chrono::system_clock>)) {
+            auto t = std::any_cast<std::chrono::time_point<std::chrono::system_clock>>(value);
+            auto now = std::chrono::system_clock::to_time_t(t);
+            std::cout << std::put_time(std::localtime(&now), "%F %T") << '\n';
+        } else {
+            std::cout << "unexpected value type" << '\n';
+        }
+    } else {
+        std::cout << "(empty)" << '\n';
+    }
+}
+
+int main() {
+    // std::any variable, 必须使用std::any_cast才能获取原始的值
+    std::any val(23);
+    val = 12.0;
+    val = std::string("world");
+    val.reset();  // val is reset as: std::any{}
+    // vector of std::any
+    std::vector<std::any> v = {
+        std::any{},
+        42,
+        'c',
+        11.0,
+        std::string("hello"),
+        std::chrono::system_clock::now()};
+    for (auto& e : v) {
+        log(e);
+    }
+}
+```
+
+## `std::optional`
+
+> `std::optional` is a template container for storing a value that may or may not exist.
