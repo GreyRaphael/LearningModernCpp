@@ -765,3 +765,113 @@ int main() {
 ## `std::optional`
 
 > `std::optional` is a template container for storing a value that may or may not exist.
+
+example1: `std::optional` as return value
+
+```cpp
+#include <iostream>
+#include <map>
+#include <optional>
+
+template <typename K, typename V>
+std::optional<V> find(K const& key, std::map<K, V> const& m) {
+    auto it = m.find(key);
+    if (it != m.end()) {
+        return it->second;
+    } else {
+        return {};  // empty optional
+    }
+}
+
+int main() {
+    std::map<int, std::string> dict{
+        {2, "James"},
+        {1, "Tom"},
+        {3, "Jack"}};
+    // auto val = find(3, dict);
+    auto val = find(30, dict);
+    if (val) {
+        std::cout << *val << '\n';
+    } else {
+        std::cout << "find nothing" << '\n';
+    }
+}
+```
+
+example2: `std::optional` as arguments
+
+```cpp
+#include <iostream>
+#include <optional>
+#include <vector>
+
+// std::option as parameters
+std::string extract(std::string const& text, std::optional<int> start, std::optional<int> end) {
+    auto s = start.value_or(0);  // if empty, then set as 0
+    auto e = end.value_or(text.size());
+    return text.substr(s, e - s);
+}
+
+// std::optional for struct fields
+struct Book {
+    std::string title;
+    std::optional<std::string> subtitle;
+    std::vector<std::string> authors;
+    std::string publisher;
+    std::string isbn;
+    std::optional<int> pages;
+    std::optional<int> year;
+};
+
+int main() {
+    std::cout << extract("hello", {}, {}) << '\n';  // hello
+    std::cout << extract("hello", 1, {}) << '\n';   // ello
+    std::cout << extract("hello", {}, 4) << '\n';   // hello
+}
+```
+
+example3: `std::optional`造成performance损失
+
+solutions:
+- entirely avoiding using `std::optional`
+- overload `void process(bar const& arg)`
+
+```cpp
+#include <iostream>
+#include <optional>
+
+struct bar {
+    bar() { std::cout << "default ctor" << '\n'; }
+    ~bar() { std::cout << "dtor" << '\n'; }
+    bar(bar const& b) { std::cout << "copy ctor" << '\n'; }
+    bar(bar&& b) { std::cout << "move ctor" << '\n'; }
+};
+
+void process(std::optional<bar> const& arg) {
+    std::cout << "in process" << '\n';
+}
+
+int main() {
+    std::optional<bar> b1{bar{}};
+    bar b2{};
+
+    process(b1);  // no copy
+    process(b2);  // copy construction, 因为b2是bar不是std::optional<bar>所以要copy ctor,造成性能损失
+    std::cout << "out process" << '\n';
+}
+```
+
+```bash
+# output
+default ctor
+move ctor
+dtor
+default ctor
+in process
+copy ctor
+in process
+dtor
+out process
+dtor
+dtor
+```
