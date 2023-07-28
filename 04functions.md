@@ -12,6 +12,7 @@
     - [high-order functions combination](#high-order-functions-combination)
   - [`std::invoke`](#stdinvoke)
   - [`type_traits`](#type_traits)
+  - [`std::conditional`](#stdconditional)
 
 ## default & delete function
 
@@ -1086,5 +1087,43 @@ int main() {
     std::cout << serialize(f) << '\n';  // plain
     std::cout << serialize(b) << '\n';  // encoded
     // std::cout << serialize(a) << '\n';  // error, v.serialize not implemented for int
+}
+```
+
+## `std::conditional`
+
+> `std::conditional`, which enables us to choose between two types at compile time
+
+```cpp
+#include <algorithm>  // std::generate
+#include <iostream>
+#include <random>
+
+template <typename T,
+          typename D = std::conditional_t<std::is_integral_v<T>, std::uniform_int_distribution<T>, std::uniform_real_distribution<T>>,
+          typename = typename std::enable_if_t<std::is_arithmetic_v<T>>>
+std::vector<T> GenerateRandom(T const min, T const max, size_t const size) {
+    std::vector<T> v(size);
+
+    std::random_device rd{};
+    std::mt19937 mt{rd()};
+
+    D dist{min, max};
+
+    std::generate(std::begin(v), std::end(v), [&dist, &mt] { return dist(mt); });
+
+    return v;
+}
+
+int main() {
+    // generate 20 randomint of [1, 10]
+    auto v1 = GenerateRandom(1, 10, 20);
+    for (auto& e : v1) std::cout << e << ',';
+    std::cout << '\n';
+
+    // generate 20 random double of [1.0, 10.0]
+    auto v2 = GenerateRandom(1.0, 10.0, 20);
+    for (auto& e : v2) std::cout << e << ',';
+    std::cout << '\n';
 }
 ```
