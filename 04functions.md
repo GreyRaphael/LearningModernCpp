@@ -11,6 +11,7 @@
     - [foldl and foldr](#foldl-and-foldr)
     - [high-order functions combination](#high-order-functions-combination)
   - [`std::invoke`](#stdinvoke)
+  - [`type_traits`](#type_traits)
 
 ## default & delete function
 
@@ -1016,5 +1017,74 @@ int main()
    // lambda
    auto lfunc=[](auto const a, auto const b){return a+b;};
    auto x4=std::invoke(lfunc, 2, 4);// 6
+}
+```
+
+## `type_traits`
+
+A Custom type_trait example
+
+```cpp
+#include <iostream>
+
+struct foo {
+    std::string serialize() {
+        return "plain";
+    }
+};
+
+struct bar {
+    std::string serialize_with_encoding() {
+        return "encoded";
+    }
+};
+
+template <typename T>
+struct is_serializeable_with_encoding {
+    static const bool value = false;
+};
+
+template <>
+struct is_serializeable_with_encoding<bar> {
+    static const bool value = true;
+};
+
+template <bool b>
+struct serializer {
+    template <typename T>
+    static auto serialize(T& v) {
+        return v.serialize();
+    }
+};
+template <>
+struct serializer<true> {
+    template <typename T>
+    static auto serialize(T& v) {
+        return v.serialize_with_encoding();
+    }
+};
+
+template <typename T>
+auto serialize(T& v) {
+    return serializer<is_serializeable_with_encoding<T>::value>::serialize(v);
+}
+
+int main() {
+    // test is_serializeable_with_encoding
+    std::cout << is_serializeable_with_encoding<int>::value << '\n';  // false
+    std::cout << is_serializeable_with_encoding<foo>::value << '\n';  // false
+    std::cout << is_serializeable_with_encoding<bar>::value << '\n';  // true
+
+    // test serializer
+    foo f{};
+    bar b{};
+    int a{10};
+    std::cout << serializer<false>::serialize<foo>(f) << '\n';  // plain
+    std::cout << serializer<true>::serialize<bar>(b) << '\n';   // encoded
+
+    // use Type trait: is_serializeable_with_encoding
+    std::cout << serialize(f) << '\n';  // plain
+    std::cout << serialize(b) << '\n';  // encoded
+    // std::cout << serialize(a) << '\n';  // error, v.serialize not implemented for int
 }
 ```
