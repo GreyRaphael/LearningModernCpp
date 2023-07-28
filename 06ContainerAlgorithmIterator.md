@@ -10,6 +10,7 @@
   - [custom random-access iterator](#custom-random-access-iterator)
   - [`std::any`](#stdany)
   - [`std::optional`](#stdoptional)
+  - [`std::variant`](#stdvariant)
 
 C++ Standard Library core initially sat three main pillars: **containers**, **algorithms**,
 and **iterators**
@@ -874,4 +875,37 @@ dtor
 out process
 dtor
 dtor
+```
+
+## `std::variant`
+
+> In C++17, a type-safe union is available in the form of a standard library class
+template called `std::variant`.
+
+example: `std::visit` without return for `std::variant`
+> `decltype`: declare type, such as `int, int& , int&&`  
+> `decay_t`: e.g. 将类型`int`, `int&`, `int&&` 退化为 `int`
+
+```cpp
+#include <iostream>
+#include <variant>
+
+int main() {
+    std::variant<int, double, std::string> v1;
+    v1 = 100.01;
+    std::cout << v1.index() << '\n';  // 1
+    v1 = 10;
+    std::cout << v1.index() << '\n';  // 0
+
+    std::visit([](auto&& arg) {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, int>)
+            std::cout << "int " << arg << '\n'; // int 10
+        else if constexpr (std::is_same_v<T, double>)
+            std::cout << "double " << arg << '\n';
+        else if constexpr (std::is_same_v<T, std::string>)
+            std::cout << "std::string " << arg << '\n';
+    },
+               v1);
+}
 ```
