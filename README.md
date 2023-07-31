@@ -233,7 +233,7 @@ locale -a
 # C.utf8
 # POSIX
 # en_US.utf8
-dpkg-reconfigure locales
+sudo dpkg-reconfigure locales
 # 空格键选择zh_CN.gbk
 # 然后选择main display language: en_US.utf8
 
