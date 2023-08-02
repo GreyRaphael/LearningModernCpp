@@ -176,14 +176,14 @@ void thread_func_3() {
 
 int main() {
     {
-        std::vector<std::thread> thead_vec;
+        std::vector<std::thread> thread_vec;
         for (int i = 0; i < 5; ++i) {
-            thead_vec.emplace_back(thread_func_1);
-            // thead_vec.emplace_back(thread_func_2);
-            // thead_vec.emplace_back(thread_func_3);
+            thread_vec.emplace_back(thread_func_1);
+            // thread_vec.emplace_back(thread_func_2);
+            // thread_vec.emplace_back(thread_func_3);
         }
 
-        for (auto& t : thead_vec)
+        for (auto& t : thread_vec)
             t.join();
     }
 }
