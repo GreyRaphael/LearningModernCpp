@@ -3,6 +3,7 @@
 - [Threading and Concurrency](#threading-and-concurrency)
   - [Basic Usage](#basic-usage)
   - [thread sleep \& yield](#thread-sleep--yield)
+  - [`mutex`](#mutex)
 
 ## Basic Usage
 
@@ -125,6 +126,62 @@ int main() {
     {
         std::thread t(func6, std::chrono::seconds(3));
         t.join();
+    }
+}
+```
+
+## `mutex`
+
+```cpp
+#include <chrono>
+#include <iostream>
+#include <mutex>
+#include <thread>
+#include <vector>
+
+std::mutex g_mutex;
+
+void thread_func_1() {
+    std::lock_guard<std::mutex> lock(g_mutex);
+    std::cout << "running thread " << std::this_thread::get_id() << '\n';
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+    std::cout << "done in thread " << std::this_thread::get_id() << '\n';
+}  // g_mutex is released here
+
+void thread_func_2() {
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        std::cout << "running thread " << std::this_thread::get_id() << '\n';
+    }  // g_mutex is released here
+
+    std::this_thread::yield();
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        std::cout << "done in thread " << std::this_thread::get_id() << '\n';
+    }  // g_mutex is released here
+}
+
+void thread_func_3() {
+    g_mutex.lock();
+    std::cout << "running thread " << std::this_thread::get_id() << '\n';
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+    std::cout << "done in thread " << std::this_thread::get_id() << '\n';
+    g_mutex.unlock();  // g_mutex is released here
+}
+
+int main() {
+    {
+        std::vector<std::thread> thead_vec;
+        for (int i = 0; i < 5; ++i) {
+            thead_vec.emplace_back(thread_func_1);
+            // thead_vec.emplace_back(thread_func_2);
+            // thead_vec.emplace_back(thread_func_3);
+        }
+
+        for (auto& t : thead_vec)
+            t.join();
     }
 }
 ```
