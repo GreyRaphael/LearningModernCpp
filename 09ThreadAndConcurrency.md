@@ -6,6 +6,7 @@
   - [`mutex`](#mutex)
   - [one writer \& multi-readers](#one-writer--multi-readers)
   - [Handling exceptions from thread functions](#handling-exceptions-from-thread-functions)
+  - [`std::condition_variable`](#stdcondition_variable)
 
 ## Basic Usage
 
@@ -393,5 +394,68 @@ int main() {
         }
     }
     std::cout << "G_TOTAL=" << G_TOTAL << '\n';
+}
+```
+
+## `std::condition_variable`
+
+example: simple usage of `std::conditional_variable`
+
+```cpp
+#include <chrono>
+#include <condition_variable>
+#include <iostream>
+#include <mutex>
+#include <vector>
+
+int main() {
+    std::condition_variable cv;
+    std::mutex cv_mutex;
+    std::mutex io_mutex;
+    int data{};
+
+    auto func1 = [&](size_t timeout) {
+        // simulate long running operation
+        {
+            std::this_thread::sleep_for(std::chrono::seconds(timeout));
+        }
+        // produce
+        {
+            std::unique_lock lock(cv_mutex);
+            ++data;
+        }
+        // print msg
+        {
+            std::lock_guard l(io_mutex);
+            std::cout << "produced " << data << '\n';
+        }
+        // notify
+        cv.notify_one();
+        // cv.notify_all();
+    };
+    auto func2 = [&]() {
+        // wait for notification
+        {
+            std::unique_lock lock(cv_mutex);
+            cv.wait(lock);
+        }
+        // consume
+        {
+            std::lock_guard l(io_mutex);
+            std::cout << "consume " << data << '\n';
+        }
+    };
+
+    const size_t N = 3;
+    std::vector<std::thread> producers_vec;
+    for (unsigned i = 0; i < N; ++i) {
+        producers_vec.emplace_back(func1, i);
+    }
+    std::vector<std::thread> consumers_vec;
+    for (unsigned i = 0; i < N; ++i) {
+        consumers_vec.emplace_back(func2);
+    }
+    for (auto& t : producers_vec) t.join();
+    for (auto& t : consumers_vec) t.join();
 }
 ```
