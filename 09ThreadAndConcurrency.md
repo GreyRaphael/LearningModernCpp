@@ -4,6 +4,7 @@
   - [Basic Usage](#basic-usage)
   - [thread sleep \& yield](#thread-sleep--yield)
   - [`mutex`](#mutex)
+  - [Handling exceptions from thread functions](#handling-exceptions-from-thread-functions)
 
 ## Basic Usage
 
@@ -239,5 +240,84 @@ int main() {
         print_container(c1); // 1 2 4 5 6 
         print_container(c2); // 4 5 7 8 3 
     }
+}
+```
+
+## Handling exceptions from thread functions
+
+```cpp
+#include <iostream>
+#include <mutex>
+#include <thread>
+#include <vector>
+
+std::mutex g_exception_mtx;
+std::vector<std::exception_ptr> g_exceptions;
+std::mutex g_data_mtx;
+size_t G_TOTAL = 0;
+const size_t N = 30;
+const size_t M = N * 0.6;
+
+void func1() {
+    for (unsigned i = 0; i < N; ++i) {
+        g_data_mtx.lock();
+        ++G_TOTAL;
+        g_data_mtx.unlock();
+        std::cout << std::this_thread::get_id() << ':' << i << ',' << G_TOTAL << '\n';
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        if (i == M) {
+            throw std::runtime_error("exception 1");
+        }
+    }
+}
+
+void func2() {
+    for (unsigned i = 0; i < N; ++i) {
+        g_data_mtx.lock();
+        ++G_TOTAL;
+        g_data_mtx.unlock();
+        std::cout << std::this_thread::get_id() << ':' << i << ',' << G_TOTAL << '\n';
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        if (i == M) {
+            throw std::runtime_error("exception 2");
+        }
+    }
+}
+
+void thread_func1() {
+    try {
+        func1();
+    } catch (...) {
+        std::lock_guard<std::mutex> lock(g_exception_mtx);
+        g_exceptions.push_back(std::current_exception());
+    }
+}
+
+void thread_func2() {
+    try {
+        func2();
+    } catch (...) {
+        std::lock_guard<std::mutex> lock(g_exception_mtx);
+        g_exceptions.push_back(std::current_exception());
+    }
+}
+
+int main() {
+    g_exceptions.clear();
+
+    std::thread t1(thread_func1);
+    std::thread t2(thread_func2);
+    t1.join();
+    t2.join();
+
+    for (auto const& e : g_exceptions) {
+        try {
+            if (e != nullptr)
+                std::rethrow_exception(e);
+        } catch (std::exception const& ex) {
+            std::cout << ex.what() << '\n';
+        }
+    }
+    std::cout << "G_TOTAL=" << G_TOTAL << '\n';
 }
 ```
