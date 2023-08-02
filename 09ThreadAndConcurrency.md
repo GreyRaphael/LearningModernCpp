@@ -4,6 +4,7 @@
   - [Basic Usage](#basic-usage)
   - [thread sleep \& yield](#thread-sleep--yield)
   - [`mutex`](#mutex)
+  - [one writer \& multi-readers](#one-writer--multi-readers)
   - [Handling exceptions from thread functions](#handling-exceptions-from-thread-functions)
 
 ## Basic Usage
@@ -239,6 +240,79 @@ int main() {
 
         print_container(c1); // 1 2 4 5 6 
         print_container(c2); // 4 5 7 8 3 
+    }
+}
+```
+
+## one writer & multi-readers
+
+`std::shared_mutex`: used in scenarios when multiple readers can access the same resource at the same time without causing data races, while only one writer it allowed to do so. 
+
+[official example](examples/ch09-shared-mutex.cc): <https://en.cppreference.com/w/cpp/thread/shared_mutex>
+
+```cpp
+#include <chrono>
+#include <iostream>
+#include <mutex>
+#include <shared_mutex>
+#include <syncstream>
+#include <thread>
+#include <vector>
+
+class ThreadSafeCounter {
+   public:
+    ThreadSafeCounter() = default;
+
+    // Multiple threads/readers can read the counter's value at the same time.
+    unsigned int get() const {
+        std::shared_lock lock(mutex_);
+        return value_;
+    }
+
+    // Only one thread/writer can increment/write the counter's value.
+    void increment() {
+        std::unique_lock lock(mutex_);
+        ++value_;
+    }
+
+    // Only one thread/writer can reset/write the counter's value.
+    void reset() {
+        std::unique_lock lock(mutex_);
+        value_ = 0;
+    }
+
+   private:
+    mutable std::shared_mutex mutex_;
+    unsigned int value_{};
+};
+
+int main() {
+    ThreadSafeCounter counter;
+
+    auto data_increment = [&counter]() {
+        for (int i{}; i < 10; ++i) {
+            counter.increment();
+            std::osyncstream(std::cout) << std::this_thread::get_id() << " write\n";
+            std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+        }
+    };
+    auto data_print = [&counter]() {
+        int i = 0;
+        while (i < 30) {
+            std::osyncstream(std::cout) << std::this_thread::get_id() << " read " << counter.get() << '\n';
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            ++i;
+        }
+    };
+
+    std::vector<std::thread> thread_vec;
+    thread_vec.emplace_back(data_increment);
+    for (unsigned i = 0; i < 3; ++i) {
+        thread_vec.emplace_back(data_print);
+    }
+
+    for (auto& t : thread_vec) {
+        t.join();
     }
 }
 ```
