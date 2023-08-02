@@ -132,6 +132,8 @@ int main() {
 
 ## `mutex`
 
+example: single mutex
+
 ```cpp
 #include <chrono>
 #include <iostream>
@@ -225,8 +227,8 @@ int main() {
         container<int> c2;
         c2.data = {4, 5, 6, 7, 8, 6};
 
-        print_container(c1);
-        print_container(c2);
+        print_container(c1); // 1 2 3 4 5 3 
+        print_container(c2); // 4 5 6 7 8 6 
 
         std::thread t1(move_between<int>, std::ref(c1), std::ref(c2), 3);
         std::thread t2(move_between<int>, std::ref(c2), std::ref(c1), 6);
@@ -234,8 +236,8 @@ int main() {
         t1.join();
         t2.join();
 
-        print_container(c1);
-        print_container(c2);
+        print_container(c1); // 1 2 4 5 6 
+        print_container(c2); // 4 5 7 8 3 
     }
 }
 ```
