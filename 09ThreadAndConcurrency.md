@@ -185,3 +185,57 @@ int main() {
     }
 }
 ```
+
+example: multiple mutexes
+
+> `std::scope_lock`:  is a wrapper for multiple mutexes implemented in an RAII manner.(since c++17)
+
+```cpp
+#include <algorithm>  // std::erase
+#include <iostream>
+#include <mutex>
+#include <thread>
+#include <vector>
+
+template <typename T>
+struct container {
+    std::mutex mtx;
+    std::vector<T> data;
+};
+
+template <typename T>
+void move_between(container<T>& c1, container<T>& c2, T const value) {
+    std::scoped_lock lock(c1.mtx, c2.mtx);  // since c++17
+
+    std::erase(c1.data, value);  // since c++20
+    c2.data.push_back(value);
+}
+
+template <typename T>
+void print_container(container<T> const& c) {
+    for (auto const& e : c.data) std::cout << e << ' ';
+    std::cout << '\n';
+}
+
+int main() {
+    {
+        container<int> c1;
+        c1.data = {1, 2, 3, 4, 5, 3};
+
+        container<int> c2;
+        c2.data = {4, 5, 6, 7, 8, 6};
+
+        print_container(c1);
+        print_container(c2);
+
+        std::thread t1(move_between<int>, std::ref(c1), std::ref(c2), 3);
+        std::thread t2(move_between<int>, std::ref(c2), std::ref(c1), 6);
+
+        t1.join();
+        t2.join();
+
+        print_container(c1);
+        print_container(c2);
+    }
+}
+```
