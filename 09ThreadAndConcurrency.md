@@ -459,3 +459,69 @@ int main() {
     for (auto& t : consumers_vec) t.join();
 }
 ```
+
+example: `std::conditional_variabbe` usage in producer-consumer model
+
+```cpp
+#include <condition_variable>
+#include <iostream>
+#include <mutex>
+#include <queue>
+#include <random>
+#include <thread>
+#include <vector>
+
+std::mutex g_mutex;
+std::condition_variable g_queuecheck;
+std::queue<int> g_buffer;
+std::atomic<bool> g_done(false);
+
+void producer(int id, std::mt19937& gen, std::uniform_int_distribution<int>& dist) {
+    for (int i = 0; i < 5; ++i) {
+        // Simulate work
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+
+        // Generate data
+        int value = id * 100 + dist(gen);
+        std::cout << "id:" << id << " [produced]: " << value << '\n';
+
+        {
+            std::lock_guard<std::mutex> locker(g_mutex);
+            g_buffer.push(value);
+            g_queuecheck.notify_one();
+        }
+    }
+}
+
+void consumer() {
+    while (true) {
+        std::unique_lock<std::mutex> locker(g_mutex);
+        if (g_buffer.empty() && !g_done) {
+            g_queuecheck.wait_for(locker, std::chrono::seconds(3));
+        } else if (g_buffer.empty() && g_done) {
+            break;
+        } else {
+            std::cout << "[consumed]: " << g_buffer.front() << '\n';
+            g_buffer.pop();
+        }
+    }
+}
+
+int main() {
+    std::random_device rd{};
+    auto generator = std::mt19937{rd()};
+    auto distribution = std::uniform_int_distribution<>{1, 5};  // [1, 5]
+
+    std::thread consumer1(consumer);
+
+    std::vector<std::thread> producers;
+    for (int i = 1; i < 6; i++) {
+        producers.emplace_back(producer, i, std::ref(generator), std::ref(distribution));
+    }
+    for (auto& t : producers) t.join();
+
+    g_done = true;
+
+    consumer1.join();
+}
+```
