@@ -8,6 +8,7 @@
   - [Handling exceptions from thread functions](#handling-exceptions-from-thread-functions)
   - [`std::condition_variable`](#stdcondition_variable)
   - [Using promises and futures to return values from threads](#using-promises-and-futures-to-return-values-from-threads)
+  - [`std::async` with `std::future`](#stdasync-with-stdfuture)
 
 ## Basic Usage
 
@@ -599,5 +600,77 @@ int main() {
 
     t1.join();
     t2.join();
+}
+```
+
+## `std::async` with `std::future`
+
+> `std::thread` is low-level operations, `std::async` is high-level operations
+
+std::async() is a variadic function template that has two overloads: one that specifies a launch policy as the first argument and another that does not. The other arguments to std::async() are the function to execute and its arguments, if any.
+
+```cpp
+#include <chrono>
+#include <future>
+#include <iostream>
+
+void do_something1() {
+    // simulate long running operation
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+    std::cout << "operation 1 done" << '\n';
+}
+void do_something2() {
+    // simulate long running operation
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::cout << "operation 2 done" << '\n';
+}
+int compute_value1() {
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+    return 100;
+}
+int compute_value2() {
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    return 200;
+}
+int compute_value3(int i) {
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+    return 100 + i;
+}
+int compute_value4(int i) {
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    return 200 * i;
+}
+
+int main() {
+    {
+        auto f = std::async(std::launch::async, do_something1);
+        do_something2();
+        f.wait();
+        std::cout << "all done!" << '\n';
+    }
+    {
+        auto f = std::async(std::launch::async, compute_value1);
+        auto val = compute_value2();
+        val += f.get();
+        std::cout << "finale result=" << val << '\n';
+    }
+    {
+        auto f = std::async(std::launch::async, compute_value3, 10);
+        auto val = compute_value4(20);
+        val += f.get();
+        std::cout << "finale result=" << val << '\n';
+    }
+    {
+        auto f = std::async(std::launch::async, do_something1);
+        int count = 0;
+        while (true) {
+            auto status = f.wait_for(std::chrono::milliseconds(500));
+            if (status == std::future_status::ready) {
+                break;
+            }
+            std::cout << "waiting " << (++count) * 500 << "ms\n";
+        }
+        std::cout << "done!" << '\n';
+    }
 }
 ```
