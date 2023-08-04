@@ -9,6 +9,7 @@
   - [`std::condition_variable`](#stdcondition_variable)
   - [Using promises and futures to return values from threads](#using-promises-and-futures-to-return-values-from-threads)
   - [`std::async` with `std::future`](#stdasync-with-stdfuture)
+  - [`std::atomic`](#stdatomic)
 
 ## Basic Usage
 
@@ -672,5 +673,28 @@ int main() {
         }
         std::cout << "done!" << '\n';
     }
+}
+```
+
+## `std::atomic`
+
+example: counter, [other examples](examples/ch09-atomic.cc)
+
+```cpp
+void test_atomic() {
+    // int counter = 0; // result is error
+    std::atomic<int> counter{0}; // result is correct
+
+    std::vector<std::thread> threads;
+    for (int i = 0; i < 10; ++i) {
+        threads.emplace_back([&counter]() {
+            for (int i = 0; i < 1e8; ++i)
+                ++counter;
+        });
+    }
+
+    for (auto& t : threads) t.join();
+
+    std::cout << counter << '\n';
 }
 ```
