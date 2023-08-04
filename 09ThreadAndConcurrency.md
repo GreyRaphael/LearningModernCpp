@@ -7,6 +7,7 @@
   - [one writer \& multi-readers](#one-writer--multi-readers)
   - [Handling exceptions from thread functions](#handling-exceptions-from-thread-functions)
   - [`std::condition_variable`](#stdcondition_variable)
+  - [Using promises and futures to return values from threads](#using-promises-and-futures-to-return-values-from-threads)
 
 ## Basic Usage
 
@@ -523,5 +524,80 @@ int main() {
     g_done = true;
 
     consumer1.join();
+}
+```
+
+## Using promises and futures to return values from threads
+
+> `promise-future` pair is basically a communication channel that enables a thread
+to communicate a value or exception with another thread through a shared state.
+
+example: `promise-future` for value
+
+```cpp
+#include <chrono>
+#include <future>
+#include <iostream>
+
+void produce_value(std::promise<int>& p) {
+    // simulate long running operation
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+
+    std::cout << "produce value " << '\n';
+    p.set_value(100);
+}
+
+void consume_value(std::future<int>& f) {
+    auto val = f.get();
+    std::cout << "consume: " << val << '\n';
+}
+
+int main() {
+    std::promise<int> p;
+    std::thread t1(produce_value, std::ref(p));
+
+    std::future<int> f = p.get_future();
+    std::thread t2(consume_value, std::ref(f));
+
+    t1.join();
+    t2.join();
+}
+```
+
+example: `promise-future` for exception
+
+```cpp
+#include <chrono>
+#include <future>
+#include <iostream>
+
+void produce_value(std::promise<int>& p) {
+    // simulate long running operation
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+
+    try {
+        throw std::runtime_error("an error has occurred!");
+    } catch (...) {
+        p.set_exception(std::current_exception());
+    }
+}
+
+void consume_value(std::future<int>& f) {
+    try {
+        f.get();
+    } catch (const std::exception& e) {
+        std::cout << "msg=" << e.what() << '\n';  // an error has occurred!
+    }
+}
+
+int main() {
+    std::promise<int> p;
+    std::thread t1(produce_value, std::ref(p));
+
+    std::future<int> f = p.get_future();
+    std::thread t2(consume_value, std::ref(f));
+
+    t1.join();
+    t2.join();
 }
 ```
