@@ -10,6 +10,8 @@
   - [Using promises and futures to return values from threads](#using-promises-and-futures-to-return-values-from-threads)
   - [`std::async` with `std::future`](#stdasync-with-stdfuture)
   - [`std::atomic`](#stdatomic)
+  - [Implementing parallel `map` and `fold`](#implementing-parallel-map-and-fold)
+    - [with STL standard parallel algorithms](#with-stl-standard-parallel-algorithms)
 
 ## Basic Usage
 
@@ -696,5 +698,106 @@ void test_atomic() {
     for (auto& t : threads) t.join();
 
     std::cout << counter << '\n';
+}
+```
+
+## Implementing parallel `map` and `fold`
+
+### with STL standard parallel algorithms
+
+```cpp
+#include <algorithm>  // std::transform
+#include <chrono>
+#include <execution>  // std::execution::par
+#include <iostream>
+#include <numeric>  // std::reduce
+#include <vector>
+
+template <typename Time = std::chrono::microseconds, typename Clock = std::chrono::high_resolution_clock>
+struct perf_timer {
+    template <typename F, typename... Args>
+    static Time duration(F&& f, Args... args) {
+        auto start = Clock::now();
+
+        std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
+
+        auto end = Clock::now();
+
+        return std::chrono::duration_cast<Time>(end - start);
+    }
+};
+
+template <typename Iter, typename F>
+void parallel_map(Iter begin, Iter end, F f) {
+    std::transform(std::execution::par,
+                   begin, end,
+                   begin,
+                   std::forward<F>(f));
+}
+
+template <typename Iter, typename R, typename F>
+auto parallel_reduce(Iter begin, Iter end, R init, F op) {
+    return std::reduce(std::execution::par,
+                       begin, end,
+                       init,
+                       std::forward<F>(op));
+}
+
+int main() {
+    std::vector<int> v(1e9);
+    std::iota(std::begin(v), std::end(v), 1);
+    // compare sequential, parallel map & reduce
+    {
+        auto v1 = v;
+        auto s1 = 0LL;
+
+        auto t11 = perf_timer<>::duration([&] { std::transform(
+                                                    std::begin(v1), std::end(v1),
+                                                    std::begin(v1),
+                                                    [](int const i) { return i + i; }); });
+        auto t12 = perf_timer<>::duration([&] { s1 = std::accumulate(
+                                                    std::begin(v1), std::end(v1),
+                                                    0LL,
+                                                    std::plus<>()); });
+
+        auto v2 = v;
+        auto s2 = 0LL;
+        auto t21 = perf_timer<>::duration([&] { parallel_map(std::begin(v2), std::end(v2), [](int const i) { return i + i; }); });
+        auto t22 = perf_timer<>::duration([&] { s2 = parallel_reduce(std::begin(v2), std::end(v2), 0LL, std::plus<>()); });
+
+        std::cout << "sequential sum:" << s1
+                  << ", map cost: " << std::chrono::duration<double, std::milli>(t11)
+                  << ", reduce cost: " << std::chrono::duration<double, std::milli>(t12)
+                  << ", map+reduce cost: " << std::chrono::duration<double, std::milli>(t11 + t12) << '\n';
+        std::cout << "  parallel sum:" << s2
+                  << ", map cost: " << std::chrono::duration<double, std::milli>(t21)
+                  << ", reduce cost: " << std::chrono::duration<double, std::milli>(t22)
+                  << ", map+reduce cost: " << std::chrono::duration<double, std::milli>(t21 + t22) << '\n';
+    }
+    // use stl map-reduce sequential & parallel
+    {
+        auto v5 = v;
+        auto s5 = 0LL;
+
+        auto t52 = perf_timer<>::duration([&] { s5 = std::transform_reduce(
+                                                    std::begin(v5), std::end(v5),
+                                                    0LL,
+                                                    std::plus<>(),
+                                                    [](int const i) { return i + i; }); });
+
+        auto v6 = v;
+        auto s6 = 0LL;
+
+        auto t62 = perf_timer<>::duration([&] { s6 = std::transform_reduce(
+                                                    std::execution::par,
+                                                    std::begin(v6), std::end(v6),
+                                                    0LL,
+                                                    std::plus<>(),
+                                                    [](int const i) { return i + i; }); });
+        std::cout << "sequential sum:" << s5
+                  << ", map+reduce cost: " << std::chrono::duration<double, std::milli>(t52) << '\n';
+        std::cout << "  parallel sum:" << s6
+                  << ", map+reduce cost: " << std::chrono::duration<double, std::milli>(t62) << '\n';
+    }
 }
 ```
