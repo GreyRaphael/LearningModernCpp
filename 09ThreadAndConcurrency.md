@@ -13,6 +13,7 @@
   - [Implementing parallel `map` and `reduce`](#implementing-parallel-map-and-reduce)
     - [with STL standard algorithms](#with-stl-standard-algorithms)
     - [with custom parallel algorithms by `std::thread`](#with-custom-parallel-algorithms-by-stdthread)
+    - [with custom parallel algorithms by `std::async`](#with-custom-parallel-algorithms-by-stdasync)
 
 ## Basic Usage
 
@@ -746,9 +747,18 @@ unsequence sum:10000000000, map+reduce cost: 33458.6ms
 
 ### with custom parallel algorithms by `std::thread`
 
-[example2](examples/ch09-thread-mapreduce.cc): with custom parallel algorithms
+[example2](examples/ch09-thread-mapreduce.cc): with custom parallel algorithms by `std::thread`
 
 ```bash
    default sum:10000000000, map cost: 42791.2ms, reduce cost: 30494.6ms, map+reduce cost: 73285.9ms
   parallel sum:10000000000, map cost: 5520.65ms, reduce cost: 3663.02ms, map+reduce cost: 9183.66ms
+```
+
+### with custom parallel algorithms by `std::async`
+
+[example3](examples/ch09-async-mapreduce.cc): with custom parallel algorithms by `std::aysnc`
+
+```bash
+   default sum:10000000000, map cost: 41210ms, reduce cost: 35599ms, map+reduce cost: 76809ms
+  parallel sum:10000000000, map cost: 5613.03ms, reduce cost: 2478.61ms, map+reduce cost: 8091.65ms
 ```
