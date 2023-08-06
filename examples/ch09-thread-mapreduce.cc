@@ -25,7 +25,7 @@ template <typename Iter, typename F>
 void parallel_map(Iter begin, Iter end, F f) {
     auto size = std::distance(begin, end);
 
-    if (size <= 1e4)
+    if (size < 1e4)
         std::transform(begin, end, begin, std::forward<F>(f));
     else {
         auto core_nums = std::thread::hardware_concurrency();
@@ -52,7 +52,7 @@ template <typename Iter, typename R, typename F>
 auto parallel_reduce(Iter begin, Iter end, R init, F op) {
     auto size = std::distance(begin, end);
 
-    if (size <= 1e4)
+    if (size < 1e4)
         return std::reduce(begin, end, init, std::forward<F>(op));
     else {
         auto core_nums = std::thread::hardware_concurrency();
