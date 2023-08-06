@@ -11,6 +11,8 @@
   - [`std::async` with `std::future`](#stdasync-with-stdfuture)
   - [`std::atomic`](#stdatomic)
   - [Implementing parallel `map` and `reduce`](#implementing-parallel-map-and-reduce)
+    - [with STL standard algorithms](#with-stl-standard-algorithms)
+    - [with custom parallel algorithms by `std::thread`](#with-custom-parallel-algorithms-by-stdthread)
 
 ## Basic Usage
 
@@ -702,6 +704,8 @@ void test_atomic() {
 
 ## Implementing parallel `map` and `reduce`
 
+### with STL standard algorithms
+
 [example1](examples/ch09-map-reduce.cc): with STL standard algorithms, differ in [policy](https://en.cppreference.com/w/cpp/algorithm/execution_policy_tag)
 - `std::execution::seq`
 - `std::execution::par`
@@ -738,4 +742,13 @@ sequential sum:10000000000, map+reduce cost: 31153.7ms
   parallel sum:10000000000, map+reduce cost: 4350.87ms
 unsequence sum:10000000000, map+reduce cost: 33458.6ms
  par+unseq sum:10000000000, map+reduce cost: 4838.21ms
+```
+
+### with custom parallel algorithms by `std::thread`
+
+[example2](examples/ch09-thread-mapreduce.cc): with custom parallel algorithms
+
+```bash
+   default sum:10000000000, map cost: 42791.2ms, reduce cost: 30494.6ms, map+reduce cost: 73285.9ms
+  parallel sum:10000000000, map cost: 5520.65ms, reduce cost: 3663.02ms, map+reduce cost: 9183.66ms
 ```
