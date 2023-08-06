@@ -14,6 +14,7 @@
     - [with STL standard algorithms](#with-stl-standard-algorithms)
     - [with custom parallel algorithms by `std::thread`](#with-custom-parallel-algorithms-by-stdthread)
     - [with custom parallel algorithms by `std::async`](#with-custom-parallel-algorithms-by-stdasync)
+  - [`std::jthread`](#stdjthread)
 
 ## Basic Usage
 
@@ -761,4 +762,24 @@ unsequence sum:10000000000, map+reduce cost: 33458.6ms
 ```bash
    default sum:10000000000, map cost: 41210ms, reduce cost: 35599ms, map+reduce cost: 76809ms
   parallel sum:10000000000, map cost: 5613.03ms, reduce cost: 2478.61ms, map+reduce cost: 8091.65ms
+```
+
+## `std::jthread`
+
+> `std::jthread`: since C++20,  joinable thread, NO NEED explicitly invoke the `join()` method to wait for the thread to finish
+execution
+
+```cpp
+#include <iostream>
+#include <thread>
+
+void thread_func1(int i) {
+    while (i-- > 0) {
+        std::cout << i << '\n';
+    }
+}
+
+int main() {
+    std::jthread t(thread_func1, 10);
+}
 ```
