@@ -703,7 +703,22 @@ void test_atomic() {
 ## Implementing parallel `map` and `reduce`
 
 [example1](examples/ch09-map-reduce.cc): with STL standard algorithms, differ in [policy](https://en.cppreference.com/w/cpp/algorithm/execution_policy_tag)
+> 除非是极端情况, 将policy空出来就能有较强的性能
 - `std::execution::seq`
 - `std::execution::par`
 - `std::execution::unseq`
 - `std::execution::par_unseq`
+
+```bash
+   default sum:10000000000, map cost: 809.857ms, reduce cost: 437.711ms, map+reduce cost: 1247.57ms
+sequential sum:10000000000, map cost: 1044.98ms, reduce cost: 413.435ms, map+reduce cost: 1458.41ms
+  parallel sum:10000000000, map cost: 1090.84ms, reduce cost: 405.494ms, map+reduce cost: 1496.33ms
+unsequence sum:10000000000, map cost: 475.577ms, reduce cost: 593.091ms, map+reduce cost: 1068.67ms
+ par+unseq sum:10000000000, map cost: 463.784ms, reduce cost: 589.562ms, map+reduce cost: 1053.35ms
+
+   default sum:10000000000, map+reduce cost: 448.986ms
+sequential sum:10000000000, map+reduce cost: 455.93ms
+  parallel sum:10000000000, map+reduce cost: 459.504ms
+unsequence sum:10000000000, map+reduce cost: 553.234ms
+ par+unseq sum:10000000000, map+reduce cost: 593.23ms
+```
