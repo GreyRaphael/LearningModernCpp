@@ -703,22 +703,39 @@ void test_atomic() {
 ## Implementing parallel `map` and `reduce`
 
 [example1](examples/ch09-map-reduce.cc): with STL standard algorithms, differ in [policy](https://en.cppreference.com/w/cpp/algorithm/execution_policy_tag)
-> 除非是极端情况, 将policy空出来就能有较强的性能
 - `std::execution::seq`
 - `std::execution::par`
 - `std::execution::unseq`
 - `std::execution::par_unseq`
 
-```bash
-   default sum:10000000000, map cost: 809.857ms, reduce cost: 437.711ms, map+reduce cost: 1247.57ms
-sequential sum:10000000000, map cost: 1044.98ms, reduce cost: 413.435ms, map+reduce cost: 1458.41ms
-  parallel sum:10000000000, map cost: 1090.84ms, reduce cost: 405.494ms, map+reduce cost: 1496.33ms
-unsequence sum:10000000000, map cost: 475.577ms, reduce cost: 593.091ms, map+reduce cost: 1068.67ms
- par+unseq sum:10000000000, map cost: 463.784ms, reduce cost: 589.562ms, map+reduce cost: 1053.35ms
+为了使用`std::execution::par`, Debian需要
+- `sudo apt install libtbb-dev`
+- `g++ main.cpp --std=c++17 -ltbb && ./a.out` or change **CMakeLists.txt**
 
-   default sum:10000000000, map+reduce cost: 448.986ms
-sequential sum:10000000000, map+reduce cost: 455.93ms
-  parallel sum:10000000000, map+reduce cost: 459.504ms
-unsequence sum:10000000000, map+reduce cost: 553.234ms
- par+unseq sum:10000000000, map+reduce cost: 593.23ms
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.0.0)
+project(proj1 VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+
+find_package(TBB REQUIRED)
+
+add_executable(proj1 main.cpp)
+
+target_link_libraries(proj1 PRIVATE TBB::tbb)
+```
+
+```bash
+   default sum:10000000000, map cost: 38516.8ms, reduce cost: 25805.9ms, map+reduce cost: 64322.8ms
+sequential sum:10000000000, map cost: 43771.2ms, reduce cost: 34368.3ms, map+reduce cost: 78139.5ms
+  parallel sum:10000000000, map cost: 6021.23ms, reduce cost: 4736.1ms, map+reduce cost: 10757.3ms
+unsequence sum:10000000000, map cost: 23439.7ms, reduce cost: 38640.6ms, map+reduce cost: 62080.4ms
+ par+unseq sum:10000000000, map cost: 3096.2ms, reduce cost: 5242.59ms, map+reduce cost: 8338.78ms
+
+   default sum:10000000000, map+reduce cost: 30342.7ms
+sequential sum:10000000000, map+reduce cost: 31153.7ms
+  parallel sum:10000000000, map+reduce cost: 4350.87ms
+unsequence sum:10000000000, map+reduce cost: 33458.6ms
+ par+unseq sum:10000000000, map+reduce cost: 4838.21ms
 ```
