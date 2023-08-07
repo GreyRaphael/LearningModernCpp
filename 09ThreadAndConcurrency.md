@@ -15,6 +15,7 @@
     - [with custom parallel algorithms by `std::thread`](#with-custom-parallel-algorithms-by-stdthread)
     - [with custom parallel algorithms by `std::async`](#with-custom-parallel-algorithms-by-stdasync)
   - [`std::jthread`](#stdjthread)
+  - [latch, semaphore, barrier](#latch-semaphore-barrier)
 
 ## Basic Usage
 
@@ -838,5 +839,173 @@ int main() {
 
         std::cout << a << '\n';  // prints "4invoke the callback" and 4
     }
+}
+```
+
+## latch, semaphore, barrier
+
+> `std::latch`: Use `std::latch` when you need threads to wait until a counter, decreased
+by other threads, reaches zero.
+
+```cpp
+#include <iostream>
+#include <latch>
+#include <thread>
+#include <vector>
+
+void process(std::vector<int> const& data) {
+    for (auto const e : data) std::cout << e << ' ';
+    std::cout << '\n';
+}
+
+int main() {
+    // latch
+    int const NUM = 4;
+    std::latch work_done(NUM);
+    std::vector<int> data(NUM);
+    std::vector<std::jthread> threads;  // or std::thread
+    for (int i = 1; i <= NUM; ++i) {
+        threads.push_back(std::jthread([&data, i, &work_done] {
+            std::this_thread::sleep_for(std::chrono::seconds(1));  // simulate work
+
+            data[i] = i * 2;  // create data
+
+            work_done.count_down();  // decrement counter
+        }));
+    }
+    work_done.wait();  // wait for all jobs to finish(work_done count down to 0)
+    process(data);     // process data from all jobs
+}
+```
+
+> `std::semaphore`: Use `std::counting_semaphore<N>` when you want to restrict a number of N threadsto access a shared resource
+
+```cpp
+#include <iostream>
+#include <semaphore>
+#include <thread>
+#include <vector>
+
+void process(std::vector<int> const& data) {
+    for (auto const e : data) std::cout << e << ' ';
+    std::cout << '\n';
+}
+
+int main() {
+    // semaphore
+    int const NUM = 4;
+    std::vector<int> data;
+    std::vector<std::jthread> threads;  // or std::thread
+    std::counting_semaphore sem{1};
+
+    for (int i = 1; i <= NUM; ++i) {
+        threads.push_back(std::jthread([&data, i, &sem] {
+            for (int k = 1; k < 3; ++k) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));  // simulate work
+                int value = i * k;                                            // create data
+
+                sem.acquire();  // acquire the semaphore
+
+                data.push_back(value);  // write to the shared resource
+                std::cout << "===>(" << i << ',' << k << "):";
+                process(data);  // print data
+
+                sem.release();  // release the semaphore
+            }
+        }));
+    }
+
+    for (auto& t : threads) t.join();
+    process(data);  // process data from all jobs
+}
+```
+
+> `std::barrier`: Threads arrive at the barrier, decrease the internal counter, and block. 
+
+```cpp
+#include <barrier>
+#include <iostream>
+#include <thread>
+#include <vector>
+
+void process(std::vector<int> const& data) {
+    for (auto const e : data) std::cout << e << ' ';
+    std::cout << '\n';
+}
+
+int main() {
+    // barrier
+    int const NUM = 4;
+    std::vector<int> data(NUM);
+    // callback is optional
+    auto callback = [&data] { process(data); }; // invoke at arrive_and_wait()
+    std::barrier barr(NUM, callback);
+
+    std::vector<std::thread> threads;
+    for (int i = 0; i < NUM; i++) {
+        threads.emplace_back([&data, &barr](int const i) {
+            barr.arrive_and_wait();
+            std::cout << "thread-" << i << " starts working" << '\n';
+
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            data[i] = i * 10;
+            std::cout << "thread-" << i << " finish working" << '\n';
+
+            barr.arrive_and_wait();  // Workers synchronize here
+            std::cout << "thread-" << i << " done" << '\n';
+        },
+                             i);
+    }
+    for (auto& t : threads) t.join();
+    process(data);
+}
+```
+
+complicated example of `std::barrier`
+
+```cpp
+#include <barrier>
+#include <iostream>
+#include <thread>
+#include <vector>
+
+void process(std::vector<int> const& data) {
+    for (auto const e : data) std::cout << e << ' ';
+    std::cout << '\n';
+}
+
+int main() {
+    int const NUM = 4;
+    std::vector<int> data(NUM);
+    int cycle = 1;
+
+    std::stop_source st;
+
+    std::barrier work_done(
+        NUM,
+        [&data, &cycle, &st]() {
+            process(data);
+            cycle++;
+            if (cycle == 10)
+                st.request_stop();
+        });
+
+    std::vector<std::jthread> threads;
+    for (int i = 0; i < NUM; ++i) {  // Change loop initialization from 1 to 0
+        threads.emplace_back(
+            [&cycle, &work_done, &data](std::stop_token st, int i) {  // Add &data as a parameter capture
+                while (!st.stop_requested()) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+                    data[i] = i * cycle;
+                    work_done.arrive_and_wait();
+                }
+            },
+            st.get_token(),  // Pass stop_token explicitly
+            i                // Pass i explicitly
+        );
+    }
+
+    for (auto& t : threads) t.join();
 }
 ```
