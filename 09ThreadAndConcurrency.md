@@ -783,3 +783,60 @@ int main() {
     std::jthread t(thread_func1, 10);
 }
 ```
+
+example: cancel the execution of thread by `std::stock_source`
+
+```cpp
+#include <chrono>
+#include <iostream>
+#include <thread>
+
+void thread_func2(std::stop_token st, int& i) {
+    while (!st.stop_requested() && i < 100) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        i++;
+    }
+}
+
+int main() {
+    // example1: cancel the execution of a thread
+    {
+        int a = 0;
+        std::jthread t(thread_func2, std::ref(a));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        t.request_stop();
+        std::cout << a << '\n';  // 4
+    }
+    // example2: cancel the execution of multi-threads
+    {
+        int a = 0;
+        int b = 10;
+
+        std::stop_source ss;
+        std::jthread t1(thread_func2, ss.get_token(), std::ref(a));
+        std::jthread t2(thread_func2, ss.get_token(), std::ref(b));
+
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+
+        ss.request_stop();  // stop all with stop_source
+
+        std::cout << a << ' ' << b << '\n';  // 4 14
+    }
+    // example3: cancel the execution of a thread with callback
+    {
+        int a = 0;
+
+        std::stop_source ss;
+        std::stop_token st = ss.get_token();
+        std::stop_callback cb(st, [&] { std::cout << a << "invoke the callback\n"; });
+
+        std::jthread t(thread_func2, st, std::ref(a));
+
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+
+        ss.request_stop();
+
+        std::cout << a << '\n';  // prints "4invoke the callback" and 4
+    }
+}
+```
