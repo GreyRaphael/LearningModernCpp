@@ -714,7 +714,7 @@ void test_atomic() {
 - `std::execution::unseq`
 - `std::execution::par_unseq`
 
-为了使用`std::execution::par`, Debian需要
+为了使用`std::execution::par`, Debian需要如下配置。MSVC不需要任何配置，也不需要修改**CMakeLists.txt**
 - `sudo apt install libtbb-dev`
 - `g++ main.cpp --std=c++17 -ltbb && ./a.out` or change **CMakeLists.txt**
 
