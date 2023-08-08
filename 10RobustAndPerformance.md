@@ -2,6 +2,7 @@
 
 - [Robustness and Performance](#robustness-and-performance)
   - [exception](#exception)
+  - [`const`](#const)
 
 ## exception
 
@@ -44,3 +45,73 @@ where `noexcept` recommendation
 - destructor
 - move constructor
 - move assignment
+
+## `const`
+
+`T const` == `const T`
+
+> Placing the const keyword after the type is more natural because it is consistent with the reading direction, from right to left. 
+
+example: `const` memeber function with `mutable`
+
+```cpp
+#include <algorithm>  // std::find
+#include <chrono>
+#include <iostream>
+#include <map>
+#include <thread>
+#include <vector>
+
+class computation {
+    double compute_value(double const input) const {
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+        return input + 100;
+    }
+
+    // mutable用于突破compute() const中的const
+    mutable std::map<double, double> cache;
+
+   public:
+    double compute(double const input) const {
+        auto it = cache.find(input);
+        if (it != cache.end()) return it->second;
+
+        auto result = compute_value(input);
+        cache[input] = result;
+
+        return result;
+    }
+};
+
+template <typename T>
+class container {
+    std::vector<T> data;
+    mutable std::mutex mt;
+
+   public:
+    void add(T const& value) {
+        std::lock_guard<std::mutex> lock(mt);
+        data.push_back(value);
+    }
+
+    bool contains(T const& value) const {
+        std::lock_guard<std::mutex> lock(mt);
+        return std::find(std::begin(data), std::end(data), value) != std::end(data);
+    }
+};
+
+int main() {
+    {
+        computation const c;
+        std::cout << c.compute(6) << '\n';  // 106
+        // 如果已经存在，直接访问cache
+        std::cout << c.compute(6) << '\n';  // 106
+    }
+    {
+        container<int> c;
+        c.add(100);
+        c.add(200);
+        std::cout << c.contains(100) << '\n';  // 1
+    }
+}
+```
