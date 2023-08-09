@@ -3,6 +3,7 @@
 - [Robustness and Performance](#robustness-and-performance)
   - [exception](#exception)
   - [`const`](#const)
+  - [`unique_ptr`](#unique_ptr)
 
 ## exception
 
@@ -112,6 +113,88 @@ int main() {
         c.add(100);
         c.add(200);
         std::cout << c.contains(100) << '\n';  // 1
+    }
+}
+```
+
+## `unique_ptr`
+
+simple example
+
+```cpp
+#include <iostream>
+#include <memory>
+#include <vector>
+
+class foo {
+    double b;
+    std::string c;
+
+   public:
+    int a;
+    foo(int const a = 10, double const b = 10.1, std::string const& c = "hello") : a(a), b(b), c(c) {}
+
+    void print() const {
+        std::cout << '(' << a << ',' << b << ',' << c << ')' << '\n';
+    }
+};
+
+struct foo_deleter {
+    void operator()(foo* pf) const {
+        std::cout << "deleting foo..." << '\n';
+        delete pf;
+    }
+};
+
+struct Base {
+    virtual ~Base() {
+        std::cout << "~Base()" << '\n';
+    }
+};
+
+struct Derived : public Base {
+    virtual ~Derived() {
+        std::cout << "~Derived()" << '\n';
+    }
+};
+
+int main(int, char**) {
+    // unique_ptr with std::move
+    {
+        auto pi = std::make_unique<int>(24);
+        auto qi = std::move(pi);
+        std::cout << (pi.get() == nullptr) << '\n';  // true
+        std::cout << *(qi.get()) << '\n';            // 24
+    }
+    // dereff unique_ptr
+    {
+        auto pf1 = std::make_unique<foo>();
+        pf1->print();
+        (*pf1).print();  // equivalent to above
+
+        auto pf2 = std::make_unique<foo>(2, 3.2, "world");
+        pf2->print();
+        std::cout << pf2->a << '\n';
+    }
+    // unique_ptr with std::move
+    {
+        std::vector<std::unique_ptr<foo>> data;
+
+        for (unsigned i = 0; i < 5; ++i) {
+            data.push_back(std::make_unique<foo>(i, i * 10.0, std::to_string(i * 2)));
+        }
+        auto pf = std::make_unique<foo>(23, 23.0, "grey");
+        data.push_back(std::move(pf));
+        for (auto const& p : data) p->print();
+    }
+    // custom unique_ptr deleter
+    {
+        std::unique_ptr<foo, foo_deleter> pf(new foo(42, 42.0, "42"), foo_deleter());
+    }
+    // unique_ptr with heirachy
+    {
+        std::unique_ptr<Derived> pd = std::make_unique<Derived>();
+        std::unique_ptr<Base> pb = std::move(pd);
     }
 }
 ```
