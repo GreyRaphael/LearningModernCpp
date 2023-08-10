@@ -164,7 +164,8 @@ int main(int, char**) {
         auto pi = std::make_unique<int>(24);
         auto qi = std::move(pi);
         std::cout << (pi.get() == nullptr) << '\n';  // true
-        std::cout << *(qi.get()) << '\n';            // 24
+        std::cout << *qi << '\n';                    // 24
+        std::cout << *(qi.get()) << '\n';            // 24, .get() return raw pointer
     }
     // dereff unique_ptr
     {
