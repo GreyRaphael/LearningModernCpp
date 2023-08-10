@@ -230,3 +230,190 @@ shared_ptr<int[]> shared_best(new int[10]);
 }
 // the destructor calls delete[], awesome!!
 ```
+
+`std::shared_ptr` example
+
+```cpp
+#include <iostream>
+#include <memory>
+#include <vector>
+
+class foo {
+    double b;
+    std::string c;
+
+   public:
+    int a;
+    foo(int const a = 10, double const b = 10.1, std::string const& c = "hello") : a(a), b(b), c(c) {}
+
+    void print() const {
+        std::cout << '(' << a << ',' << b << ',' << c << ')' << '\n';
+    }
+};
+
+struct foo_deleter {
+    void operator()(foo* pf) const {
+        std::cout << "deleting foo..." << '\n';
+        delete pf;
+    }
+};
+
+struct Base {
+    virtual ~Base() {
+        std::cout << "~Base()" << '\n';
+    }
+};
+
+struct Derived : public Base {
+    virtual ~Derived() {
+        std::cout << "~Derived()" << '\n';
+    }
+
+    void print() { std::cout << "Derived" << '\n'; }
+};
+
+struct Apprentice;
+
+struct Master : std::enable_shared_from_this<Master> {
+    ~Master() { std::cout << "~Master" << '\n'; }
+
+    void take_apprentice(std::shared_ptr<Apprentice> a);
+
+   private:
+    std::shared_ptr<Apprentice> apprentice;
+};
+
+struct Apprentice {
+    ~Apprentice() { std::cout << "~Apprentice" << '\n'; }
+
+    void take_master(std::weak_ptr<Master> m);
+
+   private:
+    std::weak_ptr<Master> master;
+};
+
+void Master::take_apprentice(std::shared_ptr<Apprentice> a) {
+    apprentice = a;
+    apprentice->take_master(weak_from_this()); // since c++17, recommended, return a weak_ptr
+    // apprentice->take_master(shared_from_this()); // convert shared_ptr-> weak_ptr
+}
+
+void Apprentice::take_master(std::weak_ptr<Master> m) {
+    master = m;
+}
+
+int main() {
+    // simple ctor
+    {
+        std::shared_ptr<int> p1{new int(100)};
+        std::shared_ptr<int> p2 = p1;
+        std::cout << p1.use_count() << ',' << p2.use_count() << '\n';  // 2,2
+        std::shared_ptr<foo> pf{new foo{1, 20.1, "world"}};
+        pf->print();
+    }
+    // make_shared
+    {
+        auto p1 = std::make_shared<int>(200);
+        *p1 = 200;
+        std::cout << *p1 << '\n';  // 200
+        auto pf = std::make_shared<foo>(2, 30.2, "grey");
+        pf->print();
+    }
+    // custom deleter
+    {
+        std::shared_ptr<foo> pf1{new foo{11, 22.2, "james"}, foo_deleter()};
+        std::shared_ptr<foo> pf2{
+            new foo{22, 33.3, "tom"},
+            [](foo* p) {std::cout << "deleting foo from lambda..." << '\n'; delete p; }};
+    }
+    // arrays
+    {
+        auto p = new int[3]{100, 200, 300};
+        std::cout << p[2] << '\n';  // 300
+        delete[] p;
+
+        // <int>
+        std::shared_ptr<int> pi1{
+            new int[3]{1, 2, 3},
+            std::default_delete<int[]>()};
+        // std::cout << pi1[2] << '\n';  // error, not allowed because <int>
+
+        // <int>
+        std::shared_ptr<int> pi2{
+            new int[3]{11, 22, 33},
+            [](int* p) { delete[] p; }};
+
+        std::shared_ptr<int> pi3{new int[3]{1, 2, 3}};    // not recommended
+        std::shared_ptr<int[]> pi4{new int[3]{1, 2, 3}};  // since c++17, recommended
+
+        auto pi5 = std::make_shared<int[]>(3);  // recommended
+        for (unsigned i = 0; i < 3; ++i) {
+            pi5[i] = i + 1;
+        }
+    }
+    {
+        std::shared_ptr<int[]> pa1{new int[3]{111, 222, 333}};
+
+        for (unsigned i = 0; i < 3; ++i) {
+            pa1[i] *= 10;
+        }
+
+        for (unsigned i = 0; i < 3; ++i) {
+            std::cout << pa1[i] << ',';
+        }
+        std::cout << '\n';
+    }
+    // container
+    {
+        std::vector<std::shared_ptr<foo>> data;
+
+        for (unsigned i = 0; i < 4; ++i) {
+            data.push_back(std::make_shared<foo>(i, i * 10, std::to_string(i * 2)));
+        }
+        auto pf1 = std::make_shared<foo>(6, 66.6, "tim");
+        auto pf2 = std::make_shared<foo>(7, 77.6, "tom");
+        data.push_back(pf1);
+        data.push_back(std::move(pf2));
+        std::cout << pf1.use_count() << '\n';  // 2
+        std::cout << pf2.use_count() << '\n';  // 0
+    }
+    // hierachy
+    {
+        std::shared_ptr<Derived> pd = std::make_shared<Derived>();
+        std::shared_ptr<Base> pb = pd;
+        std::cout << pd.use_count() << '\n';  // 2
+        std::cout << pb.use_count() << '\n';  // 2
+
+        auto pd2 = std::static_pointer_cast<Derived>(pb);
+        pd2->print();  // Derived
+    }
+    // weak_ptr
+    {
+        auto sp1 = std::make_shared<int>(1000);
+        std::cout << sp1.use_count() << '\n';  // 1
+
+        std::weak_ptr<int> wpi = sp1;
+        std::cout << sp1.use_count() << '\n';  // 1
+        std::cout << wpi.use_count() << '\n';  // 1
+
+        auto sp2 = wpi.lock();
+        std::cout << sp1.use_count() << '\n';  // 2
+        std::cout << sp2.use_count() << '\n';  // 2
+        std::cout << wpi.use_count() << '\n';  // 2
+
+        sp1.reset();
+        std::cout << sp1.use_count() << '\n';  // 0
+        std::cout << sp2.use_count() << '\n';  // 1
+        std::cout << wpi.use_count() << '\n';  // 1
+        // std::cout << *wpi << '\n'; // not allowed
+        std::cout << *sp2 << '\n';  // 1000
+    }
+    // enable_shared_from_this
+    {
+        auto m = std::make_shared<Master>();
+        auto a = std::make_shared<Apprentice>();
+
+        m->take_apprentice(a);
+    }
+}
+```
