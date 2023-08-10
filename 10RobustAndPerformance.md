@@ -5,6 +5,7 @@
   - [`const`](#const)
   - [`unique_ptr`](#unique_ptr)
   - [`shared_ptr`](#shared_ptr)
+  - [`move` semantic](#move-semantic)
 
 ## exception
 
@@ -414,6 +415,102 @@ int main() {
         auto a = std::make_shared<Apprentice>();
 
         m->take_apprentice(a);
+    }
+}
+```
+
+## `move` semantic
+
+```cpp
+#include <iostream>
+#include <vector>
+
+class Buffer {
+    unsigned char* ptr;
+    size_t length;
+
+   public:
+    ~Buffer() { delete[] ptr; }
+
+    Buffer() : ptr(nullptr), length(0) { std::cout << "default ctor" << '\n'; }
+
+    explicit Buffer(size_t const size) : ptr(new unsigned char[size]{0}), length(size) {}
+
+    Buffer(Buffer const& other) : ptr(new unsigned char[other.length]), length(other.length) {
+        std::cout << "copy ctor" << '\n';
+        std::copy(other.ptr, other.ptr + other.length, ptr);
+    }
+
+    Buffer& operator=(Buffer const& other) {
+        std::cout << "copy assignment" << '\n';
+        if (this != &other) {
+            delete[] ptr;
+
+            ptr = new unsigned char[other.length];
+            length = other.length;
+
+            std::copy(other.ptr, other.ptr + other.length, ptr);
+        }
+
+        return *this;
+    }
+
+    Buffer(Buffer&& other) {
+        std::cout << "move ctor" << '\n';
+        // copy
+        ptr = other.ptr;
+        length = other.length;
+
+        // reset
+        other.ptr = nullptr;
+        other.length = 0;
+    }
+
+    // Buffer(Buffer&& other) : ptr(nullptr), length(0) {
+    //     std::cout << "move ctor" << '\n';
+    //     *this = std::move(other);
+    // }
+
+    Buffer& operator=(Buffer&& other) {
+        std::cout << "move assignment" << '\n';
+        if (this != &other) {
+            // clean up existing resources
+            delete[] ptr;
+
+            // copy
+            ptr = other.ptr;
+            length = other.length;
+
+            // reset
+            other.ptr = nullptr;
+            other.length = 0;
+        }
+
+        return *this;
+    }
+
+    size_t size() const { return length; }
+    unsigned char* data() const { return ptr; }
+};
+
+int main() {
+    {
+        Buffer b1;                 // defalt ctor
+        Buffer b2(100);            // explicit ctor
+        Buffer b3(b2);             // copy ctor
+        b1 = b3;                   // assigin operator
+        Buffer b4(std::move(b1));  // move ctor
+        b3 = std::move(b4);        // move assignment
+    }
+    {
+        std::vector<Buffer> c;
+        c.reserve(10);
+
+        c.push_back(Buffer{100});  // move
+
+        Buffer b{200};
+        c.push_back(b);             // copy
+        c.push_back(std::move(b));  // move
     }
 }
 ```
