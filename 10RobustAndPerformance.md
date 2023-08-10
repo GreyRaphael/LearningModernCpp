@@ -4,6 +4,7 @@
   - [exception](#exception)
   - [`const`](#const)
   - [`unique_ptr`](#unique_ptr)
+  - [`shared_ptr`](#shared_ptr)
 
 ## exception
 
@@ -198,4 +199,34 @@ int main(int, char**) {
         std::unique_ptr<Base> pb = std::move(pd);
     }
 }
+```
+
+## `shared_ptr`
+
+[custom deleter](https://medium.com/pranayaggarwal25/custom-deleters-with-shared-ptr-and-unique-ptr-524bb7bd7262)
+
+```cpp
+{
+    std::unique_ptr<int> ptr(new int(5));
+}   
+// unique_ptr<int> uses default_delete<int>
+
+{
+   std::unique_ptr<int[]> ptr(new int[10]);
+}  
+// unique_ptr<int[]> uses default_delete<int[]>
+
+{
+    std::shared_ptr<int> shared_bad(new int[10]); 
+} 
+// the destructor calls delete, undefined behavior as it's an array
+
+{
+    std::shared_ptr<int> shared_good(new int[10], std::default_delete<int[]> ());
+} // the destructor calls delete[], ok
+
+{
+shared_ptr<int[]> shared_best(new int[10]);
+}
+// the destructor calls delete[], awesome!!
 ```
