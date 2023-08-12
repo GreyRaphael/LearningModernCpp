@@ -94,7 +94,7 @@ int main() {
 
 > `pimpl`: pointer to implementation
 
-a simple example for `pimpl`
+a simple example for `pimpl`, and a complicate [example](examples/ch11-piml.cc)
 
 ```bash
 CMakeLists.txt
