@@ -3,6 +3,7 @@
 - [Robustness and Performance](#robustness-and-performance)
   - [exception](#exception)
   - [`const`](#const)
+  - [`dtor` and `ctor`](#dtor-and-ctor)
   - [`unique_ptr`](#unique_ptr)
   - [`shared_ptr`](#shared_ptr)
   - [`move` semantic](#move-semantic)
@@ -120,7 +121,7 @@ int main() {
 }
 ```
 
-## `unique_ptr`
+## `dtor` and `ctor`
 
 simple example to demo `dtor` and `ctor`
 
@@ -161,6 +162,8 @@ int main() {
     // ~Foo()200
 }
 ```
+
+## `unique_ptr`
 
 simple example
 
@@ -244,34 +247,6 @@ int main(int, char**) {
 ```
 
 ## `shared_ptr`
-
-[custom deleter](https://medium.com/pranayaggarwal25/custom-deleters-with-shared-ptr-and-unique-ptr-524bb7bd7262)
-
-```cpp
-{
-    std::unique_ptr<int> ptr(new int(5));
-}   
-// unique_ptr<int> uses default_delete<int>
-
-{
-   std::unique_ptr<int[]> ptr(new int[10]);
-}  
-// unique_ptr<int[]> uses default_delete<int[]>
-
-{
-    std::shared_ptr<int> shared_bad(new int[10]); 
-} 
-// the destructor calls delete, undefined behavior as it's an array
-
-{
-    std::shared_ptr<int> shared_good(new int[10], std::default_delete<int[]> ());
-} // the destructor calls delete[], ok
-
-{
-shared_ptr<int[]> shared_best(new int[10]);
-}
-// the destructor calls delete[], awesome!!
-```
 
 `std::shared_ptr` example
 
@@ -385,7 +360,7 @@ int main() {
             new int[3]{11, 22, 33},
             [](int* p) { delete[] p; }};
 
-        std::shared_ptr<int> pi3{new int[3]{1, 2, 3}};    // not recommended
+        std::shared_ptr<int> pi3{new int[3]{1, 2, 3}};    // bad
         std::shared_ptr<int[]> pi4{new int[3]{1, 2, 3}};  // since c++17, recommended
 
         auto pi5 = std::make_shared<int[]>(3);  // recommended
