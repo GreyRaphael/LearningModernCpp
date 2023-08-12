@@ -6,6 +6,7 @@
   - [`dtor` and `ctor`](#dtor-and-ctor)
   - [`unique_ptr`](#unique_ptr)
   - [`shared_ptr`](#shared_ptr)
+  - [custom deleter for `unique_ptr` and `shared_ptr`](#custom-deleter-for-unique_ptr-and-shared_ptr)
   - [`move` semantic](#move-semantic)
   - [operator `<=>`](#operator-)
 
@@ -431,6 +432,111 @@ int main() {
         auto a = std::make_shared<Apprentice>();
 
         m->take_apprentice(a);
+    }
+}
+```
+
+## custom deleter for `unique_ptr` and `shared_ptr`
+
+[custom deleter](https://medium.com/pranayaggarwal25/custom-deleters-with-shared-ptr-and-unique-ptr-524bb7bd7262)
+
+```cpp
+{
+    std::unique_ptr<int> ptr(new int(5));
+}   
+// unique_ptr<int> uses default_delete<int>
+
+{
+   std::unique_ptr<int[]> ptr(new int[10]);
+}  
+// unique_ptr<int[]> uses default_delete<int[]>
+
+{
+    std::shared_ptr<int> shared_bad(new int[10]); 
+} 
+// the destructor calls delete, undefined behavior as it's an array
+
+{
+    std::shared_ptr<int> shared_good(new int[10], std::default_delete<int[]> ());
+} // the destructor calls delete[], ok
+
+{
+shared_ptr<int[]> shared_best(new int[10]);
+}
+// the destructor calls delete[], awesome!!
+```
+
+```cpp
+#include <iostream>
+#include <memory>
+
+class Foo {
+   public:
+    int val = 0;
+    Foo() = default;
+    // Foo &operator=(const Foo &) = delete;
+    // Foo &operator=(Foo &&) = delete;
+    Foo(int value) : val(value) {}
+    ~Foo() { std::cout << "~Foo()" << val << '\n'; }
+};
+
+int main() {
+    {
+        auto pf1 = std::make_unique<Foo>(10);  // use default_delete
+
+        std::unique_ptr<Foo, std::default_delete<Foo>> pf2{
+            new Foo{20},
+            std::default_delete<Foo>()};
+
+        // custom deleter
+        // std::unique_ptr<Foo> pf3{ // error, less tempalte params
+        std::unique_ptr<Foo, void (*)(Foo *)> pf3{
+            new Foo{30},
+            [](Foo *p) {std::cout << "deleting from lambda" << '\n'; delete p; }};
+    }
+    {
+        std::cout << "--------------------" << '\n';
+        auto pf1 = std::make_shared<Foo>(11);  // use default_delete
+
+        std::shared_ptr<Foo> pf2{
+            new Foo{22},
+            std::default_delete<Foo>()};
+
+        // custom deleter
+        // std::shared_ptr<Foo, void (*)(Foo*)> pf3{ // error, too many template params
+        std::shared_ptr<Foo> pf3{
+            new Foo{33},
+            [](Foo *p) {std::cout << "deleting from lambda" << '\n'; delete p; }};
+    }
+    // unique_ptr array
+    {
+        std::cout << "--------------------" << '\n';
+        std::unique_ptr<Foo[], std::default_delete<Foo[]>> pf_arr{
+            new Foo[3]{40, 50, 60},
+            std::default_delete<Foo[]>()};
+    }
+    {
+        std::cout << "--------------------" << '\n';
+        auto pf_arr = std::make_unique<Foo[]>(3);
+        pf_arr[1] = Foo{2000};
+        std::cout << "Foo{2000} going to die" << '\n';
+        pf_arr[2] = std::move(Foo{3000});
+        std::cout << "Foo{3000} going to die" << '\n';
+    }
+    // shard_ptr array
+    {
+        std::cout << "--------------------" << '\n';
+        std::shared_ptr<Foo[]> pf_arr{
+            new Foo[3]{44, 55, 66},
+            std::default_delete<Foo[]>()};
+    }
+    {
+        std::cout << "--------------------" << '\n';
+        auto pf_arr = std::make_shared<Foo[]>(3);
+        pf_arr[1] = Foo{2222};
+        std::cout << "Foo{2222} going to die" << '\n';
+        pf_arr[2] = std::move(Foo{3333});
+        std::cout << "Foo{3333} going to die" << '\n';
     }
 }
 ```
