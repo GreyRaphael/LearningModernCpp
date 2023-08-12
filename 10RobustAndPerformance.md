@@ -6,6 +6,7 @@
   - [`unique_ptr`](#unique_ptr)
   - [`shared_ptr`](#shared_ptr)
   - [`move` semantic](#move-semantic)
+  - [operator `<=>`](#operator-)
 
 ## exception
 
@@ -511,6 +512,114 @@ int main() {
         Buffer b{200};
         c.push_back(b);             // copy
         c.push_back(std::move(b));  // move
+    }
+}
+```
+
+## operator `<=>`
+
+> three-way comparison operator `<=>`, since C++20
+
+```cpp
+#include <compare>
+#include <iostream>
+#include <tuple>  // std::tie
+
+class foo {
+   private:
+    int val1;
+    double val2;
+
+   public:
+    foo(int const i, double const d) : val1(i), val2(d) {}
+    bool operator==(foo const& other) const = default;
+};
+
+class bar {
+   private:
+    int val1;
+    double val2;
+
+   public:
+    bar(int const i, double const d) : val1(i), val2(d) {}
+    auto operator<=>(bar const& other) const = default;  // since c++20
+};
+
+class custom1 {
+   private:
+    int val1;
+    double val2;
+
+   public:
+    custom1(int const i, double const d) : val1(i), val2(d) {}
+    // must implement in custom1 type
+    bool operator==(custom1 const& other) const {
+        return (val1 == other.val1) && (val2 == other.val2);
+    }
+    auto operator<=>(custom1 const& other) const {
+        return std::tie(val1, val2) <=> std::tie(other.val1, other.val2);
+    }
+};
+
+class custom2 {
+   private:
+    int val1;
+
+   public:
+    custom2(int const i) : val1(i) {}
+    // must implement in custom2 type
+    bool operator==(custom2 const& other) const {
+        return val1 == other.val1;
+    }
+    auto operator<=>(custom2 const& other) const {
+        return val1 <=> other.val1;
+    }
+};
+
+int main() {
+    {
+        foo f1{1, 2};
+        foo f2{1, 2};
+        foo f3{2, 3};
+        std::cout << (f1 == f2) << '\n';  //  true
+        std::cout << (f1 == f3) << '\n';  // false
+        // std::cout << (f1 < f3) << '\n';   // error
+    }
+    {
+        bar b1{1, 2};
+        bar b2{1, 2};
+        bar b3{2, 1};
+        std::cout << (b1 == b2) << '\n';  // true
+        std::cout << (b1 == b3) << '\n';  // false
+        std::cout << (b1 != b3) << '\n';  // true
+        std::cout << (b1 < b3) << '\n';   // true, member-wise compare
+        std::cout << (b1 > b3) << '\n';   // false, member-wise compare
+        std::cout << (b1 <= b3) << '\n';  // true, member-wise compare
+        std::cout << (b1 >= b3) << '\n';  // false, member-wise compare
+    }
+    {
+        custom1 b1{1, 2};
+        custom1 b2{1, 2};
+        custom1 b3{2, 1};
+        std::cout << (b1 == b2) << '\n';  // true
+        std::cout << (b1 == b3) << '\n';  // false
+        std::cout << (b1 != b3) << '\n';  // true
+        std::cout << (b1 < b3) << '\n';   // true, member-wise compare
+        std::cout << (b1 > b3) << '\n';   // false, member-wise compare
+        std::cout << (b1 <= b3) << '\n';  // true, member-wise compare
+        std::cout << (b1 >= b3) << '\n';  // false, member-wise compare
+    }
+    {
+        custom2 b1{10};
+        custom2 b2{10};
+        custom2 b3{20};
+        std::cout << (b1 == b2) << '\n';  // true
+        std::cout << (b1 == b3) << '\n';  // false
+        std::cout << (b1 != b3) << '\n';  // true
+        std::cout << (b1 < b3) << '\n';   // true, member-wise compare
+        std::cout << (b1 > b3) << '\n';   // false, member-wise compare
+        std::cout << (b1 <= b3) << '\n';  // true, member-wise compare
+        std::cout << (b1 >= b3) << '\n';  // false, member-wise compare
     }
 }
 ```
