@@ -122,6 +122,46 @@ int main() {
 
 ## `unique_ptr`
 
+simple example to demo `dtor` and `ctor`
+
+```cpp
+#include <iostream>
+
+class Foo {
+   public:
+    int val = 0;
+
+    Foo() = default;                                  // default ctor
+    Foo(Foo &&) = default;                            // move ctor
+    Foo(const Foo &) = default;                       // copy ctor
+    Foo &operator=(Foo &&) = default;                 // move assiginment
+    Foo &operator=(const Foo &) = default;            // copy assignment
+    ~Foo() { std::cout << "~Foo()" << val << '\n'; }  // dtor
+    Foo(int value) : val(value) {}                    // custom ctor
+};
+
+int main() {
+    {
+        Foo f1;
+        f1 = Foo{10};  // copy assignment
+        std::cout << "rvalue going to die" << '\n';
+        f1.val = 100;
+    }
+    // ~Foo()10
+    // rvalue going to die
+    // ~Foo()100
+    {
+        Foo f2;
+        f2 = std::move(Foo{20});  // move assignment
+        std::cout << "rvalue going to die" << '\n';
+        f2.val = 200;
+    }
+    // ~Foo()20
+    // rvalue going to die
+    // ~Foo()200
+}
+```
+
 simple example
 
 ```cpp
