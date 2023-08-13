@@ -3,6 +3,7 @@
 - [Implementing Patterns \& Idioms](#implementing-patterns--idioms)
   - [Avoiding repetitive `if...else` statements in factory patterns](#avoiding-repetitive-ifelse-statements-in-factory-patterns)
   - [`pimpl`](#pimpl)
+  - [named parameter idiom](#named-parameter-idiom)
 
 Definition:
 - **Idioms**: provide instructions on how to resolve implementation-specific issues in a programming language, such as memory management in C++
@@ -165,5 +166,202 @@ void MyClass::doSomething() {
 int main() {
     MyClass obj;
     obj.doSomething();
+}
+```
+
+## named parameter idiom
+
+> The named parameter idiom has the advantage that it allows you to specify values only for the parameters that you want, in any order, using a name, which is much more intuitive than a fixed, positional order.
+
+example: simple `named paramter idiom`
+
+```cpp
+#include <iostream>
+#include <string>
+
+class Person {
+   public:
+    Person() = default;
+    Person(std::string const& name, int const age) : m_Name(name), m_Age(age) {}
+
+    Person& setName(const std::string& name) {
+        m_Name = name;
+        return *this;
+    }
+
+    Person& setAge(int age) {
+        m_Age = age;
+        return *this;
+    }
+
+    void printInfo() const {
+        std::cout << "Name: " << m_Name << "\tAge: " << m_Age << std::endl;
+    }
+
+   private:
+    std::string m_Name;
+    int m_Age;
+};
+
+class PersonBuilder {
+   public:
+    PersonBuilder() {
+        m_Person = std::make_unique<Person>();
+    }
+
+    PersonBuilder& withName(const std::string& name) {
+        m_Person->setName(name);
+        return *this;
+    }
+
+    PersonBuilder& withAge(int age) {
+        m_Person->setAge(age);
+        return *this;
+    }
+
+    Person& build() {
+        return *m_Person;
+    }
+
+   private:
+    std::unique_ptr<Person> m_Person;
+};
+
+int main() {
+    {
+        Person p{"Tom", 22};
+        p.printInfo();
+    }
+    {
+        Person p1 = PersonBuilder().withAge(24).withName("James").build();
+        p1.printInfo();
+
+        // change parameter order
+        Person p2 = PersonBuilder().withName("Tim").withAge(25).build();
+        p2.printInfo();
+    }
+}
+```
+
+example: avoid getter-setter
+
+```cpp
+#include <iostream>
+#include <string>
+
+class PersonBuilder;
+
+class Person {
+   public:
+    Person() = default;
+    Person(std::string const& name, int const age) : m_Name(name), m_Age(age) {}
+
+    void printInfo() const {
+        std::cout << "Name: " << m_Name << "\tAge: " << m_Age << std::endl;
+    }
+
+   private:
+    std::string m_Name;
+    int m_Age;
+    // PersonBuilder can visit private data
+    // avoid writing getter-setter
+    friend class PersonBuilder;
+};
+
+class PersonBuilder {
+   public:
+    PersonBuilder() {
+        m_Person = std::make_unique<Person>();
+    }
+
+    PersonBuilder& withName(const std::string& name) {
+        m_Person->m_Name = name;
+        return *this;
+    }
+
+    PersonBuilder& withAge(int age) {
+        m_Person->m_Age = age;
+        return *this;
+    }
+
+    Person& build() {
+        return *m_Person;
+    }
+
+   private:
+    std::unique_ptr<Person> m_Person;
+};
+
+int main() {
+    {
+        Person p{"Tom", 22};
+        p.printInfo();
+    }
+    {
+        Person p1 = PersonBuilder().withAge(24).withName("James").build();
+        p1.printInfo();
+
+        // change parameter order
+        Person p2 = PersonBuilder().withName("Tim").withAge(25).build();
+        p2.printInfo();
+    }
+}
+```
+
+example: with object as parameters
+
+```cpp
+#include <iostream>
+#include <string>
+
+class Person;
+
+class PersonParams {
+   public:
+    PersonParams& withName(const std::string& name) {
+        name_ = name;
+        return *this;
+    }
+
+    PersonParams& withAge(int age) {
+        age_ = age;
+        return *this;
+    }
+
+   private:
+    std::string name_;
+    int age_;
+    // Person can visit PersonParams private data
+    friend class Person;
+};
+
+class Person {
+   public:
+    Person(std::string const& name, int const age) : m_Name(name), m_Age(age) {}
+    Person(PersonParams const& pp) : m_Name(pp.name_), m_Age(pp.age_) {}
+
+    void printInfo() const {
+        std::cout << "Name: " << m_Name << "\tAge: " << m_Age << std::endl;
+    }
+
+   private:
+    std::string m_Name;
+    int m_Age;
+};
+
+int main() {
+    {
+        Person p{"Tom", 22};
+        p.printInfo();
+    }
+    {
+        Person p1{
+            PersonParams().withAge(24).withName("James")};
+        p1.printInfo();
+
+        Person p2{
+            PersonParams().withName("Tim").withAge(25)};
+        p2.printInfo();
+    }
 }
 ```
