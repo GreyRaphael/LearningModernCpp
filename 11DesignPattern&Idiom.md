@@ -411,3 +411,55 @@ int main() {
     pd->performOperation();
 }
 ```
+
+example: constructor and destructor in inheritance
+
+example: **virtual destructor**
+
+> When a base class pointer points to a derived class object, calling delete on that pointer will only invoke the base class destructor if the destructor is not virtual. This can lead to a memory leak if the derived class has allocated resources that need to be cleaned up.
+
+```cpp
+#include <iostream>
+
+class Base {
+   public:
+    Base() { std::cout << "Base ctor" << '\n'; }
+    virtual ~Base() { std::cout << "Base dtor" << '\n'; }
+    // ~Base() { std::cout << "Base dtor" << '\n'; }
+};
+
+class Derived : public Base {
+   public:
+    Derived() { std::cout << "Derived ctor" << '\n'; }
+    ~Derived() { std::cout << "Derived dtor" << '\n'; }
+};
+
+int main() {
+    {
+        // ~Base()有无virtual效果一样
+        Derived d;
+    }
+    // Base ctor
+    // Derived ctor
+    // Derived dtor
+    // Base dtor
+    {
+        std::cout << "----------" << '\n';
+        Base* pb = new Derived{};
+        delete pb;
+    }
+    // Base ctor
+    // Derived ctor
+    // Derived dtor
+    // Base dtor
+    {
+        // recommended
+        std::cout << "----------" << '\n';
+        std::unique_ptr<Base> pb = std::make_unique<Derived>();
+    }
+    // Base ctor
+    // Derived ctor
+    // Derived dtor
+    // Base dtor
+}
+```
