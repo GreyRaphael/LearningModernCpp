@@ -4,6 +4,7 @@
   - [Avoiding repetitive `if...else` statements in factory patterns](#avoiding-repetitive-ifelse-statements-in-factory-patterns)
   - [`pimpl`](#pimpl)
   - [named parameter idiom](#named-parameter-idiom)
+  - [`non-virtual interface idiom`](#non-virtual-interface-idiom)
 
 Definition:
 - **Idioms**: provide instructions on how to resolve implementation-specific issues in a programming language, such as memory management in C++
@@ -363,5 +364,50 @@ int main() {
             PersonParams().withName("Tim").withAge(25)};
         p2.printInfo();
     }
+}
+```
+
+## `non-virtual interface idiom`
+
+> `non-virtual interface idiom` is a design pattern for providing a unified interface for a class while allowing customization of its behavior through virtual functions by making (public) interfaces non-virtual and virtual functions private.
+
+simple example of `non-virtual interface idiom`
+
+```cpp
+#include <iostream>
+
+class Base {
+   public:
+    void performOperation() {
+        preOperationHook();
+        std::cout << "common code in Base" << '\n';
+        postOperationHook();
+    }
+
+   private:
+    virtual void preOperationHook() {
+        std::cout << "Base class pre-operation hook" << std::endl;
+    }
+
+    virtual void postOperationHook() {
+        std::cout << "Base class post-operation hook" << std::endl;
+    }
+};
+
+class Derived : public Base {
+   private:
+    void preOperationHook() override {
+        std::cout << "Derived class pre-operation hook" << std::endl;
+    }
+
+    void postOperationHook() override {
+        std::cout << "Derived class post-operation hook" << std::endl;
+    }
+};
+
+int main() {
+    // implicitly convert Derived to Base
+    std::unique_ptr<Base> pd = std::make_unique<Derived>();
+    pd->performOperation();
 }
 ```
