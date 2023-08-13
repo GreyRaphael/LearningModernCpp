@@ -92,7 +92,9 @@ int main() {
 
 ## `pimpl`
 
-> `pimpl`: pointer to implementation
+> `pimpl`: pointer to implementation, it enables changing the implementation without modifying the interface and, therefore, avoiding the need to recompile the code that is using the interface. 
+
+Tips: always put all the private member data and functions, except for the virtual ones, in the pimpl class and leave the protected data members and functions and all the private virtual functions in the public class.
 
 a simple example for `pimpl`, and a complicate [example](examples/ch11-piml.cc)
 
