@@ -410,9 +410,10 @@ int main() {
     std::unique_ptr<Base> pd = std::make_unique<Derived>();
     pd->performOperation();
 }
+// Derived class pre-operation hook
+// common code in Base
+// Derived class post-operation hook
 ```
-
-example: constructor and destructor in inheritance
 
 example: **virtual destructor**
 
@@ -461,5 +462,96 @@ int main() {
     // Derived ctor
     // Derived dtor
     // Base dtor
+}
+```
+
+`non-virtual interface idiom` example
+> The core principles of the `non-virtual interface idiom` is that virtual functions should not be public; they should be either private or protected, in case the base class implementation could be called from a derived class. 
+
+```cpp
+#include <iostream>
+#include <vector>
+
+class control {
+   private:
+    virtual void paint() = 0;
+
+   protected:
+    virtual void erase_background() {
+        std::cout << "erasing control background..." << '\n';
+    }
+
+   public:
+    void draw() {
+        erase_background();
+        paint();
+    }
+
+    virtual ~control() {
+        std::cout << "destroying control..." << '\n';
+    }
+};
+
+class button : public control {
+   private:
+    virtual void paint() override {
+        std::cout << "painting button..." << '\n';
+    }
+
+   protected:
+    virtual void erase_background() override {
+        control::erase_background();
+        std::cout << "erasing button background..." << '\n';
+    }
+
+   public:
+    ~button() {
+        std::cout << "destroying button..." << '\n';
+    }
+};
+
+class checkbox : public button {
+   private:
+    virtual void paint() override {
+        std::cout << "painting checkbox..." << '\n';
+    }
+
+   protected:
+    virtual void erase_background() override {
+        button::erase_background();
+        std::cout << "erasing checkbox background..." << '\n';
+    }
+
+   public:
+    ~checkbox() {
+        std::cout << "destroying checkbox..." << '\n';
+    }
+};
+
+int main() {
+    {
+        button b;
+        b.draw();
+    }
+    {
+        std::cout << "--------------------" << '\n';
+        std::unique_ptr<control> pc = std::make_unique<button>();
+        pc->draw();
+    }
+    {
+        std::cout << "--------------------" << '\n';
+        std::unique_ptr<control> pc = std::make_unique<checkbox>();
+        pc->draw();
+    }
+    {
+        std::cout << "--------------------" << '\n';
+        std::vector<std::unique_ptr<control>> controls;
+
+        controls.emplace_back(std::make_unique<button>());
+        controls.emplace_back(std::make_unique<checkbox>());
+
+        for (auto& c : controls)
+            c->draw();
+    }
 }
 ```
