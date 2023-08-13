@@ -5,6 +5,7 @@
   - [`pimpl`](#pimpl)
   - [named parameter idiom](#named-parameter-idiom)
   - [`non-virtual interface idiom`](#non-virtual-interface-idiom)
+  - [`attorney-client idiom`](#attorney-client-idiom)
 
 Definition:
 - **Idioms**: provide instructions on how to resolve implementation-specific issues in a programming language, such as memory management in C++
@@ -552,6 +553,136 @@ int main() {
 
         for (auto& c : controls)
             c->draw();
+    }
+}
+```
+
+## `attorney-client idiom`
+
+> The `attorney-client idiom` provides a simple mechanism to restrict friends access to only designated private parts of a class.
+
+example for usage
+
+```cpp
+#include <iostream>
+
+namespace old_version {
+
+class Client {
+    int data_1;
+    int data_2;
+
+    void action1() { std::cout << "action1" << '\n'; }
+    void action2() { std::cout << "action2" << '\n'; }
+
+    friend class Friend;
+
+   public:
+    // public interface
+};
+
+class Friend {
+   public:
+    // Friend can visit all the private data
+    void access_client_data(Client& c) {
+        c.action1();
+        c.action2();
+        auto d1 = c.data_1;
+        auto d2 = c.data_1;
+    }
+};
+}  // namespace old_version
+
+namespace new_version {
+
+class Client {
+    int data_1;
+    int data_2;
+
+    void action1() { std::cout << "action1" << '\n'; }
+    void action2() { std::cout << "action2" << '\n'; }
+
+    friend class Attorney;
+
+   public:
+    // public interface
+};
+
+class Attorney {
+    // inline: avoids any runtime overhead due to the level of indirection the attorney class introduces. 
+    static inline void run_action1(Client& c) {
+        c.action1();
+    }
+    // inline: avoids any runtime overhead due to the level of indirection the attorney class introduces. 
+    static inline int get_data1(Client& c) {
+        return c.data_1;
+    }
+
+    friend class Friend;
+};
+
+class Friend {
+   public:
+    // Friend can only visit private date_1 & action_1
+    void access_client_data(Client& c) {
+        Attorney::run_action1(c);
+        auto d1 = Attorney::get_data1(c);
+    }
+};
+}  // namespace new_version
+
+int main() {
+    {
+        old_version::Client c1;
+        old_version::Friend f1;
+        f1.access_client_data(c1);
+    }
+    {
+        new_version::Client c1;
+        new_version::Friend f1;
+        f1.access_client_data(c1);
+    }
+}
+```
+
+example: `attorney-client idiom` for inheritance by `virtual function`
+
+```cpp
+#include <iostream>
+
+class Base {
+    virtual void execute() { std::cout << "base" << '\n'; }
+
+    friend class BAttorney;
+};
+
+class Derived : public Base {
+    virtual void execute() override { std::cout << "derived" << '\n'; }
+};
+
+class BAttorney {
+    static inline void execute(Base& b) {
+        b.execute();
+    }
+
+    friend class Foo;
+};
+
+class Foo {
+   public:
+    void run() {
+        Base b;
+        BAttorney::execute(b);  // prints 'base'
+
+        Derived d;
+        BAttorney::execute(d);  // prints 'derived'
+    }
+};
+
+int main() {
+    {
+        Foo f;
+        f.run();
     }
 }
 ```
