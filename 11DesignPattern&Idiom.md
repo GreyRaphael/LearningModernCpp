@@ -755,3 +755,61 @@ int main() {
     }
 }
 ```
+
+`CRTP` example in `std::vector`
+> It is not possible to store, in a homogeneous container, such as a vector or list, objects of CRTP types because each base class is a unique type (such as `control<button>` and `control<checkbox>`)
+
+```cpp
+#include <iostream>
+#include <vector>
+
+class controlbase {
+   public:
+    virtual void draw() = 0;
+    virtual ~controlbase() {}
+};
+
+template <typename T>
+class control : public controlbase {
+   public:
+    virtual void draw() override {
+        static_cast<T*>(this)->erase_background();
+        static_cast<T*>(this)->paint();
+    }
+};
+
+class button : public control<button> {
+   public:
+    void erase_background() {
+        std::cout << "erasing button background..." << '\n';
+    }
+
+    void paint() {
+        std::cout << "painting button..." << '\n';
+    }
+};
+
+class checkbox : public control<checkbox> {
+   public:
+    void erase_background() {
+        std::cout << "erasing checkbox background..." << '\n';
+    }
+
+    void paint() {
+        std::cout << "painting checkbox..." << '\n';
+    }
+};
+
+void draw_controls(std::vector<std::unique_ptr<controlbase>>& v) {
+    for (auto& c : v) {
+        c->draw();
+    }
+}
+
+int main() {
+    std::vector<std::unique_ptr<controlbase>> v;
+    v.push_back(std::make_unique<button>());
+    v.push_back(std::make_unique<checkbox>());
+    draw_controls(v);
+}
+```
