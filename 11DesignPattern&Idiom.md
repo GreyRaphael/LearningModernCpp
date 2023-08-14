@@ -6,6 +6,7 @@
   - [named parameter idiom](#named-parameter-idiom)
   - [`non-virtual interface idiom`](#non-virtual-interface-idiom)
   - [`attorney-client idiom`](#attorney-client-idiom)
+  - [curiously recurring template pattern](#curiously-recurring-template-pattern)
 
 Definition:
 - **Idioms**: provide instructions on how to resolve implementation-specific issues in a programming language, such as memory management in C++
@@ -686,3 +687,6 @@ int main() {
     }
 }
 ```
+
+## curiously recurring template pattern
+
