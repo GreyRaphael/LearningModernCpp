@@ -746,5 +746,12 @@ int main() {
         draw_control(b);
         draw_control(c);
     }
+    {
+        button b;
+        checkbox c;
+
+        b.draw();
+        c.draw();
+    }
 }
 ```
