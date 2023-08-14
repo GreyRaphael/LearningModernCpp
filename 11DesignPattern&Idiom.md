@@ -694,6 +694,45 @@ Polymorphism methods:
 - virtual functions: **runtime polymorphism**, Virtual functions can represent a performance issue, especially when they are small and called multiple times in a loop
 - curiously recurring template pattern: **compile time polymorphism**
 
+```cpp
+#include <iostream>
+
+template <typename T>
+class Base {
+   public:
+    Base() { std::cout << "Base ctor" << '\n'; }
+    void interface() {
+        static_cast<T*>(this)->func1();
+    }
+};
+
+class Derived : public Base<Derived> {
+   public:
+    Derived() { std::cout << "Derived ctor" << '\n'; }
+    void func1() { std::cout << "Derived::func1" << '\n'; }
+};
+
+template <typename T>
+void do_something(Base<T>& b) {
+    b.func1();
+}
+
+int main() {
+    Derived d;
+    d.interface();
+}
+```
+
+Detailed Process:
+- Template Instantiation: When the compiler encounters the definition of `Derived`, it needs to instantiate the `Base<Derived>` template. This means that the compiler generates the necessary code for the `Base` class template using the `Derived` class as the template argument.
+- Base Class Code Generation: The compiler generates the code for the `Base<Derived>` class using the `Derived` class as the template argument. This includes any member functions, variables, and other code defined within the `Base` template. (只看函数declaration `void interface();`,运行时查看函数体definition `static_cast<T*>(this)->func1();`)
+- Derived Class Code Generation: After the base class code has been generated, the compiler generates the code for the `Derived` class. In this case, the `Derived` class only contains the inheritance relationship to `Base<Derived>`, so there might not be any additional code generated.
+- Compilation and Linking: The generated code for both the base and derived classes is compiled and linked together to create the final executable or library.The `this` pointer inside `Base<Derived>::interface()` is of type `Base<Derived>*`, but due to the `static_cast`, it’s explicitly casted to `Derived*`, allowing the derived class implementation to be called.
+
+`Base<Derived>::interface()` is declared before the `Derived` class is known to the compiler. However, the `Base` class is a class template, which means it is instantiated only when the compiler encounters code that uses it(at `Derived d;`). At that point, the `Derived` class is already defined and known to the compiler, so calls to `Derived::func1()` can be made.
+
+When `d.interface()` is called, it invokes `Base<Derived>::interface()` because function resolution starts from the base class. Inside `Base<Derived>::interface()`, the line `static_cast<Derived*>(this)->func1()` is executed.
+
 `CRTP` example
 
 ```cpp
