@@ -6,7 +6,7 @@
   - [named parameter idiom](#named-parameter-idiom)
   - [`non-virtual interface idiom`](#non-virtual-interface-idiom)
   - [`attorney-client idiom`](#attorney-client-idiom)
-  - [curiously recurring template pattern](#curiously-recurring-template-pattern)
+  - [curiously recurring template pattern (`CRTP`)](#curiously-recurring-template-pattern-crtp)
 
 Definition:
 - **Idioms**: provide instructions on how to resolve implementation-specific issues in a programming language, such as memory management in C++
@@ -688,5 +688,63 @@ int main() {
 }
 ```
 
-## curiously recurring template pattern
+## curiously recurring template pattern (`CRTP`)
 
+Polymorphism methods:
+- virtual functions: **runtime polymorphism**, Virtual functions can represent a performance issue, especially when they are small and called multiple times in a loop
+- curiously recurring template pattern: **compile time polymorphism**
+
+`CRTP` example
+
+```cpp
+#include <iostream>
+
+template <typename T>
+class control {
+   public:
+    void draw() {
+        static_cast<T*>(this)->erase_background();
+        static_cast<T*>(this)->paint();
+    }
+};
+
+class button : public control<button> {
+   private:
+    // if private, friend is necessary
+    friend class control<button>;
+
+    void erase_background() {
+        std::cout << "erasing button background..." << '\n';
+    }
+
+    void paint() {
+        std::cout << "painting button..." << '\n';
+    }
+};
+
+class checkbox : public control<checkbox> {
+   public:
+    void erase_background() {
+        std::cout << "erasing checkbox background..." << '\n';
+    }
+
+    void paint() {
+        std::cout << "painting checkbox..." << '\n';
+    }
+};
+
+template <typename T>
+void draw_control(control<T>& c) {
+    c.draw();
+}
+
+int main() {
+    {
+        button b;
+        checkbox c;
+
+        draw_control(b);
+        draw_control(c);
+    }
+}
+```
