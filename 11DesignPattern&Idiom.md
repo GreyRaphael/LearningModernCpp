@@ -852,3 +852,42 @@ int main() {
     draw_controls(v);
 }
 ```
+
+`CRTP` example like inheritance
+
+```cpp
+#include <iostream>
+
+template <class T>
+class control {
+   public:
+    void draw() {
+        static_cast<T*>(this)->erase_background();
+        static_cast<T*>(this)->paint();
+    }
+};
+
+template <class T>
+class fancybutton : public control<fancybutton<T>> {
+   public:
+    void erase_background() {
+        static_cast<T*>(this)->paint_area();
+    }
+
+    void paint() {
+        std::cout << "painting button..." << '\n';
+    }
+};
+
+class transparentbutton : public fancybutton<transparentbutton> {
+   public:
+    void paint_area() {
+        std::cout << "painting transparent button background..." << '\n';
+    }
+};
+
+int main() {
+    transparentbutton tb;
+    tb.draw();
+}
+```
