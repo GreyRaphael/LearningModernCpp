@@ -7,6 +7,7 @@
   - [`non-virtual interface idiom`](#non-virtual-interface-idiom)
   - [`attorney-client idiom`](#attorney-client-idiom)
   - [curiously recurring template pattern (`CRTP`)](#curiously-recurring-template-pattern-crtp)
+  - [thread-safe singleton](#thread-safe-singleton)
 
 Definition:
 - **Idioms**: provide instructions on how to resolve implementation-specific issues in a programming language, such as memory management in C++
@@ -889,5 +890,69 @@ class transparentbutton : public fancybutton<transparentbutton> {
 int main() {
     transparentbutton tb;
     tb.draw();
+}
+```
+
+## thread-safe singleton
+
+a simple thread-safe singleton
+
+```cpp
+#include <iostream>
+
+class Singleton {
+   private:
+    // default not delted, because an instance of the class must be actually created in the class code
+    Singleton() {}
+
+   public:
+    Singleton(Singleton const&) = delete;             // copy ctor
+    Singleton& operator=(Singleton const&) = delete;  // copy assignment
+
+    static Singleton& instance() {
+        static Singleton single;
+        return single;
+    }
+};
+
+int main() {
+    auto& s = Singleton::instance();
+}
+```
+
+simple thread-safe singleton with `CRTP`
+
+```cpp
+#include <iostream>
+
+template <typename T>
+class SingletonBase {
+   protected:
+    SingletonBase() { std::cout << "SingletonBase ctor" << '\n'; }
+
+   public:
+    SingletonBase(SingletonBase const&) = delete;
+    SingletonBase& operator=(SingletonBase const&) = delete;
+
+    static T& instance() {
+        std::cout << "call instance" << '\n';
+        static T single;
+        return single;
+    }
+};
+
+class Single : public SingletonBase<Single> {
+   private:
+    Single() { std::cout << "Single ctor" << '\n'; }
+    // static T single;构造的时候调用Single(){}，但是Single是private，所以需要Single对SingleBase<Single>friend
+    friend class SingletonBase<Single>;
+
+   public:
+    void demo() { std::cout << "demo" << '\n'; }
+};
+
+int main() {
+    auto& s = Single::instance();
+    s.demo();
 }
 ```
