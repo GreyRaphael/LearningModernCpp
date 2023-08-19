@@ -1,7 +1,66 @@
 # Testing Frameworks
 
 - [Testing Frameworks](#testing-frameworks)
+  - [catch2](#catch2)
   - [Using CMake’s CTest](#using-cmakes-ctest)
+
+## catch2
+
+simple example by [catch2](https://github.com/catchorg/Catch2/tree/v2.x)
+
+```bash
+catch2/
+    catch.hpp
+main.cpp
+CMakelists.txt
+```
+
+```cmake
+# CMakelists.txt
+cmake_minimum_required(VERSION 3.18.0)
+project(proj1 VERSION 0.1.0)
+
+set(CMAKE_CXX_STANDARD 20)
+
+add_executable(proj1 main.cpp)
+```
+
+```cpp
+// main.cpp
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
+#include <iostream>
+
+
+int myadd(int x, int y) { return x + y; }
+int mymul(int x, int y) { return x * y; }
+
+TEST_CASE("cast1", "[learn][catch]") {
+    SECTION("func1") {
+        auto result = myadd(100, 200);
+        auto expected = 300;
+        REQUIRE(result == expected);
+    }
+    SECTION("func2") {
+        auto result = mymul(100, 200);
+        auto expected = 20000;
+        REQUIRE(result == expected);
+    }
+}
+
+TEST_CASE("cast2") {
+    SECTION("func3") {
+        auto result = myadd(100, 0);
+        auto expected = 100;
+        REQUIRE(result == expected);
+    }
+    SECTION("func4") {
+        auto result = mymul(100, 0);
+        auto expected = 200;
+        REQUIRE(result == expected);
+    }
+}
+```
 
 ## Using CMake’s CTest
 
