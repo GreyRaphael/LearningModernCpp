@@ -35,7 +35,15 @@ add_executable(proj1 main.cpp)
 int myadd(int x, int y) { return x + y; }
 int mymul(int x, int y) { return x * y; }
 
-TEST_CASE("cast1", "[learn][catch]") {
+TEST_CASE("case0") {
+    auto result = myadd(11, 22);
+    auto expected = 33;
+    REQUIRE(result == expected);
+}
+
+// learn, catch is tags
+TEST_CASE("case1", "[learn][catch]") {
+    // several section in one case
     SECTION("func1") {
         auto result = myadd(100, 200);
         auto expected = 300;
@@ -48,7 +56,7 @@ TEST_CASE("cast1", "[learn][catch]") {
     }
 }
 
-TEST_CASE("cast2") {
+TEST_CASE("case2") {
     SECTION("func3") {
         auto result = myadd(100, 0);
         auto expected = 100;
