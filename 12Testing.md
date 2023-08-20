@@ -31,7 +31,6 @@ add_executable(proj1 main.cpp)
 #include "catch2/catch.hpp"
 #include <iostream>
 
-
 int myadd(int x, int y) { return x + y; }
 int mymul(int x, int y) { return x * y; }
 
@@ -68,6 +67,33 @@ TEST_CASE("case2") {
         REQUIRE(result == expected);
     }
 }
+
+TEST_CASE("case3", "[learn][catch]") {
+    // nested sections
+    SECTION("test_methods") {
+        SECTION("func5") {
+            auto result = myadd(100, 11);
+            auto expected = 111;
+            REQUIRE(result == expected);
+        }
+        SECTION("func6") {
+            auto result = mymul(11, 11);
+            auto expected = 120;
+            REQUIRE(result == expected);
+        }
+    }
+}
+```
+
+```bash
+# run all test cases
+./proj1
+# run single case
+./proj case2
+# run a section
+./proj case2 -c func4
+# run a nested section
+./proj case3 -c test_methods -c func6
 ```
 
 ## Using CMake’s CTest
