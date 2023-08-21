@@ -29,7 +29,6 @@ add_executable(proj1 main.cpp)
 // main.cpp
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
-#include <iostream>
 
 int myadd(int x, int y) { return x + y; }
 int mymul(int x, int y) { return x * y; }
