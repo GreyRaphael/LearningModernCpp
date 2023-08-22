@@ -241,3 +241,60 @@ int main() {
     pass_container(d1);
 }
 ```
+
+example: paramter type `T` of function `do_wrap_numerical()` must be `NumericalWrapable`, which means return type must be `Num<T>` of function `wrap` and `T` must be `Numerical`
+
+```cpp
+#include <iostream>
+
+template <class T>
+concept Numerical = std::is_arithmetic_v<T>;
+
+template <Numerical T>
+struct Num {
+    T value;
+};
+
+template <Numerical T>
+Num<T> wrap(T value) {
+    return {value};
+}
+
+template <typename T>
+concept NumericalWrapable = requires(T x) {
+    // return must be Num<T>
+    { wrap(x) } -> std::same_as<Num<T>>;
+};
+
+template <typename T>
+struct any_wrapper {
+    T value;
+};
+
+any_wrapper<std::string> wrap(std::string const s) {
+    return {s};
+}
+
+template <NumericalWrapable T>
+auto do_wrap_numerical(T x) {
+    return wrap(x);
+}
+
+int main() {
+    auto w10 = wrap("hello");
+    std::cout << w10.value << '\n';
+    // auto w11 = do_wrap_numerical("hello");  // error, wrap() not return Num<T>
+    // std::cout << w11.value << '\n';
+
+    auto w20 = wrap(10);
+    std::cout << w20.value << '\n';
+    auto w21 = do_wrap_numerical(11);
+    std::cout << w21.value << '\n';
+
+    auto w30 = wrap(20.2);
+    std::cout << w30.value << '\n';
+    auto w31 = do_wrap_numerical(30.3);
+    std::cout << w31.value << '\n';
+}
+```
+
