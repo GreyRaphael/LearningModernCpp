@@ -92,8 +92,8 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 
 add_library(proj1 SHARED main.cpp)
 
-if(MSVC)
-    # in windows, should linked with python3x.lib
+if(WIN32)
+    # in windows, should linked with python3x.lib, compiler can be MSVC or mingw
     target_link_libraries(proj1 PUBLIC Python::Python)
 endif()
 ```
