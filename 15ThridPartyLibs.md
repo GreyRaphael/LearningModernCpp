@@ -2,6 +2,7 @@
 
 - [Third-Party Library](#third-party-library)
   - [pybind11](#pybind11)
+  - [`nlohmann::json`](#nlohmannjson)
 
 
 ## pybind11
@@ -110,5 +111,67 @@ PYBIND11_MODULE(proj1, m) {
     m.doc() = "pybind11 proj1 plugin";  // optional module docstring
 
     m.def("add", &add, "A function that adds two numbers");
+}
+```
+
+## `nlohmann::json`
+
+> [nlohmann::json](https://github.com/nlohmann/json)
+
+simple example
+
+```bash
+include
+    └──nlohmann
+        └── json.hpp
+main.cpp
+CMakeLists.txt
+```
+
+```cmake
+cmake_minimum_required(VERSION 3.25.0)
+project(proj1 VERSION 0.1.0)
+
+set(CMAKE_CXX_STANDARD 20)
+
+include_directories(${CMAKE_SOURCE_DIR}/include)
+
+add_executable(proj1 main.cpp)
+```
+
+```cpp
+// main.cpp
+#include <iostream>
+#include <nlohmann/json.hpp>
+
+class Foo {
+   private:
+    int id_ = 0;
+    double score_ = 0;
+
+   public:
+    Foo() = default;
+    nlohmann::json to_json() {
+        nlohmann::json j;
+        j["id"] = id_;
+        j["score"] = score_;
+        return j;
+    }
+    void from_json(nlohmann::json const& j) {
+        id_ = j["id"];
+        score_ = j["score"];
+    }
+    void print_info() {
+        std::cout << "id=" << id_ << ", score=" << score_ << '\n';
+    }
+};
+
+int main() {
+    Foo f;
+    f.print_info();  // id=0, score=0
+    f.from_json({{"id", 10}, {"score", 90.5}});
+    f.print_info();  // id=10, score=90.5
+    auto j = f.to_json();
+    std::cout << j << '\n';  // {"id":10,"score":90.5}
 }
 ```
