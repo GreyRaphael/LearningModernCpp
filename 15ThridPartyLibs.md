@@ -182,14 +182,14 @@ example: `load` from json file & `dump` to json file
 // example.json
 {
     "name":"grey",
-    "age":23,
+    "年龄":23,
     "scores":[60, 95, 32]
 }
 ```
 
 ```json
 // output.json
-{"age":23,"id":100010,"name":"grey","scores":[60,95,32]}
+{"id":100010,"name":"grey","scores":[60,95,32],"年龄":23}
 ```
 
 ```cpp
