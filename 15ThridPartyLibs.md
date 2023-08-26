@@ -213,3 +213,57 @@ int main() {
     fout << j;
 }
 ```
+
+example: json `load` from string & `dump` to string
+
+```cpp
+#include <fstream>
+#include <iostream>
+#include <nlohmann/json.hpp>
+#include <sstream>
+#include <vector>
+
+int main() {
+    // generate data
+    std::ifstream fin{"example.json"};
+    std::ostringstream oss;
+    oss << fin.rdbuf();
+
+    // load from string
+    {
+        std::string raw_str1 = oss.str();
+        std::cout << raw_str1 << '\n';
+        // load from raw string, 无需考虑\"
+        auto j1 = nlohmann::json::parse(raw_str1);
+        std::cout << j1 << '\n';
+
+        // load from string literal
+        std::string raw_str2 = R"({"name":"Tim","scores":[60,95,32],"年龄":54})";
+        auto j2 = nlohmann::json::parse(raw_str2);
+        std::cout << j2 << '\n';
+
+        // load from string literal, stupid
+        std::string raw_str3 = "{\"name\":\"Jerry\",\"scores\":[60,95,32],\"年龄\":66}";
+        auto j3 = nlohmann::json::parse(raw_str3);
+        std::cout << j3 << '\n';
+    }
+
+    // generate data
+    std::vector<int> v{11, 22, 33};
+    nlohmann::json j{
+        {"name", "James"},
+        {"年龄", 43},
+        {"scores", v}
+
+    };
+    // dump to string
+    {
+        std::string s1 = j.dump();
+        std::cout << s1 << '\n';
+
+        // string to file
+        std::ofstream fout{"output.json"};
+        fout << s1;
+    }
+}
+```
