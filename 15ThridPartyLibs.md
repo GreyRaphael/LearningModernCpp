@@ -175,3 +175,41 @@ int main() {
     std::cout << j << '\n';  // {"id":10,"score":90.5}
 }
 ```
+
+example: `load` from json file & `dump` to json file
+
+```json
+// example.json
+{
+    "name":"grey",
+    "age":23,
+    "scores":[60, 95, 32]
+}
+```
+
+```json
+// output.json
+{"age":23,"id":100010,"name":"grey","scores":[60,95,32]}
+```
+
+```cpp
+// main.cpp
+#include <fstream>
+#include <iostream>
+#include <nlohmann/json.hpp>
+
+int main() {
+    // load from file
+    std::ifstream fin{"example.json"};
+    auto j = nlohmann::json::parse(fin); // nlohmann::json
+
+    std::cout << j << '\n';                           // {"age":23,"name":"grey","scores":[60,95,32]}
+    std::cout << j["scores"] << '\n';                 // [60,95,32]
+    std::cout << typeid(j["scores"]).name() << '\n';  // nlohmann allocator
+
+    // dump to file
+    j["id"] = 100010;
+    std::ofstream fout{"output.json"};
+    fout << j;
+}
+```
