@@ -8,6 +8,7 @@
     - [`json` with raw-string](#json-with-raw-string)
     - [Read/Write bson](#readwrite-bson)
     - [deal with `NAN`](#deal-with-nan)
+  - [`zlib`](#zlib)
 
 
 ## Code Organized by CMake
@@ -451,4 +452,85 @@ int main() {
 ### deal with `NAN`
 
 
+## `zlib`
 
+download [zlib](https://github.com/madler/zlib/releases) and build by its `CMakeLists.txt`, set to `Release`
+
+example: zip file
+
+```cmake
+# current project CMakeLists.txt
+cmake_minimum_required(VERSION 3.25.0)
+project(proj1 VERSION 0.1.0)
+set(CMAKE_CXX_STANDARD 20)
+
+include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/zip/include)
+
+link_directories(${PROJECT_SOURCE_DIR}/zip/lib)
+add_executable(proj1 main.cpp)
+target_link_libraries(proj1 zlibstatic)
+```
+
+```cpp
+//main.cpp
+#include <zlib.h>
+
+
+std::string readGzipFile(const std::string& filename) {
+    std::ifstream file(filename, std::ios::binary);
+    if (!file) {
+        std::cerr << "Failed to open file: " << filename << std::endl;
+        return "";
+    }
+
+    std::stringstream buffer;
+    z_stream zs;
+    memset(&zs, 0, sizeof(zs));
+
+    if (inflateInit2(&zs, 16 + MAX_WBITS) != Z_OK) {
+        std::cerr << "inflateInit2 failed" << std::endl;
+        return "";
+    }
+
+    const int bufferSize = 4096;
+    char inBuffer[bufferSize];
+    char outBuffer[bufferSize];
+
+    zs.next_in = nullptr;
+    zs.avail_in = 0;
+    zs.next_out = nullptr;
+    zs.avail_out = 0;
+
+    int ret = Z_OK;
+    do {
+        file.read(inBuffer, bufferSize);
+        zs.next_in = reinterpret_cast<Bytef*>(inBuffer);
+        zs.avail_in = file.gcount();
+
+        do {
+            zs.next_out = reinterpret_cast<Bytef*>(outBuffer);
+            zs.avail_out = bufferSize;
+
+            ret = inflate(&zs, Z_NO_FLUSH);
+            if (ret == Z_STREAM_ERROR) {
+                std::cerr << "inflate error: " << zs.msg << std::endl;
+                inflateEnd(&zs);
+                return "";
+            }
+
+            buffer.write(outBuffer, bufferSize - zs.avail_out);
+        } while (zs.avail_out == 0);
+    } while (ret != Z_STREAM_END);
+
+    inflateEnd(&zs);
+
+    return buffer.str();
+}
+
+int main(){
+    std::string filename = "2023-08-23.json.gz";
+    std::string content = readGzipFile(filename);
+    std::cout << "Content of " << filename << ":\n" << content << std::endl;
+}
+```
