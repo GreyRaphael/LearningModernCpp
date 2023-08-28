@@ -3,6 +3,10 @@
 - [Third-Party Library](#third-party-library)
   - [pybind11](#pybind11)
   - [`nlohmann::json`](#nlohmannjson)
+    - [`json` with file](#json-with-file)
+    - [`json` with raw-string](#json-with-raw-string)
+    - [Read/Write bson](#readwrite-bson)
+    - [deal with `NAN`](#deal-with-nan)
   - [Code Organized by CMake](#code-organized-by-cmake)
 
 
@@ -177,6 +181,8 @@ int main() {
 }
 ```
 
+### `json` with file
+
 example: `load` from json file & `dump` to json file
 
 ```json
@@ -214,6 +220,8 @@ int main() {
     fout << j;
 }
 ```
+
+### `json` with raw-string
 
 example: json `load` from string & `dump` to string
 
@@ -268,6 +276,64 @@ int main() {
     }
 }
 ```
+
+### Read/Write bson
+
+[bson](https://json.nlohmann.me/api/basic_json/to_bson): Binary  Json
+
+```cpp
+#include <cmath>
+#include <fstream>
+#include <iostream>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+
+int main() {
+    // Create a JSON object
+    json jsonData = {
+        {"name", "Tom"},
+        {"age", 23},
+        // {"field", NAN}, // NOT support NAN, INFINITY
+        {"city", 12.3}};
+
+    // write bson
+    {
+        // Convert JSON to BSON
+        std::vector<uint8_t> bsonData = json::to_bson(jsonData);
+
+        // Write BSON data to a file
+        std::ofstream outFile("data.bson", std::ios::binary);
+        if (!outFile) {
+            std::cerr << "Failed to open file for writing." << std::endl;
+            return 1;
+        }
+        outFile.write(reinterpret_cast<const char*>(bsonData.data()), bsonData.size());
+        outFile.close();
+    }
+    // read bson
+    {
+        // Read BSON data from the file
+        std::ifstream inFile("data.bson", std::ios::binary);
+        if (!inFile) {
+            std::cerr << "Failed to open file for reading." << std::endl;
+            return 1;
+        }
+        std::vector<char> buffer((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
+        inFile.close();
+
+        // Convert BSON to JSON
+        json decodedData = json::from_bson(buffer);
+
+        // Print the decoded JSON data
+        std::cout << decodedData.dump(4) << std::endl;
+    }
+}
+```
+
+### deal with `NAN`
+
+
 
 ## Code Organized by CMake
 
