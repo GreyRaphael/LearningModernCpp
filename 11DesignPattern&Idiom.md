@@ -893,6 +893,95 @@ int main() {
 }
 ```
 
+example: a practical CRTP example
+
+```cpp
+#include <iostream>
+
+// Base class template using CRTP
+template <typename Derived>
+class Shape {
+   public:
+    void printArea() {
+        Derived& derived = static_cast<Derived&>(*this);
+        std::cout << "Area: " << derived.calculateArea() << std::endl;
+    }
+};
+
+// Derived class template
+template <typename T>
+class Rectangle : public Shape<Rectangle<T>> {
+   private:
+    T length;
+    T width;
+
+   public:
+    Rectangle(T l, T w) : length(l), width(w) {}
+
+    T calculateArea() {
+        return length * width;
+    }
+};
+
+// Derived class template
+template <typename T, typename = typename std::enable_if_t<std::is_floating_point_v<T>, T>>
+class Ellipse : public Shape<Ellipse<T>> {
+   private:
+    T length;
+    T width;
+
+   public:
+    Ellipse(T l, T w) : length(l), width(w) {}
+
+    T calculateArea() {
+        return 3.1415926 * length * width;
+    }
+};
+
+template <typename T>
+class Square : public Rectangle<T> {
+   public:
+    Square(T width) : Rectangle<T>(width, width) {}
+};
+
+class Circle : public Ellipse<double> {
+   public:
+    Circle(double radius) : Ellipse(radius, radius) {}
+};
+
+template <typename T>
+void do_something(Shape<T>& b) {
+    b.printArea();
+}
+
+int main() {
+    Rectangle<int> rectangle1(5, 3);
+    rectangle1.printArea();  // Output: Area: 15
+    Rectangle<double> rectangle2(2.5, 4.5);
+    rectangle2.printArea();  // Output: Area: 11.25
+
+    // Ellipse<int> ellipse1(5, 3); // error, should be <double>
+    Ellipse<double> ellipse2(2.5, 4.5);
+    ellipse2.printArea();  // Output: Area: 35.3429
+
+    Square<int> s1{10};
+    s1.printArea();
+    Square<double> s2{20};
+    s2.printArea();
+
+    Circle circle(10);
+    circle.printArea();
+
+    std::cout << "=============" << '\n';
+    do_something(rectangle1);
+    do_something(rectangle2);
+    do_something(ellipse2);
+    do_something(s1);
+    do_something(s2);
+    do_something(circle);
+}
+```
+
 ## thread-safe singleton
 
 a simple thread-safe singleton
