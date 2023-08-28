@@ -1,6 +1,7 @@
 # Functions
 
 - [Functions](#functions)
+  - [multiple returns of function](#multiple-returns-of-function)
   - [default \& delete function](#default--delete-function)
   - [Lambda](#lambda)
     - [basic usage](#basic-usage)
@@ -13,6 +14,73 @@
   - [`std::invoke`](#stdinvoke)
   - [`type_traits`](#type_traits)
   - [`std::conditional`](#stdconditional)
+
+## multiple returns of function
+
+```cpp
+#include <iostream>
+#include <memory>
+#include <tuple>
+
+struct Student {
+    int id;
+    std::string name;
+    double score;
+};
+
+// method1
+Student return_multi_values_by_struct() {
+    Student stu;
+    stu.id = 10000;
+    stu.name = "james";
+    stu.score = 95;
+    return stu;
+}
+
+// method2
+std::unique_ptr<Student> return_multi_values_by_struct_pointer() {
+    auto p_stu = std::make_unique<Student>();
+    p_stu->id = 10010;
+    p_stu->name = "grey";
+    p_stu->score = 85.5;
+    return p_stu;
+}
+
+// method3
+void return_multi_values_by_arguments_ref(int& id, std::string& name, double& score) {
+    id = 10030;
+    name = "Tom";
+    score = 90;
+}
+
+// method4
+std::tuple<int, std::string, double> return_multi_values_by_tuple() {
+    return {10040, "Bob", 96};
+}
+
+int main() {
+    {
+        auto stu1 = return_multi_values_by_struct();
+        std::cout << stu1.name << '\n';
+    }
+    {
+        auto p_stu1 = return_multi_values_by_struct_pointer();
+        std::cout << p_stu1->score << '\n';
+    }
+    {
+        int id;
+        std::string name;
+        double score;
+        return_multi_values_by_arguments_ref(id, name, score);
+        std::cout << name << '\n';
+    }
+    {
+        // most simple since c++17
+        auto [id, name, age] = return_multi_values_by_tuple();
+        std::cout << name << '\n';
+    }
+}
+```
 
 ## default & delete function
 
