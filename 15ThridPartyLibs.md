@@ -1,14 +1,131 @@
 # Third-Party Library
 
 - [Third-Party Library](#third-party-library)
+  - [Code Organized by CMake](#code-organized-by-cmake)
   - [pybind11](#pybind11)
   - [`nlohmann::json`](#nlohmannjson)
     - [`json` with file](#json-with-file)
     - [`json` with raw-string](#json-with-raw-string)
     - [Read/Write bson](#readwrite-bson)
     - [deal with `NAN`](#deal-with-nan)
-  - [Code Organized by CMake](#code-organized-by-cmake)
 
+
+## Code Organized by CMake
+
+```bash
+├─CMakeLists.txt
+├─main.cpp
+│
+├─mylib1
+│  │  CMakeLists.txt
+│  │  myadd.cpp
+│  │
+│  └─include
+│          myadd.h
+│
+└─mylib2
+    │  CMakeLists.txt
+    │  point3d.cpp
+    │
+    └─include
+            point3d.h
+```
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.25.0)
+project(proj1 VERSION 0.1.0)
+set(CMAKE_CXX_STANDARD 20)
+
+add_subdirectory(mylib1)
+add_subdirectory(mylib2)
+
+include_directories(${CMAKE_SOURCE_DIR}/mylib1/include)
+include_directories(${CMAKE_SOURCE_DIR}/mylib2/include)
+
+add_executable(proj1 main.cpp)
+
+link_directories(${CMAKE_BINARY_DIR}/mylib1)
+link_directories(${CMAKE_BINARY_DIR}/mylib2)
+
+target_link_libraries(proj1 PUBLIC mymath)
+target_link_libraries(proj1 PUBLIC mypoint)
+```
+
+```cmake
+# mylib1/CMakeLists.txt
+cmake_minimum_required(VERSION 3.25.0)
+project(mymath VERSION 0.1.0)
+set(CMAKE_CXX_STANDARD 20)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+add_library(mymath SHARED myadd.cpp)
+```
+
+```cmake
+# mylib2/CMakeLists.txt
+cmake_minimum_required(VERSION 3.25.0)
+project(mypoint VERSION 0.1.0)
+set(CMAKE_CXX_STANDARD 20)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+add_library(mypoint SHARED point3d.cpp)
+```
+
+```cpp
+// main.cpp
+#include <myadd.h>
+#include <point3d.h>
+
+#include <iostream>
+
+int main() {
+    std::cout << myadd(10, 20) << '\n';
+    Point3D p{11, 22, 33};
+    p.print();
+}
+```
+
+```h
+// mylib1/myadd.h
+int myadd(int x, int y);
+```
+
+```cpp
+// mylib1/myadd.cpp
+#include "myadd.h"
+
+int myadd(int x, int y) {
+    return x + y;
+}
+```
+
+```h
+// mylib2/point3d.h
+class Point3D {
+   private:
+    int x_;
+    int y_;
+    int z_;
+
+   public:
+    Point3D(int x, int y, int z) : x_(x), y_(y), z_(z) {}
+    void print();
+};
+```
+
+```cpp
+// mylib2/point3d.cpp
+#include <iostream>
+
+#include "point3d.h"
+
+void Point3D::print() {
+    std::cout << '(' << x_ << ',' << y_ << ',' << z_ << ')' << '\n';
+}
+```
 
 ## pybind11
 
@@ -335,119 +452,3 @@ int main() {
 
 
 
-## Code Organized by CMake
-
-```bash
-├─CMakeLists.txt
-├─main.cpp
-│
-├─mylib1
-│  │  CMakeLists.txt
-│  │  myadd.cpp
-│  │
-│  └─include
-│          myadd.h
-│
-└─mylib2
-    │  CMakeLists.txt
-    │  point3d.cpp
-    │
-    └─include
-            point3d.h
-```
-
-```cmake
-# CMakeLists.txt
-cmake_minimum_required(VERSION 3.25.0)
-project(proj1 VERSION 0.1.0)
-set(CMAKE_CXX_STANDARD 20)
-
-add_subdirectory(mylib1)
-add_subdirectory(mylib2)
-
-include_directories(${CMAKE_SOURCE_DIR}/mylib1/include)
-include_directories(${CMAKE_SOURCE_DIR}/mylib2/include)
-
-add_executable(proj1 main.cpp)
-
-link_directories(${CMAKE_BINARY_DIR}/mylib1)
-link_directories(${CMAKE_BINARY_DIR}/mylib2)
-
-target_link_libraries(proj1 PUBLIC mymath)
-target_link_libraries(proj1 PUBLIC mypoint)
-```
-
-```cmake
-# mylib1/CMakeLists.txt
-cmake_minimum_required(VERSION 3.25.0)
-project(mymath VERSION 0.1.0)
-set(CMAKE_CXX_STANDARD 20)
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-add_library(mymath SHARED myadd.cpp)
-```
-
-```cmake
-# mylib2/CMakeLists.txt
-cmake_minimum_required(VERSION 3.25.0)
-project(mypoint VERSION 0.1.0)
-set(CMAKE_CXX_STANDARD 20)
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-add_library(mypoint SHARED point3d.cpp)
-```
-
-```cpp
-// main.cpp
-#include <myadd.h>
-#include <point3d.h>
-
-#include <iostream>
-
-int main() {
-    std::cout << myadd(10, 20) << '\n';
-    Point3D p{11, 22, 33};
-    p.print();
-}
-```
-
-```h
-// mylib1/myadd.h
-int myadd(int x, int y);
-```
-
-```cpp
-// mylib1/myadd.cpp
-#include "myadd.h"
-
-int myadd(int x, int y) {
-    return x + y;
-}
-```
-
-```h
-// mylib2/point3d.h
-class Point3D {
-   private:
-    int x_;
-    int y_;
-    int z_;
-
-   public:
-    Point3D(int x, int y, int z) : x_(x), y_(y), z_(z) {}
-    void print();
-};
-```
-
-```cpp
-// mylib2/point3d.cpp
-#include <iostream>
-
-#include "point3d.h"
-
-void Point3D::print() {
-    std::cout << '(' << x_ << ',' << y_ << ',' << z_ << ')' << '\n';
-}
-```
