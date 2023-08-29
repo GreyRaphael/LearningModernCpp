@@ -104,14 +104,11 @@ int main() {
         j_converted["_xSeries"] = deque2bytes(init_j["_xSeries"]);
         std::cout << j_converted << '\n';
 
-        nlohmann::json j_back;
-        auto value = j_converted["feature"].get<std::array<std::byte, sizeof(double)>>();
-        auto dq = j_converted["_xSeries"].get<std::vector<std::byte>>();
-        // j_back["feature"] = bytes2value<double>(value);
-        // j_back["_xSeries"] = bytes2deque(dq);
-        // std::cout << j_back << '\n';
-        std::cout << bytes2value<double>(value) << '\n';
-        for (auto e : bytes2deque(dq)) std::cout << e << '\t';
+        auto value_bytes = j_converted["feature"].get<std::array<std::byte, sizeof(double)>>();
+        auto dq_bytes = j_converted["_xSeries"].get<std::vector<std::byte>>();
+        
+        std::cout << bytes2value<double>(value_bytes) << '\n';
+        for (auto e : bytes2deque(dq_bytes)) std::cout << e << '\t';
         std::cout << '\n';
     }
 }
