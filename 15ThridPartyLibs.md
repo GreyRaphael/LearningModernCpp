@@ -556,9 +556,21 @@ void writeGzFile(const std::string& filename, const std::string& data) {
     gzclose(file);
 }
 
-int main(){
-    std::string filename = "2023-08-23.json.gz";
-    std::string content = readGzipFile(filename);
-    std::cout << "Content of " << filename << ":\n" << content << std::endl;
+int main() {
+    // generate string data
+    std::ifstream fin{"data.json"};
+    std::ostringstream oss;
+    oss << fin.rdbuf();
+    std::string data = oss.str();
+
+    {
+        // write gz file
+        writeGzFile("2023-08-23.json.gz", data);
+    }
+    {
+        // read gz file
+        std::string data = readGzFile("2023-08-23.json.gz");
+        std::cout << data << '\n';
+    }
 }
 ```
