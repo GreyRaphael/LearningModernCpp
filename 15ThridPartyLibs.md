@@ -7,7 +7,7 @@
     - [`json` with file](#json-with-file)
     - [`json` with raw-string](#json-with-raw-string)
     - [Read/Write bson](#readwrite-bson)
-    - [deal with `NAN`](#deal-with-nan)
+    - [deal with `NAN` \& `INFINITY`](#deal-with-nan--infinity)
   - [`zlib`](#zlib)
 
 
@@ -449,14 +449,28 @@ int main() {
 }
 ```
 
-### deal with `NAN`
+### deal with `NAN` & `INFINITY`
 
 
 ## `zlib`
 
-download [zlib](https://github.com/madler/zlib/releases) and build by its `CMakeLists.txt`, set to `Release`
+download [zlib](https://github.com/madler/zlib/releases) and build(`Release`) by its `CMakeLists.txt`, copy the output to following project in `zilb` directory
 
-example: zip file
+zlib Read/Write *.gz file
+
+```bash
+├─main.cpp
+├─CMakeLists.txt
+│ 
+└─zlib
+    ├─include
+    │  ├─zconf.h
+    │  └─zlib.h
+    └─lib
+        ├─zlib.lib
+        ├─zlib.dll
+        └─zlibstatic.lib
+```
 
 ```cmake
 # current project CMakeLists.txt
@@ -465,67 +479,57 @@ project(proj1 VERSION 0.1.0)
 set(CMAKE_CXX_STANDARD 20)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
-include_directories(${CMAKE_SOURCE_DIR}/zip/include)
+include_directories(${CMAKE_SOURCE_DIR}/zlib/include)
 
-link_directories(${PROJECT_SOURCE_DIR}/zip/lib)
+link_directories(${PROJECT_SOURCE_DIR}/zlib/lib)
 add_executable(proj1 main.cpp)
-target_link_libraries(proj1 zlibstatic)
+
+# # static library, link zlibstatic.lib
+# target_link_libraries(proj1 zlibstatic)
+
+# shared library, link zlib.lib
+target_link_libraries(proj1 zlib)
 ```
 
 ```cpp
 //main.cpp
 #include <zlib.h>
 
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
-std::string readGzipFile(const std::string& filename) {
-    std::ifstream file(filename, std::ios::binary);
+
+std::string readGzFile(const std::string& filename) {
+    gzFile file = gzopen(filename.c_str(), "rb");
     if (!file) {
         std::cerr << "Failed to open file: " << filename << std::endl;
         return "";
     }
 
-    std::stringstream buffer;
-    z_stream zs;
-    memset(&zs, 0, sizeof(zs));
+    std::string result;
+    char buffer[2048];
+    int bytesRead = 0;
 
-    if (inflateInit2(&zs, 16 + MAX_WBITS) != Z_OK) {
-        std::cerr << "inflateInit2 failed" << std::endl;
-        return "";
+    while ((bytesRead = gzread(file, buffer, sizeof(buffer))) > 0) {
+        result.append(buffer, bytesRead);
     }
 
-    const int bufferSize = 4096;
-    char inBuffer[bufferSize];
-    char outBuffer[bufferSize];
+    gzclose(file);
 
-    zs.next_in = nullptr;
-    zs.avail_in = 0;
-    zs.next_out = nullptr;
-    zs.avail_out = 0;
+    return result;
+}
 
-    int ret = Z_OK;
-    do {
-        file.read(inBuffer, bufferSize);
-        zs.next_in = reinterpret_cast<Bytef*>(inBuffer);
-        zs.avail_in = file.gcount();
+void writeGzFile(const std::string& filename, const std::string& data) {
+    gzFile file = gzopen(filename.c_str(), "wb");
+    if (!file) {
+        std::cerr << "Failed to open file: " << filename << std::endl;
+        return;
+    }
 
-        do {
-            zs.next_out = reinterpret_cast<Bytef*>(outBuffer);
-            zs.avail_out = bufferSize;
+    gzwrite(file, data.c_str(), data.length());
 
-            ret = inflate(&zs, Z_NO_FLUSH);
-            if (ret == Z_STREAM_ERROR) {
-                std::cerr << "inflate error: " << zs.msg << std::endl;
-                inflateEnd(&zs);
-                return "";
-            }
-
-            buffer.write(outBuffer, bufferSize - zs.avail_out);
-        } while (zs.avail_out == 0);
-    } while (ret != Z_STREAM_END);
-
-    inflateEnd(&zs);
-
-    return buffer.str();
+    gzclose(file);
 }
 
 int main(){
