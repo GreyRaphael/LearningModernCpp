@@ -7,7 +7,7 @@
     - [`json` with file](#json-with-file)
     - [`json` with raw-string](#json-with-raw-string)
     - [Read/Write bson](#readwrite-bson)
-    - [deal with `NAN` \& `INFINITY`](#deal-with-nan--infinity)
+    - [json deal with `NAN` \& `INFINITY`](#json-deal-with-nan--infinity)
   - [`zlib`](#zlib)
 
 
@@ -449,8 +449,32 @@ int main() {
 }
 ```
 
-### deal with `NAN` & `INFINITY`
+### json deal with `NAN` & `INFINITY`
 
+json not support `NAN` & `INFINITY`
+> `NAN` & `INFINITY` are dumped as `null` in `nlohmann::json`
+
+```cpp
+#include <cmath>
+#include <iostream>
+#include <nlohmann/json.hpp>
+
+int main() {
+    nlohmann::json j{
+        {"key1", NAN},
+        {"key2", INFINITY},
+        {"key3", 3.1415926}};
+    std::cout << j << '\n'; // {"key1":null,"key2":null,"key3":3.1415926}
+    std::string j_str = j.dump();
+
+    auto j2 = nlohmann::json::parse(j_str);
+    std::cout << j2 << '\n'; // // {"key1":null,"key2":null,"key3":3.1415926}
+}
+```
+
+Solution for parse, visit [solutions](examples/ch15-json-nan-inf.cc):
+1. single double value: **double -> bytes -> double**
+2. double in a container: **double container -> bytes container -> double container**
 
 ## `zlib`
 
