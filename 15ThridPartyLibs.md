@@ -557,19 +557,21 @@ void writeGzFile(const std::string& filename, const std::string& data) {
 }
 
 int main() {
+    std::string source_filename{"data.json"};
+    std::string gz_filename{"test.json.gz"};
     // generate string data
-    std::ifstream fin{"data.json"};
+    std::ifstream fin{source_filename};
     std::ostringstream oss;
     oss << fin.rdbuf();
     std::string data = oss.str();
 
     {
         // write gz file
-        writeGzFile("2023-08-23.json.gz", data);
+        writeGzFile(gz_filename, data);
     }
     {
         // read gz file
-        std::string data = readGzFile("2023-08-23.json.gz");
+        std::string data = readGzFile(gz_filename);
         std::cout << data << '\n';
     }
 }
