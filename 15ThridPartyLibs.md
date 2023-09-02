@@ -9,6 +9,7 @@
     - [Read/Write bson](#readwrite-bson)
     - [json deal with `NAN` \& `INFINITY`](#json-deal-with-nan--infinity)
   - [`zlib`](#zlib)
+  - [`spdlog`](#spdlog)
 
 
 ## Code Organized by CMake
@@ -574,5 +575,30 @@ int main() {
         std::string data = readGzFile(gz_filename);
         std::cout << data << '\n';
     }
+}
+```
+
+## `spdlog`
+
+> [spdlog](https://github.com/gabime/spdlog): Very fast, header-only/compiled, C++ logging library. ci
+
+```cpp
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
+
+int main(){
+    // config logger
+    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("log/custom.log", true);  // true: delete previous log.txt
+
+    spdlog::logger logger("mylogger", {console_sink, file_sink});
+    spdlog::set_default_logger(std::make_shared<spdlog::logger>(logger));  // SPDLOG_XXX is default logger
+    spdlog::set_pattern("[%^%4!l%$] [%T] [%s:%#:%!] %v");
+
+    // use spdlog
+    SPDLOG_INFO("test info");
+    SPDLOG_WARN("test warning");
+    SPDLOG_ERROR("test error");
 }
 ```
