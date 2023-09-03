@@ -492,17 +492,16 @@ cmake_minimum_required(VERSION 3.25.0)
 project(proj1 VERSION 0.1.0)
 set(CMAKE_CXX_STANDARD 20)
 
-include_directories(${CMAKE_SOURCE_DIR}/include)
-include_directories(${CMAKE_SOURCE_DIR}/zlib/include)
-
-link_directories(${PROJECT_SOURCE_DIR}/zlib/lib)
 add_executable(proj1 main.cpp)
+target_include_directories(proj1 PRIVATE zlib/include)
+
+target_link_directories(proj1 PRIVATE zlib/lib)
 
 # # static library, link zlibstatic.lib
-# target_link_libraries(proj1 zlibstatic)
+# target_link_libraries(proj1 PRIVATE zlibstatic)
 
 # shared library, link zlib.lib
-target_link_libraries(proj1 zlib)
+target_link_libraries(proj1 PRIVATE zlib)
 ```
 
 ```cpp
