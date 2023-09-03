@@ -130,29 +130,28 @@ simple example of **pybind11** in Linux
 
 ```bash
 ├── CMakeLists.txt
-├── include
-│   └── pybind11
-└── main.cpp
+├── main.cpp
+└── pybind11-2.11.1
+    └── include
+        └── pybind11
 ```
 
 ```cmake
 # CMakeLists.txt
 cmake_minimum_required(VERSION 3.25.0)
 project(proj1 VERSION 0.1.0)
-
 set(CMAKE_CXX_STANDARD 20)
 
 # cmake version > 3.12.0, https://cmake.org/cmake/help/latest/module/FindPython.html
 find_package (Python COMPONENTS Development REQUIRED)
-# include Python.h
-include_directories(${Python_INCLUDE_DIRS})
 message("> Python_INCLUDE_DIRS = ${Python_INCLUDE_DIRS}")
 
+add_library(proj1 SHARED main.cpp)
+# include Python.h
+target_include_directories(proj1 PRIVATE ${Python_INCLUDE_DIRS})
 # include pybind11/*.hpp
 # download from https://github.com/pybind/pybind11/tree/master/include/pybind11
-include_directories(${PROJECT_SOURCE_DIR}/include)
-
-add_library(proj1 SHARED main.cpp)
+target_include_directories(proj1 PRIVATE pybind11-2.11.1/include)
 # remove prefix "lib": libproj1->proj1
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
 ```
