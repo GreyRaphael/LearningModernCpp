@@ -43,16 +43,10 @@ set(CMAKE_CXX_STANDARD 20)
 add_subdirectory(mylib1)
 add_subdirectory(mylib2)
 
-include_directories(${CMAKE_SOURCE_DIR}/mylib1/include)
-include_directories(${CMAKE_SOURCE_DIR}/mylib2/include)
-
 add_executable(proj1 main.cpp)
 
-link_directories(${CMAKE_BINARY_DIR}/mylib1)
-link_directories(${CMAKE_BINARY_DIR}/mylib2)
-
-target_link_libraries(proj1 PUBLIC mymath)
-target_link_libraries(proj1 PUBLIC mypoint)
+target_link_libraries(proj1 PRIVATE mymath)
+target_link_libraries(proj1 PRIVATE mypoint)
 ```
 
 ```cmake
@@ -61,9 +55,8 @@ cmake_minimum_required(VERSION 3.25.0)
 project(mymath VERSION 0.1.0)
 set(CMAKE_CXX_STANDARD 20)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-
 add_library(mymath SHARED myadd.cpp)
+target_include_directories(mymath PUBLIC include)
 ```
 
 ```cmake
@@ -72,9 +65,8 @@ cmake_minimum_required(VERSION 3.25.0)
 project(mypoint VERSION 0.1.0)
 set(CMAKE_CXX_STANDARD 20)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-
 add_library(mypoint SHARED point3d.cpp)
+target_include_directories(mypoint PUBLIC include)
 ```
 
 ```cpp
