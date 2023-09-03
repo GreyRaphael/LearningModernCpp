@@ -189,9 +189,7 @@ project(proj1 VERSION 0.1.0)
 set(CMAKE_CXX_STANDARD 20)
 
 find_package (Python COMPONENTS Interpreter Development REQUIRED)
-
 message("> Python_INCLUDE_DIRS = ${Python_INCLUDE_DIRS}")
-include_directories(${Python_INCLUDE_DIRS})
 
 # get .cp39-win_amd64.pyd or .cpython-310-x86_64-linux-gnu.so
 execute_process(
@@ -205,14 +203,15 @@ set(CMAKE_SHARED_LIBRARY_SUFFIX "${_PYTHON_MODULE_EXTENSION}")
 # libxxxx.so -> xxxx.so
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
 
-# include pybind11/*.hpp
-include_directories(${PROJECT_SOURCE_DIR}/include)
-
 add_library(proj1 SHARED main.cpp)
+# include pybind11/*.hpp
+target_include_directories(proj1 PRIVATE pybind11-2.11.1/include)
+# include Python.h
+target_include_directories(proj1 PRIVATE ${Python_INCLUDE_DIRS})
 
 if(WIN32)
     # in windows, should linked with python3x.lib, compiler can be MSVC or mingw
-    target_link_libraries(proj1 PUBLIC Python::Python)
+    target_link_libraries(proj1 PRIVATE Python::Python)
 endif()
 ```
 
