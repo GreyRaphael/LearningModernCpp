@@ -10,6 +10,7 @@
     - [json deal with `NAN` \& `INFINITY`](#json-deal-with-nan--infinity)
   - [`zlib`](#zlib)
   - [`spdlog`](#spdlog)
+  - [`fmt`](#fmt)
 
 
 ## Code Organized by CMake
@@ -602,3 +603,9 @@ int main(){
     SPDLOG_ERROR("test error");
 }
 ```
+
+## `fmt`
+
+[fmt](https://github.com/fmtlib/fmt) is an open-source formatting library providing a fast and safe alternative to C stdio and C++ iostreams.
+> [fmt cheat sheet](https://hackingcpp.com/cpp/libs/fmt.html)
+
