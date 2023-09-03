@@ -246,12 +246,10 @@ CMakeLists.txt
 ```cmake
 cmake_minimum_required(VERSION 3.25.0)
 project(proj1 VERSION 0.1.0)
-
 set(CMAKE_CXX_STANDARD 20)
 
-include_directories(${CMAKE_SOURCE_DIR}/include)
-
 add_executable(proj1 main.cpp)
+target_include_directories(proj1 PRIVATE include)
 ```
 
 ```cpp
