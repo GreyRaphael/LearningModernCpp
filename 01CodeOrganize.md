@@ -1,9 +1,55 @@
 # Orgnize Code
 
 - [Orgnize Code](#orgnize-code)
+  - [clangd for C++](#clangd-for-c)
   - [by Multifiles](#by-multifiles)
   - [Class Organize](#class-organize)
 
+## clangd for C++
+
+in Linux:
+1. `sudo apt install clangd-16`
+2. install vscode extension [clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd)
+3. config `settings.json` of vscode
+4. add global format file to `/home/username/.clang-format`
+
+```json
+// settings.json
+{
+    "clangd.path": "/usr/bin/clangd-15",
+    "clangd.arguments": [
+        "--clang-tidy"
+    ]
+}
+```
+
+```bash
+# /home/username/.clang-format
+IndentWidth: 4
+ColumnLimit: 0
+```
+
+in Windows:
+1. download [llvm-mingw](https://github.com/mstorsjo/llvm-mingw/releases)
+2. install vscode extension [clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd)
+3. config `settings.json` of vscode
+4. add global format file to `D:/.clang-format`, which is the top level of your projects
+
+```json
+// settings.json
+{
+    "clangd.path": "D:/Dev/llvm-mingw/bin/clangd.exe",
+    "clangd.arguments": [
+        "--clang-tidy",
+    ],
+}
+```
+
+```bash
+# D:/.clang-format
+IndentWidth: 4
+ColumnLimit: 0
+```
 
 ## by Multifiles
 
