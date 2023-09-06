@@ -9,6 +9,8 @@
 - [Development Environment in Debian](#development-environment-in-debian)
   - [GCC \& Clang in VSCode](#gcc--clang-in-vscode)
   - [LLDB in VSCode](#lldb-in-vscode)
+    - [in linux](#in-linux)
+    - [in Windows](#in-windows)
 - [Development Environment Online](#development-environment-online)
 - [Othre configuration](#othre-configuration)
   - [linux locale config](#linux-locale-config)
@@ -177,6 +179,57 @@ windows下的MinGw可以使用如下配置
 
 > 在Linux下需要提前编译lldb-mi，在windows下使用llvm-mingw自带的lldb-mi.exe即可
 
+#### in linux
+
+```bash
+sudo apt install liblldb-15-dev
+
+git clone https://github.com/lldb-tools/lldb-mi.git
+cd lldb-mi
+mkdir build
+cd build
+cmake .. -DCMAKE_BUILD_TYPE:STRING=Release
+cmake --build .
+cmake --install .
+whereis lldb-mi
+# lldb-mi: /usr/bin/lldb-mi /usr/local/bin/lldb-mi
+```
+
+```json
+// settings.json
+{
+    "cmake.debugConfig": {
+        "MIMode": "lldb",
+        "miDebuggerPath": "/usr/bin/lldb-mi"
+    },
+}
+```
+
+1. Install [CodeLLDB](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb) extensions
+2. Add `launch.json`
+3. Add **breakpoints** and debug
+
+```json
+// launch.json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Launch",
+            "program": "${workspaceFolder}/build/proj1",
+            "args": [],
+            "cwd": "${workspaceFolder}/build"
+        }
+
+    ]
+}
+```
+
+#### in Windows
+
+
 1. Install [CodeLLDB](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb) extensions
 2. Add `launch.json`
 3. Add **breakpoints** and debug
@@ -195,7 +248,6 @@ windows下的MinGw可以使用如下配置
             "cwd": "${workspaceFolder}/build/bin",
             "env": {
                 // lldb-mi.exe必须在下面PATH
-                // Linux必须手动编译lldb-mi
                 "PATH": "D:/Dev/llvm-mingw/bin"
             }
         }
@@ -213,7 +265,6 @@ windows下的MinGw可以使用如下配置
     },
     "cmake.debugConfig": {
         "MIMode": "lldb",
-        // "miDebuggerPath": "/usr/bin/lldb-mi"
         "miDebuggerPath": "D:/Dev/llvm-mingw/bin/lldb-mi.exe"
     }
 }
