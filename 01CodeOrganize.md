@@ -8,7 +8,7 @@
 ## clangd for C++
 
 in Linux:
-1. `sudo apt install clangd-16`
+1. `sudo apt install clangd-15`
 2. install vscode extension [clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd)
 3. config `settings.json` of vscode
 4. add global format file to `/home/username/.clang-format`
@@ -50,6 +50,8 @@ in Windows:
 IndentWidth: 4
 ColumnLimit: 0
 ```
+
+> Attention: vscode extension [clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd)没有debugger功能，需要另外安装[CodeLLDB](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb), [CodeLLDB Debug Tutorial](README.md#lldb-in-vscode)
 
 ## by Multifiles
 

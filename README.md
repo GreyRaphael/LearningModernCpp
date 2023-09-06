@@ -128,7 +128,9 @@ sudo add-apt-repository ppa:ubuntu-toolchain-r/test
 sudo http_proxy=http://192.168.0.108:7890 apt install gcc-13
 ```
 
-install **C/C++ Extension Pack** in vscode extensions
+Install vscode extenstion:
+- method1: install **C/C++ Extension Pack** in vscode extensions(not recommended), 
+- method2: just install vscode extension [clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd)
 
 config `setttings.json` in linux
 > gcc-12和clang-15都能使用gdb来调试
