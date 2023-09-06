@@ -8,6 +8,7 @@
   - [wsl use conda](#wsl-use-conda)
 - [Development Environment in Debian](#development-environment-in-debian)
   - [GCC \& Clang in VSCode](#gcc--clang-in-vscode)
+  - [clangd for C++](#clangd-for-c)
 - [Development Environment Online](#development-environment-online)
 - [Othre configuration](#othre-configuration)
   - [linux locale config](#linux-locale-config)
@@ -177,6 +178,52 @@ windows下的MinGw可以使用如下配置(不推荐MinGW)
       // "D:/Dev/winlibs-mingw64/bin",
   ],
 }
+```
+
+### clangd for C++
+
+in Linux:
+1. `sudo apt install clangd-16`
+2. install vscode extension [clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd)
+3. config `settings.json` of vscode
+4. add global format file to `/home/username/.clang-format`
+
+```json
+// settings.json
+{
+    "clangd.path": "/usr/bin/clangd-16",
+    "clangd.arguments": [
+        "--clang-tidy"
+    ]
+}
+```
+
+```bash
+# /home/username/.clang-format
+IndentWidth: 4
+ColumnLimit: 0
+```
+
+in Windows:
+1. download [llvm-mingw](https://github.com/mstorsjo/llvm-mingw/releases) or MSVC
+2. install vscode extension [clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd)
+3. config `settings.json` of vscode
+4. add global format file to `D:/.clang-format`, which is the top level of your projects
+
+```json
+// settings.json
+{
+    "clangd.path": "D:/Dev/llvm-mingw/bin/clangd.exe",
+    "clangd.arguments": [
+        "--clang-tidy",
+    ],
+}
+```
+
+```bash
+# D:/.clang-format
+IndentWidth: 4
+ColumnLimit: 0
 ```
 
 ## Development Environment Online
