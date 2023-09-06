@@ -8,9 +8,6 @@
   - [wsl use conda](#wsl-use-conda)
 - [Development Environment in Debian](#development-environment-in-debian)
   - [GCC \& Clang in VSCode](#gcc--clang-in-vscode)
-  - [LLDB in VSCode](#lldb-in-vscode)
-    - [in linux](#in-linux)
-    - [in Windows](#in-windows)
 - [Development Environment Online](#development-environment-online)
 - [Othre configuration](#othre-configuration)
   - [linux locale config](#linux-locale-config)
@@ -76,28 +73,28 @@ wsl -l -v
 > 实机和wsl均可这么配置，下文以WSL为例
 
 1. Download [wsl debian11 image](https://learn.microsoft.com/en-us/windows/wsl/install-manual), and install(直接解压，然后以Administrator权限运行debian.exe)
-2. update [Debian11 to Debian12](https://www.makeuseof.com/upgrade-to-debian-12-bookworm-from-debian-11/)
+2. update to debian `testing` version(testing版debian软件版本较新)
 3. Install development environment
 
 ```bash
 # 1. Download image & Install
-# 2. Debain11 -> Debian12
+# 2. Debain11 -> testing
 sudo apt update
 sudo apt install apt-transport-https ca-certificates
 
-# 使用https://mirrors.tuna.tsinghua.edu.cn/help/debian/的Debian12源
+# 使用https://mirrors.tuna.tsinghua.edu.cn/help/debian/的Debian11源，将所有bullseye修改为testing，
 sudo vi /etc/apt/sources.list
 sudo apt update && sudo apt upgrade -y
 
 # 在powershell中wslconfig /t Debian,然后重新进入wsl
 
-# 检查版本是否是12
+# 检查版本
 cat /etc/debian_version
 
 sudo apt --purge autoremove -y
 
 # 3. Install development environment
-sudo apt install clang-15
+sudo apt install clang-16
 sudo apt install gdb
 sudo apt install build-essential
 sudo apt install git cmake ninja-build -y
@@ -115,27 +112,26 @@ git config --global http.proxy http://192.168.0.108:7890
 Debian11->12 problems
 - [solution](https://github.com/microsoft/WSL/issues/4279#issuecomment-1639165782) for problem: `mv: cannot move '/lib/x86_64-linux-gnu/security' to '/usr/lib/x86_64-linux-gnu/security': Permission denied`
 
+Debian11->testing problems
+- [solution](https://github.com/microsoft/WSL/issues/10397#issuecomment-1682139166) for problem: `/etc/passwd lock: Invalid argument`
+
 ### GCC & Clang in VSCode
 
 ```bash
-# 安装gcc, g++, Debian12默认gcc是version 12
+# 安装gcc, g++; testing默认是最高版本gcc
 sudo apt install build-essential
-# 安装clang-15
-sudo apt install clang-15
+# 安装clang-16
+sudo apt install clang-16
 # 安装gdb
 sudo apt install gdb
-
-# 如果安装更高版本gcc13, 先add source，然后使用proxy安装
-sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-sudo http_proxy=http://192.168.0.108:7890 apt install gcc-13
 ```
 
 Install vscode extenstion:
-- method1: install **C/C++ Extension Pack** in vscode extensions(not recommended), 
-- method2: just install vscode extension [clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd)
+1. install [ms-cpp-tools](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools), then `"C_Cpp.intelliSenseEngine": "disabled",`
+2. just install vscode extension [clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd)
 
 config `setttings.json` in linux
-> gcc-12和clang-15都能使用gdb来调试
+> gcc-13和clang-16都能使用gdb来调试
 
 ```json
 // setings.json in linux
@@ -145,14 +141,22 @@ config `setttings.json` in linux
     "cmake.configureSettings": {
         "CMAKE_MAKE_PROGRAM": "/usr/bin/ninja"
     },
-    "cmake.debugConfig": {
-        "MIMode": "gdb",
-        "miDebuggerPath": "/usr/bin/gdb"
-    }
+    "[cpp]": {
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+    },
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "clangd.path": "clangd-16",
+    "clangd.arguments": [
+        "--clang-tidy",
+    ],
+    "[python]": {
+        "editor.formatOnType": true,
+        "editor.defaultFormatter": "ms-python.black-formatter"
+    },
 }
 ```
 
-windows下的MinGw可以使用如下配置
+windows下的MinGw可以使用如下配置(不推荐MinGW)
 
 ```json
 // settings.json in windows of MingW by gcc and llvm
@@ -172,101 +176,6 @@ windows下的MinGw可以使用如下配置
       "D:/Dev/llvm-mingw/bin",
       // "D:/Dev/winlibs-mingw64/bin",
   ],
-}
-```
-
-### LLDB in VSCode
-
-> 在Linux下需要提前编译lldb-mi，在windows下使用llvm-mingw自带的lldb-mi.exe即可
-
-#### in linux
-
-```bash
-sudo apt install liblldb-15-dev
-
-git clone https://github.com/lldb-tools/lldb-mi.git
-cd lldb-mi
-mkdir build
-cd build
-cmake .. -DCMAKE_BUILD_TYPE:STRING=Release
-cmake --build .
-cmake --install .
-whereis lldb-mi
-# lldb-mi: /usr/bin/lldb-mi /usr/local/bin/lldb-mi
-```
-
-```json
-// settings.json
-{
-    "cmake.debugConfig": {
-        "MIMode": "lldb",
-        "miDebuggerPath": "/usr/bin/lldb-mi"
-    },
-}
-```
-
-1. Install [CodeLLDB](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb) extensions
-2. Add `launch.json`
-3. Add **breakpoints** and debug
-
-```json
-// launch.json
-{
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Launch",
-            "program": "${workspaceFolder}/build/proj1",
-            "args": [],
-            "cwd": "${workspaceFolder}/build"
-        }
-
-    ]
-}
-```
-
-#### in Windows
-
-
-1. Install [CodeLLDB](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb) extensions
-2. Add `launch.json`
-3. Add **breakpoints** and debug
-
-```json
-// launch.json in windows
-{
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Win-Debug",
-            "program": "${workspaceFolder}/build/bin/proj1",
-            "args": [],
-            "cwd": "${workspaceFolder}/build/bin",
-            "env": {
-                // lldb-mi.exe必须在下面PATH
-                "PATH": "D:/Dev/llvm-mingw/bin"
-            }
-        }
-    ]
-}
-```
-
-```json
-// 或者直接修改settings.json
-{
-    "cmake.cmakePath": "/usr/bin/cmake",
-    "cmake.generator": "Ninja",
-    "cmake.configureSettings": {
-        "CMAKE_MAKE_PROGRAM": "/usr/bin/ninja"
-    },
-    "cmake.debugConfig": {
-        "MIMode": "lldb",
-        "miDebuggerPath": "D:/Dev/llvm-mingw/bin/lldb-mi.exe"
-    }
 }
 ```
 
