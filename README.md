@@ -200,6 +200,7 @@ in Linux:
 
 ```bash
 # /home/username/.clang-format
+BasedOnStyle: Google
 IndentWidth: 4
 ColumnLimit: 0
 ```
@@ -222,6 +223,7 @@ in Windows:
 
 ```bash
 # D:/.clang-format
+BasedOnStyle: Google
 IndentWidth: 4
 ColumnLimit: 0
 ```
