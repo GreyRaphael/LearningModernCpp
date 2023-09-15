@@ -4,6 +4,7 @@
   - [Code Organized by CMake](#code-organized-by-cmake)
   - [pybind11](#pybind11)
   - [`nlohmann::json`](#nlohmannjson)
+    - [`json` with vector](#json-with-vector)
     - [`json` with file](#json-with-file)
     - [`json` with raw-string](#json-with-raw-string)
     - [Read/Write bson](#readwrite-bson)
@@ -286,6 +287,25 @@ int main() {
     f.print_info();  // id=10, score=90.5
     auto j = f.to_json();
     std::cout << j << '\n';  // {"id":10,"score":90.5}
+}
+```
+
+### `json` with vector
+
+```cpp
+#include <iostream>
+#include <nlohmann/json.hpp>
+#include <vector>
+
+int main() {
+    const int N = 5;
+    std::vector<nlohmann::json> jsons(N);
+    for (size_t i = 0; i < N; ++i) {
+        jsons[i]["id"] = 10 + i;
+    }
+    nlohmann::json root_json;
+    root_json["jsons"] = jsons;
+    std::cout << root_json << '\n'; // {"jsons":[{"id":10},{"id":11},{"id":12},{"id":13},{"id":14}]}
 }
 ```
 
