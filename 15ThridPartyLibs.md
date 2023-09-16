@@ -309,6 +309,79 @@ int main() {
 }
 ```
 
+example: from/to json for vector
+
+```cpp
+#include <iostream>
+#include <nlohmann/json.hpp>
+#include <vector>
+
+class Operator {
+   public:
+    Operator(int val) : _vsum(val + 100) {}
+    void to_json(nlohmann::json& state) {
+        state["_vsum"] = _vsum;
+    }
+    void from_json(const nlohmann::json& state) {
+        _vsum = state["_vsum"];
+    }
+    void print() { std::cout << _vsum << '\n'; }
+
+   private:
+    int _vsum = 0;
+};
+
+class Factor1 {
+   public:
+    Factor1() {
+        for (int i = 0; i < PRICE_COUNT_; i++) {
+            auto op = Operator(i);
+            _rolling_ask_prices.push_back(op);
+        }
+    }
+    void to_json(nlohmann::json& state);
+    void from_json(const nlohmann::json& state);
+
+    std::vector<Operator> _rolling_ask_prices;
+
+   private:
+    int const PRICE_COUNT_ = 5;
+};
+
+void Factor1::to_json(nlohmann::json& state) {
+    std::vector<nlohmann::json> j1s(PRICE_COUNT_);
+    for (size_t i = 0; i < PRICE_COUNT_; ++i) {
+        _rolling_ask_prices[i].to_json(j1s[i]);
+    }
+    state["_rolling_ask_prices"] = j1s;
+}
+
+void Factor1::from_json(const nlohmann::json& state) {
+    auto j1s = state["_rolling_ask_prices"];
+    for (size_t i = 0; i < PRICE_COUNT_; ++i) {
+        _rolling_ask_prices[i].from_json(j1s[i]);
+    }
+}
+
+int main() {
+    {
+        nlohmann::json state;
+        Factor1 f1;
+        f1.to_json(state);
+        std::cout << state.dump() << '\n';  //{"_rolling_ask_prices":[{"_vsum":100},{"_vsum":101},{"_vsum":102},{"_vsum":103},{"_vsum":104}]}
+    }
+    {
+        std::string json_str = R"({"_rolling_ask_prices":[{"_vsum":200},{"_vsum":201},{"_vsum":202},{"_vsum":203},{"_vsum":204}]})";
+        nlohmann::json state = nlohmann::json::parse(json_str);
+        Factor1 f1;
+        f1.from_json(state);
+        for (auto& op : f1._rolling_ask_prices) {
+            op.print();
+        }
+    }
+}
+```
+
 ### `json` with file
 
 example: `load` from json file & `dump` to json file
