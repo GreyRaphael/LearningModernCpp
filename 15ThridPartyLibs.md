@@ -305,7 +305,19 @@ int main() {
     }
     nlohmann::json root_json;
     root_json["jsons"] = jsons;
-    std::cout << root_json << '\n'; // {"jsons":[{"id":10},{"id":11},{"id":12},{"id":13},{"id":14}]}
+
+    // to_json
+    std::cout << root_json << '\n';  // {"jsons":[{"id":10},{"id":11},{"id":12},{"id":13},{"id":14}]}
+
+    // parse json
+    std::string json_str = R"({"jsons":[{"id":20},{"id":21},{"id":22},{"id":23},{"id":24}]})";
+    auto j = nlohmann::json::parse(json_str);
+    // for (auto& e : j["jsons"]) {
+    //     std::cout << e["id"] << ',';
+    // } // 20,21,22,23,24,
+    for (size_t i = 0; i < N; ++i) {
+        std::cout << j["jsons"][i]["id"] << ',';
+    } // 20,21,22,23,24,
 }
 ```
 
