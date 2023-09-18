@@ -704,4 +704,113 @@ int main(){
 
 ## `SQLite3`
 
-[sqlite3](https://www.sqlite.org/download.html) : A self-contained, high-performance, SQL database engine.
+Use `sqlite3` in C++
+1. download source code of [sqlite](https://www.sqlite.org/download.html), e.g. `sqlite-amalgamation-3430100.zip`
+2. extract `sqlite3.h` & `sqlite3.c` from `sqlite-amalgamation-3430100.zip` file to your dependency folder
+3. create `CMakeLists.txt`
+4. build with your project
+
+example: C++ Read/Write SQLite3
+
+```bash
+_deps/
+    sqlite-3.43.1/
+        sqlite3.c
+        sqlite3.h
+        CMakeLists.txt
+main.cpp
+CMakeLists.txt
+```
+
+```cmake
+# _deps/sqlite-3.43.1/CMakeLists.txt
+# add_library(sqlite3 sqlite3.c) # static lib
+add_library(sqlite3 SHARED sqlite3.c) # shared lib
+```
+
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.25.0)
+project(proj1 VERSION 0.1.0)
+set(CMAKE_CXX_STANDARD 20)
+
+add_subdirectory(_deps/sqlite-3.43.1)
+
+add_executable(proj1 main.cpp)
+target_include_directories(proj1 PRIVATE _deps/sqlite-3.43.1)
+target_link_libraries(proj1 PRIVATE sqlite3)
+```
+
+```cpp
+#include <sqlite3.h>
+
+#include <cmath>   // std::round
+#include <format>  // std::format
+#include <iostream>
+#include <tuple>
+#include <vector>
+
+void writeDb(sqlite3 *db, std::string const &sql) {
+    std::cout << "Writing to database: " << sql << '\n';
+    int rc = sqlite3_exec(db, sql.c_str(), nullptr, nullptr, nullptr);
+    if (rc != SQLITE_OK) {
+        // Error handling if executing the INSERT statement fails
+        std::cout << "insert error: " << sqlite3_errmsg(db) << '\n';
+    }
+}
+
+std::vector<std::tuple<std::string, int, double>> readDb(sqlite3 *db, std::string const &sql) {
+    std::cout << "Reading from database: " << sql << '\n';
+    std::vector<std::tuple<std::string, int, double>> results;
+    int rc = sqlite3_exec(
+        db, sql.c_str(), [](void *data, int argc, char **argv, char **colNames) {
+            // result->data->vec
+            auto vec = static_cast<std::vector<std::tuple<std::string, int, double>> *>(data);
+            vec->push_back(std::make_tuple(std::string{argv[0]}, std::stoi(argv[1]), std::stod(argv[2])));
+            return 0;
+        },
+        &results, nullptr);
+    if (rc != SQLITE_OK) {
+        std::cout << "SQL error: " << sqlite3_errmsg(db) << '\n';
+    }
+    return results;
+}
+
+int main() {
+    sqlite3 *db;
+    int rc = sqlite3_open("your_database.db", &db);
+    if (rc) {
+        // Error handling if opening the database fails
+        std::cout << "cannot open database" << sqlite3_errmsg(db) << '\n';
+        return rc;
+    }
+
+    auto createTableSql = "CREATE TABLE IF NOT EXISTS your_table (column1 TEXT, column2 INT, column3 REAL);";
+    rc = sqlite3_exec(db, createTableSql, nullptr, nullptr, nullptr);
+    if (rc != SQLITE_OK) {
+        // Error handling if executing the CREATE TABLE statement fails
+        std::cout << "cannot create table" << sqlite3_errmsg(db) << '\n';
+        sqlite3_close(db);
+        return rc;
+    }
+    // write date to sqlite3
+    {
+        for (size_t i = 0; i < 10; ++i) {
+            auto name = std::format("stu-{}", i);
+            auto score = std::round(1.1 * i * 100) / 100;  // .2f
+            auto insertSql = std::format("INSERT INTO your_table (column1, column2, column3) VALUES ('{}', {}, {});", name, i, score);
+            writeDb(db, insertSql);
+        }
+    }
+    // read from sqlite3
+    {
+        auto results = readDb(db, "SELECT * FROM your_table");
+        for (auto &row : results) {
+            auto [name, id, score] = row;
+            std::cout << name << " " << id << " " << score << '\n';
+        }
+    }
+    sqlite3_close(db);
+}
+```
