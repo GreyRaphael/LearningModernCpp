@@ -12,6 +12,7 @@
   - [`zlib`](#zlib)
   - [`spdlog`](#spdlog)
   - [`fmt`](#fmt)
+  - [`SQLite3`](#sqlite3)
 
 
 ## Code Organized by CMake
@@ -701,3 +702,6 @@ int main(){
 [fmt](https://github.com/fmtlib/fmt) is an open-source formatting library providing a fast and safe alternative to C stdio and C++ iostreams.
 > [fmt cheat sheet](https://hackingcpp.com/cpp/libs/fmt.html)
 
+## `SQLite3`
+
+[sqlite3](https://www.sqlite.org/download.html) : A self-contained, high-performance, SQL database engine.
