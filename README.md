@@ -46,6 +46,9 @@ export ALL_PROXY='socks5://10.101.253.101:7890'
 source ~/set_proxy.txt
 ```
 
+a proxy is for git, so just set git proxy is ok
+> `git config --global http.proxy 10.101.253.101:7890`
+
 ### wsl use conda
 
 ```bash
