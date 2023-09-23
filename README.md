@@ -9,6 +9,7 @@
 - [Development Environment in Debian](#development-environment-in-debian)
   - [GCC \& Clang in VSCode](#gcc--clang-in-vscode)
   - [clangd for C++](#clangd-for-c)
+- [Development Environment in CentOS7](#development-environment-in-centos7)
 - [Development Environment Online](#development-environment-online)
 - [Othre configuration](#othre-configuration)
   - [linux locale config](#linux-locale-config)
@@ -229,6 +230,54 @@ in Windows:
 BasedOnStyle: Google
 IndentWidth: 4
 ColumnLimit: 0
+```
+
+## Development Environment in CentOS7
+
+1. download centos wsl [image](https://github.com/wsldl-pg/CentWSL/releases)
+2. execute CentOS7.exe to install CentOS7
+
+```bash
+# user config: https://www.digitalocean.com/community/tutorials/how-to-add-and-delete-users-on-a-centos-7-server
+# create user & set password
+sudo adduser cauchy
+sudo passwd cauchy
+
+# Granting Sudo Privileges to a User
+sudo usermod -aG wheel cauchy
+# Check sudo privilege
+sudo lid -g wheel
+
+# update repo
+sudo yum update
+
+# install devtoolset
+sudo yum install centos-release-scl-rh
+sudo yum install devtoolset-11
+
+# temporary usage
+scl enable devtoolset-11 bash
+gcc --version
+g++ --version
+
+# permenantly usage
+mv /usr/bin/gcc /usr/bin/gcc-4.8.5
+ln -s /opt/rh/devtoolset-11/root/bin/gcc /usr/bin/gcc
+mv /usr/bin/g++ /usr/bin/g++-4.8.5
+ln -s /opt/rh/devtoolset-11/root/bin/g++ /usr/bin/g++
+gcc --version
+g++ --version
+```
+
+```bash
+sudo yum install epel-release
+sudo yum install cmake3
+sudo ln -s /usr/bin/cmake3 /usr/bin/cmake
+cmake --version
+
+sudo yum install https://packages.endpointdev.com/rhel/7/os/x86_64/endpoint-repo.x86_64.rpm
+sudo yum install git
+git --version
 ```
 
 ## Development Environment Online
