@@ -242,11 +242,14 @@ ColumnLimit: 0
 # create user & set password
 sudo adduser cauchy
 sudo passwd cauchy
+# delte user from /home
+sudo userdel -r cauchy
 
 # Granting Sudo Privileges to a User
 sudo usermod -aG wheel cauchy
-# Check sudo privilege
+# Check sudo privilege, & uid
 sudo lid -g wheel
+# cauchy(uid=1000) 
 
 # update repo
 sudo yum update
@@ -278,7 +281,17 @@ cmake --version
 sudo yum install https://packages.endpointdev.com/rhel/7/os/x86_64/endpoint-repo.x86_64.rpm
 sudo yum install git
 git --version
+
+sudo yum install openssl-devel
+sudo yum install curl-devel
+sudo yum install expat-devel
+sudo yum install zlib-devel
 ```
+
+wsl进入CentOS默认账号是root,需要切换成创建的账号, [method](https://github.com/microsoft/WSL/issues/4276#issuecomment-509364493)
+1. get uid: `id -u cauchy`
+2. 找到对应CentOS的注册表: `Computer\HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Lxss\{xxxx}`
+3. 创建`REG_DWORD`,值为decimal `1000`
 
 ## Development Environment Online
 
