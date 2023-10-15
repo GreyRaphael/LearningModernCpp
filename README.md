@@ -10,6 +10,7 @@
   - [GCC \& Clang in VSCode](#gcc--clang-in-vscode)
   - [clangd for C++](#clangd-for-c)
 - [Development Environment in CentOS7](#development-environment-in-centos7)
+- [Development Environment in Fedora38](#development-environment-in-fedora38)
 - [Development Environment Online](#development-environment-online)
 - [Othre configuration](#othre-configuration)
   - [linux locale config](#linux-locale-config)
@@ -103,6 +104,8 @@ sudo apt install clang-16
 sudo apt install gdb
 sudo apt install build-essential
 sudo apt install git cmake ninja-build -y
+# rust
+sudo apt install rustc rust-src rustfmt
 ```
 
 config git proxy
@@ -292,6 +295,58 @@ wsl进入CentOS默认账号是root,需要切换成创建的账号, [method](http
 1. get uid: `id -u cauchy`
 2. 找到对应CentOS的注册表: `Computer\HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Lxss\{xxxx}`
 3. 创建`REG_DWORD`,值为decimal `1000`
+
+
+## Development Environment in Fedora38
+
+```bash
+# 1. download and install Fedora 38, https://github.com/WhitewaterFoundry/Fedora-Remix-for-WSL
+# 2. update
+sudo dnf update
+
+# cpp
+sudo dnf install clang gdb git cmake ninja-build
+# clangd
+sudo dnf install clang-tools-extra
+
+# rust
+sudo dnf install rust cargo rust-src rustfmt
+
+vi ~/.bashrc
+# export PS1='[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$'
+# alias ll='ls -la'
+
+vi ~/.gitconfig
+# [user]
+#         name = BeFedora38
+#         email = grey@pku.edu.cn
+# [http]
+#         proxy = http://192.168.0.108:7890
+```
+
+change vscode settings
+
+```json
+{
+    "cmake.cmakePath": "/usr/bin/cmake",
+    "cmake.generator": "Ninja",
+    "cmake.configureSettings": {
+        "CMAKE_MAKE_PROGRAM": "/usr/bin/ninja"
+    },
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 0}",
+    "C_Cpp.inlayHints.parameterNames.enabled": true,
+    "C_Cpp.inlayHints.referenceOperator.enabled": true,
+    "C_Cpp.inlayHints.autoDeclarationTypes.enabled": true,
+    "[cpp]": {
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+    },
+    "clangd.path": "clangd",
+    "clangd.arguments": [
+        "--clang-tidy",
+    ],
+}
+```
 
 ## Development Environment Online
 
