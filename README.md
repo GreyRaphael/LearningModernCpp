@@ -31,6 +31,22 @@ wslconfig /u Debian
 wslconfig /u Ubuntu
 ```
 
+wsl export & import, higher version of wsl1
+
+```bash
+# help info
+wsl -h 
+
+# show all WSL image names
+wsl -l -v
+
+# export WSL image to local file
+wsl --export Fedora38 "D:\BackUp\Fedora38.tar"
+
+# import local file to WSL image
+wsl --import Fedora38 D:\IDE\Fedora38 "D:\Software\BackUp\Fedora38Csc.tar"
+```
+
 ### wsl use windows proxy
 
 ```bash
