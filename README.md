@@ -44,7 +44,7 @@ wsl -l -v
 wsl --export Fedora38 "D:\BackUp\Fedora38.tar"
 
 # import local file to WSL image
-wsl --import Fedora38 D:\IDE\Fedora38 "D:\Software\BackUp\Fedora38Csc.tar"
+wsl --import Fedora38 D:\IDE\Fedora38 "D:\BackUp\Fedora38.tar"
 ```
 
 ### wsl use windows proxy
@@ -52,7 +52,6 @@ wsl --import Fedora38 D:\IDE\Fedora38 "D:\Software\BackUp\Fedora38Csc.tar"
 ```bash
 # wsl open proxy in current shell
 vi ~/set_proxy.txt
-
 
 # ~/set_proxy.txt
 export http_proxy='http://10.101.253.101:7890'
@@ -329,7 +328,7 @@ sudo dnf install clang-tools-extra
 sudo dnf install rust cargo rust-src rustfmt
 
 vi ~/.bashrc
-# export PS1='[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$'
+# export PS1='\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$'
 # alias ll='ls -la'
 
 vi ~/.gitconfig
