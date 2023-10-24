@@ -414,7 +414,7 @@ int main(int argc, char const *argv[]) {
 }
 ```
 
-Method1: by `launch.json`
+Method1: by `.vscode/launch.json`
 1. create a `launch.json` in vscode left panel, change `args` field.
 2. run `(gdb) Launch` in left panel
 
@@ -452,3 +452,19 @@ Method1: by `launch.json`
 }
 ```
 
+Method2: by `.vscode/settings.json`
+1. create `settings.json`, add following fields
+2. debug
+
+```json
+// settings.json
+{
+    "cmake.debugConfig": {
+        "args": [
+            "config\\journal_config.json",
+            "strategy",
+            "config\\sbq_config.json",
+        ]
+    },
+}
+```
