@@ -14,6 +14,7 @@
 - [Development Environment Online](#development-environment-online)
 - [Othre configuration](#othre-configuration)
   - [linux locale config](#linux-locale-config)
+- [How to debug program with arguments in CMakeTools](#how-to-debug-program-with-arguments-in-cmaketools)
 
 ## Development Environment in WSL
 
@@ -390,3 +391,64 @@ locale -a
 # en_US.utf8
 # zh_CN.gbk
 ```
+
+## How to debug program with arguments in CMakeTools
+
+```cmake
+cmake_minimum_required(VERSION 3.24.0)
+project(proj1 VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+add_executable(proj1 main.cpp)
+```
+
+```cpp
+// program for check args
+#include <format>
+#include <iostream>
+
+int main(int argc, char const *argv[]) {
+    for (size_t i = 0; i < argc; ++i) {
+        std::cout << std::format("arg-{}: {}\n", i, argv[i]);
+    }
+}
+```
+
+Method1: by `launch.json`
+1. create a `launch.json` in vscode left panel, change `args` field.
+2. run `(gdb) Launch` in left panel
+
+```json
+// launch.json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/proj1",
+            "args": ["10", "20", "30"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+
+    ]
+}
+```
+
