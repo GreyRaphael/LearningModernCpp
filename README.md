@@ -14,6 +14,7 @@
 - [Development Environment Online](#development-environment-online)
 - [Othre configuration](#othre-configuration)
   - [linux locale config](#linux-locale-config)
+- [How to debug program with arguments in CMakeTools](#how-to-debug-program-with-arguments-in-cmaketools)
 
 ## Development Environment in WSL
 
@@ -31,12 +32,27 @@ wslconfig /u Debian
 wslconfig /u Ubuntu
 ```
 
+wsl export & import, higher version of wsl1
+
+```bash
+# help info
+wsl -h 
+
+# show all WSL image names
+wsl -l -v
+
+# export WSL image to local file
+wsl --export Fedora38 "D:\BackUp\Fedora38.tar"
+
+# import local file to WSL image
+wsl --import Fedora38 D:\IDE\Fedora38 "D:\BackUp\Fedora38.tar"
+```
+
 ### wsl use windows proxy
 
 ```bash
 # wsl open proxy in current shell
 vi ~/set_proxy.txt
-
 
 # ~/set_proxy.txt
 export http_proxy='http://10.101.253.101:7890'
@@ -316,7 +332,7 @@ sudo dnf install rust cargo rust-src rustfmt
 sudo dnf install golang
 
 vi ~/.bashrc
-# export PS1='[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$'
+# export PS1='\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$'
 # alias ll='ls -la'
 
 vi ~/.gitconfig
@@ -377,4 +393,81 @@ locale -a
 # POSIX
 # en_US.utf8
 # zh_CN.gbk
+```
+
+## How to debug program with arguments in CMakeTools
+
+```cmake
+cmake_minimum_required(VERSION 3.24.0)
+project(proj1 VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+add_executable(proj1 main.cpp)
+```
+
+```cpp
+// program for check args
+#include <format>
+#include <iostream>
+
+int main(int argc, char const *argv[]) {
+    for (size_t i = 0; i < argc; ++i) {
+        std::cout << std::format("arg-{}: {}\n", i, argv[i]);
+    }
+}
+```
+
+Method1: by `.vscode/launch.json`
+1. create a `launch.json` in vscode left panel, change `args` field.
+2. run `(gdb) Launch` in left panel
+
+```json
+// launch.json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/proj1",
+            "args": ["10", "20", "30"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+
+    ]
+}
+```
+
+Method2: by `.vscode/settings.json`
+1. create `settings.json`, add following fields
+2. debug
+
+```json
+// settings.json
+{
+    "cmake.debugConfig": {
+        "args": [
+            "config\\journal_config.json",
+            "strategy",
+            "config\\sbq_config.json",
+        ]
+    },
+}
 ```
