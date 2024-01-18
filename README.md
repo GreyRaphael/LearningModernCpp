@@ -332,8 +332,9 @@ sudo dnf install rust cargo rust-src rustfmt
 sudo dnf install golang
 
 vi ~/.bashrc
-# export PS1='\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$'
-# alias ll='ls -la'
+
+PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+alias ll='ls -la'
 
 vi ~/.gitconfig
 # [user]
