@@ -130,7 +130,27 @@ config git proxy
 # the config is saved in ~/.gitconfig
 git config --global user.name "yourname"
 git config --global user.email "yourmail"
-git config --global http.proxy http://192.168.0.108:7890
+git config --global http.proxy http://127.0.0.1:2080
+```
+
+or just change file `vi ~/.gitconfig`
+
+```bash
+ [user]
+         name = csc_fedora_gewei
+         email = grey@pku.edu.cn
+ [http]
+         proxy = http://127.0.0.1:2080
+```
+
+for csc to use `git clone ssh@xxxx.git`, change `vi ~/.ssh/config`, [solution](https://github.com/orgs/community/discussions/55269#discussioncomment-5901262)
+- problem1: *ssh - port 22: Resource temporarily unavailable*
+- problem2: *kex_exchange_identification: Connection closed by remote host*
+
+```bash
+Host github.com
+  HostName 20.200.245.248
+  Port 443
 ```
 
 Debian11->12 problems
