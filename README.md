@@ -4,8 +4,8 @@
 
 - [Development Environment in WSL](#development-environment-in-wsl)
   - [wslconfig in powershell](#wslconfig-in-powershell)
-  - [wsl use windows proxy](#wsl-use-windows-proxy)
-  - [wsl use conda](#wsl-use-conda)
+  - [wsl with proxy](#wsl-with-proxy)
+  - [wsl with git](#wsl-with-git)
 - [Development Environment in Debian](#development-environment-in-debian)
   - [GCC \& Clang in VSCode](#gcc--clang-in-vscode)
   - [clangd for C++](#clangd-for-c)
@@ -38,6 +38,9 @@ wsl export & import, higher version of wsl1
 # help info
 wsl -h 
 
+# set to wsl1
+wsl --set-default-version 1
+
 # show all WSL image names
 wsl -l -v
 
@@ -46,9 +49,12 @@ wsl --export Fedora38 "D:\BackUp\Fedora38.tar"
 
 # import local file to WSL image
 wsl --import Fedora38 D:\IDE\Fedora38 "D:\BackUp\Fedora38.tar"
+
+# shutdown
+wsl --shutdown
 ```
 
-### wsl use windows proxy
+### wsl with proxy
 
 ```bash
 # wsl open proxy in current shell
@@ -64,30 +70,35 @@ export ALL_PROXY='socks5://10.101.253.101:7890'
 source ~/set_proxy.txt
 ```
 
-a proxy is for git, so just set git proxy is ok
-> `git config --global http.proxy 10.101.253.101:7890`
+### wsl with git
 
-### wsl use conda
+config git proxy
 
 ```bash
-# 1. Download Miniconda3-latest-Linux-x86_64.sh & Install
-wget https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-latest-Linux-x86_64.sh
+# the config is saved in ~/.gitconfig
+git config --global user.name "yourname"
+git config --global user.email "yourmail"
+git config --global http.proxy http://127.0.0.1:2080
+```
 
-chmod +x Miniconda3-latest-Linux-x86_64.sh
+or just change file `vi ~/.gitconfig`
 
-./Miniconda3-latest-Linux-x86_64.sh
+```bash
+ [user]
+         name = csc_fedora_gewei
+         email = grey@pku.edu.cn
+ [http]
+         proxy = http://127.0.0.1:2080
+```
 
-# 2.change conda source
-# visit https://mirrors.tuna.tsinghua.edu.cn/help/anaconda/
+for csc to use `git clone ssh@xxxx.git`, change `vi ~/.ssh/config`, [solution](https://github.com/orgs/community/discussions/55269#discussioncomment-5901262)
+- problem1: *ssh - port 22: Resource temporarily unavailable*
+- problem2: *kex_exchange_identification: Connection closed by remote host*
 
-conda update --all
-# WSL换源后使用conda出现CondaHTTPError: HTTP 000 CONNECTION FAILED for url <https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/linux-64/current_repodata.json>
-# 但是 wget正常
-wget https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/linux-64/current_repodata.json
-# in cmd
-wsl --shutdown
-wsl -l -v
-# 重启wsl
+```bash
+Host github.com
+  HostName 20.200.245.248
+  Port 443
 ```
 
 ## Development Environment in Debian
@@ -122,35 +133,6 @@ sudo apt install build-essential
 sudo apt install git cmake ninja-build -y
 # rust
 sudo apt install rustc rust-src rustfmt
-```
-
-config git proxy
-
-```bash
-# the config is saved in ~/.gitconfig
-git config --global user.name "yourname"
-git config --global user.email "yourmail"
-git config --global http.proxy http://127.0.0.1:2080
-```
-
-or just change file `vi ~/.gitconfig`
-
-```bash
- [user]
-         name = csc_fedora_gewei
-         email = grey@pku.edu.cn
- [http]
-         proxy = http://127.0.0.1:2080
-```
-
-for csc to use `git clone ssh@xxxx.git`, change `vi ~/.ssh/config`, [solution](https://github.com/orgs/community/discussions/55269#discussioncomment-5901262)
-- problem1: *ssh - port 22: Resource temporarily unavailable*
-- problem2: *kex_exchange_identification: Connection closed by remote host*
-
-```bash
-Host github.com
-  HostName 20.200.245.248
-  Port 443
 ```
 
 Debian11->12 problems
@@ -355,13 +337,15 @@ vi ~/.bashrc
 
 PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 alias ll='ls -la'
+```
 
-vi ~/.gitconfig
-# [user]
-#         name = BeFedora38
-#         email = grey@pku.edu.cn
-# [http]
-#         proxy = http://192.168.0.108:7890
+```bash
+# vi ~/.gitconfig
+[user]
+        name = BeFedora38
+        email = grey@pku.edu.cn
+[http]
+        proxy = http://192.168.0.108:7890
 ```
 
 change vscode settings
