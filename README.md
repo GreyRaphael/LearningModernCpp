@@ -137,10 +137,8 @@ cat /etc/debian_version
 sudo apt --purge autoremove -y
 
 # 3. Install development environment
-sudo apt install clang-16
-sudo apt install gdb
 sudo apt install build-essential
-sudo apt install git cmake ninja-build -y
+sudo apt install clang gdb git cmake ninja-build -y
 # rust
 sudo apt install rustc rust-src rustfmt
 ```
@@ -152,15 +150,6 @@ Debian11->testing problems
 - [solution](https://github.com/microsoft/WSL/issues/10397#issuecomment-1682139166) for problem: `/etc/passwd lock: Invalid argument`
 
 ### GCC & Clang in VSCode
-
-```bash
-# 安装gcc, g++; testing默认是最高版本gcc
-sudo apt install build-essential
-# 安装clang-16
-sudo apt install clang-16
-# 安装gdb
-sudo apt install gdb
-```
 
 Install vscode extenstion:
 1. install [ms-cpp-tools](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools), then `"C_Cpp.intelliSenseEngine": "disabled",`
