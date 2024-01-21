@@ -90,14 +90,14 @@ git config --global user.email "yourmail"
 git config --global http.proxy http://192.168.0.108:2080
 ```
 
-or just change file `vi ~/.gitconfig`
+or just change file `vi ~/.gitconfig`, then `git config --global --list`
 
 ```bash
- [user]
-         name = csc_fedora_gewei
-         email = grey@pku.edu.cn
- [http]
-         proxy = http://192.168.0.108:2080
+[user]
+        name = csc_fedora_gewei
+        email = grey@pku.edu.cn
+[http]
+        proxy = http://192.168.0.108:2080
 ```
 
 for csc to use `git clone ssh@xxxx.git`, change `vi ~/.ssh/config`, [solution](https://github.com/orgs/community/discussions/55269#discussioncomment-5901262)
