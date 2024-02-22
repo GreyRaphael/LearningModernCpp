@@ -317,6 +317,30 @@ wsl进入CentOS默认账号是root,需要切换成创建的账号, [method](http
 
 ## Development Environment in Fedora38
 
+update Fedora38 to Fedora Rawhide
+- backup old wsl: `wsl --export Fedora38 "D:\BackUp\Fedora38.tar"`
+- run below commands to update
+
+```bash
+#Be sure that systemd is disabled
+cat /etc/wsl.conf
+
+# sudo dnf install dnf-plugin-system-upgrade
+sudo dnf -y system-upgrade --allowerasing --skip-broken download --releasever=rawhide  
+sudo dnf -y system-upgrade reboot
+# At this point, it will raise an error, ignore it, and execute the following commands:
+
+sudo dnf -y system-upgrade upgrade   
+
+sudo dnf -y autoremove   
+sudo dnf -y clean all   
+sudo mandb  
+update.sh  
+sudo dnf upgrade --refresh
+cat /etc/fedora-release
+exit
+```
+
 ```bash
 # 1. download and install Fedora 38, https://github.com/WhitewaterFoundry/Fedora-Remix-for-WSL
 # 2. update
