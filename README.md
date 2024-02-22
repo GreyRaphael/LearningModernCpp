@@ -3,7 +3,7 @@
 >  Learning Notes for Modern C++, examples from [Modern C++ Programming Cookbook - 2nd Edition](https://github.com/PacktPublishing/Modern-CPP-Programming-Cookbook-Second-Edition)
 
 - [Development Environment in WSL](#development-environment-in-wsl)
-  - [wslconfig in powershell](#wslconfig-in-powershell)
+  - [wsl basic cmds](#wsl-basic-cmds)
   - [wsl with proxy](#wsl-with-proxy)
   - [wsl with git](#wsl-with-git)
 - [Development Environment in Debian](#development-environment-in-debian)
@@ -18,7 +18,19 @@
 
 ## Development Environment in WSL
 
-### wslconfig in powershell
+### wsl basic cmds
+
+```bash
+# update wsl program itself, not distro
+wsl --update
+
+# set to wsl1
+wsl --set-default-version 1
+# set to wsl2
+wsl --set-default-version 2
+```
+
+wsl uninstall distro
 
 ```powershell
 # help info
@@ -32,14 +44,11 @@ wslconfig /u Debian
 wslconfig /u Ubuntu
 ```
 
-wsl export & import, higher version of wsl1
+wsl export & import
 
 ```bash
 # help info
 wsl -h 
-
-# set to wsl1
-wsl --set-default-version 1
 
 # show all WSL image names
 wsl -l -v
@@ -61,10 +70,10 @@ wsl --shutdown
 vi ~/set_proxy.txt
 
 # ~/set_proxy.txt
-export http_proxy='http://10.101.253.101:7890'
-export https_proxy='http://10.101.253.101:7890'
-export all_proxy='socks5://10.101.253.101:7890'
-export ALL_PROXY='socks5://10.101.253.101:7890'
+export http_proxy='http://192.168.0.108:7890'
+export https_proxy='http://192.168.0.108:7890'
+export all_proxy='socks5://192.168.0.108:7890'
+export ALL_PROXY='socks5://192.168.0.108:7890'
 
 
 source ~/set_proxy.txt
@@ -78,17 +87,17 @@ config git proxy
 # the config is saved in ~/.gitconfig
 git config --global user.name "yourname"
 git config --global user.email "yourmail"
-git config --global http.proxy http://127.0.0.1:2080
+git config --global http.proxy http://192.168.0.108:2080
 ```
 
-or just change file `vi ~/.gitconfig`
+or just change file `vi ~/.gitconfig`, then `git config --global --list`
 
 ```bash
- [user]
-         name = csc_fedora_gewei
-         email = grey@pku.edu.cn
- [http]
-         proxy = http://127.0.0.1:2080
+[user]
+        name = csc_fedora_gewei
+        email = grey@pku.edu.cn
+[http]
+        proxy = http://192.168.0.108:2080
 ```
 
 for csc to use `git clone ssh@xxxx.git`, change `vi ~/.ssh/config`, [solution](https://github.com/orgs/community/discussions/55269#discussioncomment-5901262)
@@ -96,6 +105,7 @@ for csc to use `git clone ssh@xxxx.git`, change `vi ~/.ssh/config`, [solution](h
 - problem2: *kex_exchange_identification: Connection closed by remote host*
 
 ```bash
+# ~/.ssh/config
 Host github.com
   HostName 20.200.245.248
   Port 443
@@ -127,10 +137,8 @@ cat /etc/debian_version
 sudo apt --purge autoremove -y
 
 # 3. Install development environment
-sudo apt install clang-16
-sudo apt install gdb
 sudo apt install build-essential
-sudo apt install git cmake ninja-build -y
+sudo apt install clang gdb git cmake ninja-build -y
 # rust
 sudo apt install rustc rust-src rustfmt
 ```
@@ -142,15 +150,6 @@ Debian11->testing problems
 - [solution](https://github.com/microsoft/WSL/issues/10397#issuecomment-1682139166) for problem: `/etc/passwd lock: Invalid argument`
 
 ### GCC & Clang in VSCode
-
-```bash
-# 安装gcc, g++; testing默认是最高版本gcc
-sudo apt install build-essential
-# 安装clang-16
-sudo apt install clang-16
-# 安装gdb
-sudo apt install gdb
-```
 
 Install vscode extenstion:
 1. install [ms-cpp-tools](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools), then `"C_Cpp.intelliSenseEngine": "disabled",`
