@@ -18,6 +18,7 @@
 - [How to use vcpkg in vscode](#how-to-use-vcpkg-in-vscode)
   - [msvc](#msvc)
   - [mingw](#mingw)
+- [linux](#linux)
 
 ## Development Environment in WSL
 
@@ -586,6 +587,53 @@ cmake_minimum_required(VERSION 3.28.0)
 
 # must specify triplet
 set(VCPKG_TARGET_TRIPLET x64-mingw-dynamic)
+
+project(proj1 VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+
+add_executable(proj1 main.cpp)
+
+# consume packages
+find_package(spdlog CONFIG REQUIRED)
+target_link_libraries(proj1 PRIVATE spdlog::spdlog)
+
+find_package(fmt CONFIG REQUIRED)
+target_link_libraries(proj1 PRIVATE fmt::fmt)
+```
+
+## linux
+
+step1: install vcpkg
+
+```bash
+cd
+git clone https://github.com/Microsoft/vcpkg.git
+cd vcpkg
+./bootstrap-vcpkg.sh
+
+# default use static libary
+vcpkg install spdlog
+# use shared library *.so
+vcpkg install fmt:x64-linux-dynamic
+```
+
+step2: config in vscode
+
+```json
+"cmake.configureSettings": {
+    "CMAKE_TOOLCHAIN_FILE":"/home/your_name/vcpkg/scripts/buildsystems/vcpkg.cmake",
+},
+```
+
+step3: [cmake integration](https://learn.microsoft.com/en-us/vcpkg/users/buildsystems/cmake-integration)
+> add triplet according to your installation before `project()`
+
+```cmake
+cmake_minimum_required(VERSION 3.28.0)
+
+# leave empty or use shard library
+set(VCPKG_TARGET_TRIPLET x64-linux-dynamic)
 
 project(proj1 VERSION 0.1.0 LANGUAGES C CXX)
 
