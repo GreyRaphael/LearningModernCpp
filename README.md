@@ -15,6 +15,7 @@
 - [Othre configuration](#othre-configuration)
   - [linux locale config](#linux-locale-config)
 - [How to debug program with arguments in CMakeTools](#how-to-debug-program-with-arguments-in-cmaketools)
+- [How to use vcpkg in windows with vscode](#how-to-use-vcpkg-in-windows-with-vscode)
 
 ## Development Environment in WSL
 
@@ -498,4 +499,53 @@ Method2: by `.vscode/settings.json`
         ]
     },
 }
+```
+
+## How to use vcpkg in windows with vscode
+
+
+step1: install vcpkg
+
+```bash
+cd D:\Dev\
+git clone https://github.com/Microsoft/vcpkg.git
+cd vcpkg
+.\bootstrap-vcpkg.bat
+
+# install package
+vcpkg install fmt
+# specify triplet
+vcpkg install spdlog:x64-windows
+# vcpkg install spdlog:x64-mingw-dynamic
+```
+
+step2: config in vscode
+
+```json
+"cmake.configureSettings": {
+    "CMAKE_TOOLCHAIN_FILE":"D:/Dev/vcpkg/scripts/buildsystems/vcpkg.cmake",
+},
+```
+
+step3: [cmake integration](https://learn.microsoft.com/en-us/vcpkg/users/buildsystems/cmake-integration)
+> add triplet according to your installation before `project()`
+
+```cmake
+cmake_minimum_required(VERSION 3.28.0)
+
+# set(VCPKG_TARGET_TRIPLET x64-linux-dynamic)
+set(VCPKG_TARGET_TRIPLET x64-mingw-dynamic)
+
+project(proj1 VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+
+add_executable(proj1 main.cpp)
+
+# consume packages
+find_package(spdlog CONFIG REQUIRED)
+target_link_libraries(proj1 PRIVATE spdlog::spdlog)
+
+find_package(fmt CONFIG REQUIRED)
+target_link_libraries(proj1 PRIVATE fmt::fmt)
 ```
