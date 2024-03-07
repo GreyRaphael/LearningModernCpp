@@ -4,6 +4,7 @@
   - [Code Organized by CMake](#code-organized-by-cmake)
   - [pybind11](#pybind11)
   - [`nlohmann::json`](#nlohmannjson)
+    - [`json` with struct](#json-with-struct)
     - [`json` with vector](#json-with-vector)
     - [`json` with file](#json-with-file)
     - [`json` with raw-string](#json-with-raw-string)
@@ -288,6 +289,58 @@ int main() {
     f.print_info();  // id=10, score=90.5
     auto j = f.to_json();
     std::cout << j << '\n';  // {"id":10,"score":90.5}
+}
+```
+
+### `json` with struct
+
+```cpp
+#include <iostream>
+#include <nlohmann/json.hpp>
+#include <string>
+
+using json = nlohmann::json;
+
+struct Person {
+    int age;
+    double height;
+    char symbols[3];
+};
+
+struct Student {
+    std::string name;
+    int scores[3];
+};
+
+void to_json(json& j, const Person& p) {
+    j = json{{"age", p.age}, {"height", p.height}, {"symbols", p.symbols}};
+}
+
+void from_json(const json& j, Person& p) {
+    j.at("age").get_to(p.age);
+    j.at("height").get_to(p.height);
+    j.at("symbols").get_to(p.symbols);
+}
+
+void to_json(json& j, const Student& s) {
+    j = json{{"name", s.name}, {"scores", s.scores}};
+}
+
+void from_json(const json& j, Student& s) {
+    j.at("name").get_to(s.name);
+    j.at("scores").get_to(s.scores);
+}
+
+int main() {
+    // Serialize Person
+    Person person{25, 175.5, {'a', 'b', 'c'}};
+    json personJson = person;
+    std::cout << "Person JSON:\n"<< personJson.dump(2) << std::endl;
+
+    // Serialize Student
+    Student student{"Alice", {90, 85, 95}};
+    json studentJson = student;
+    std::cout << "Student JSON:\n"<< studentJson.dump(2) << std::endl;
 }
 ```
 
