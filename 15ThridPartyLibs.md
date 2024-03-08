@@ -14,6 +14,7 @@
   - [`spdlog`](#spdlog)
   - [`fmt`](#fmt)
   - [`SQLite3`](#sqlite3)
+  - [CLI11](#cli11)
 
 
 ## Code Organized by CMake
@@ -865,5 +866,50 @@ int main() {
         }
     }
     sqlite3_close(db);
+}
+```
+
+## CLI11
+
+[CLI11](https://github.com/CLIUtils/CLI11): `vcpkg install cli11`
+
+```cpp
+#include <fmt/core.h>
+#include <CLI/CLI.hpp>
+#include <string>
+
+int main(int argc, char** argv) {
+    CLI::App app("future trade client");
+
+    // order
+    CLI::App* subcommand1 = app.add_subcommand("order", "send orders");
+    int side = 0;
+    subcommand1->add_option("-s,--side", side, "trading direction");
+    int volume = 100;
+    subcommand1->add_option("-v,--vol", volume, "trading volume");
+    std::string stock_info{"input/stock.csv"};
+    subcommand1->add_option("-i,--in", stock_info, "stock price info");
+    std::string client_info{"clients/gewei.json"};
+    subcommand1->add_option("-u,--u", client_info, "account info");
+    int order_type = 1;
+    subcommand1->add_option("-t,--type", side, "trading direction");
+
+    // cancel
+    CLI::App* subcommand2 = app.add_subcommand("cancel", "cancel orders");
+
+    // query
+    CLI::App* subcommand3 = app.add_subcommand("query", "query");
+
+    app.parse(argc, argv);
+
+    if (app.got_subcommand("order")) {
+        fmt::println("send orders");
+        fmt::println("input {}: {}, {}, {}, {}, {}", app.count_all(), side, volume, stock_info, client_info, order_type);
+    } else if (app.got_subcommand("cancel")) {
+        fmt::println("cancel orders");
+    } else if (app.got_subcommand("query")) {
+        fmt::println("query orders");
+    } else {
+    }
 }
 ```
