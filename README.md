@@ -447,6 +447,31 @@ su - moris
 sudo dnf update
 ```
 
+prepare develepment environment
+
+```bash
+# for cpp
+sudo dnf install clang gdb git cmake ninja-build clang-tools-extra
+
+
+# for golang
+sudo dnf install golang
+
+# for python
+sudo dnf install python3.10
+
+# install vcpkg
+git clone https://github.com/microsoft/vcpkg
+./vcpkg/bootstrap-vcpkg.sh
+vi ~/.bashrc
+
+source /home/gewei/vcpkg/scripts/vcpkg_completion.bash
+export PATH=$PATH:$HOME/vcpkg
+
+PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+alias ll='ls -la'
+```
+
 ## Development Environment Online
 
 - [Wandbox](https://wandbox.org/)
