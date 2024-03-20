@@ -11,6 +11,7 @@
   - [clangd for C++](#clangd-for-c)
 - [Development Environment in CentOS7](#development-environment-in-centos7)
 - [Development Environment in Fedora38](#development-environment-in-fedora38)
+  - [Development Environment in Fedora Rawhide](#development-environment-in-fedora-rawhide)
 - [Development Environment Online](#development-environment-online)
 - [Othre configuration](#othre-configuration)
   - [linux locale config](#linux-locale-config)
@@ -397,6 +398,53 @@ change vscode settings
         "--clang-tidy",
     ],
 }
+```
+
+### Development Environment in Fedora Rawhide
+
+download image from [Fedora-WSL-RootFS](https://github.com/VSWSL/Fedora-WSL-RootFS)
+
+```bash
+# in powershell
+wsl --import Rawhide D:\Dev\Rawhide D:\Downloads\rootfs.amd64.tar.gz
+
+# into Rawhide bash
+wsl -l -v
+wsl -d Rawhide
+
+# following tutorial to rawhide: https://docs.fedoraproject.org/en-US/quick-docs/upgrading-fedora-offline/
+sudo dnf upgrade --refresh
+sudo dnf install dnf-plugin-system-upgrade
+
+# wsl1, replace gpgcheck=1 with gpgcheck=0
+/etc/yum.repos.d/
+vi fedora-cisco-openh264.repo
+vi fedora-updates-testing.repo
+vi fedora-updates.repo
+vi fedora.repo
+
+# change to rawhide channel
+sudo dnf system-upgrade download --releasever=rawhide
+sudo dnf system-upgrade reboot
+# At this point, it will raise an error, ignore it, and execute the following commands:
+
+sudo dnf -y system-upgrade upgrade
+exit
+wsl --shutdown
+wsl -d Rawhide
+
+sudo dnf -y autoremove
+sudo dnf -y clean all
+sudo mandb
+sudo dnf upgrade --refresh
+cat /etc/fedora-release
+
+# add user
+adduser moris
+passwd moris
+usermod -aG wheel moris
+su - moris
+sudo dnf update
 ```
 
 ## Development Environment Online
