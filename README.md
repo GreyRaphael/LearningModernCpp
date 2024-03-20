@@ -11,7 +11,7 @@
   - [clangd for C++](#clangd-for-c)
 - [Development Environment in CentOS7](#development-environment-in-centos7)
 - [Development Environment in Fedora38](#development-environment-in-fedora38)
-  - [Development Environment in Fedora Rawhide](#development-environment-in-fedora-rawhide)
+- [Development Environment in Fedora Rawhide](#development-environment-in-fedora-rawhide)
 - [Development Environment Online](#development-environment-online)
 - [Othre configuration](#othre-configuration)
   - [linux locale config](#linux-locale-config)
@@ -400,7 +400,7 @@ change vscode settings
 }
 ```
 
-### Development Environment in Fedora Rawhide
+## Development Environment in Fedora Rawhide
 
 download image from [Fedora-WSL-RootFS](https://github.com/VSWSL/Fedora-WSL-RootFS)
 
@@ -465,11 +465,18 @@ git clone https://github.com/microsoft/vcpkg
 ./vcpkg/bootstrap-vcpkg.sh
 vi ~/.bashrc
 
-source /home/gewei/vcpkg/scripts/vcpkg_completion.bash
+source $HOME/vcpkg/vcpkg/scripts/vcpkg_completion.bash
 export PATH=$PATH:$HOME/vcpkg
 
 PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 alias ll='ls -la'
+
+# make softlink
+ln -s /mnt/c/Users/moris winhome
+
+# genenrate ssh-key
+ssh-keygen -t ed25519 -C "your_email@example.com"
+cat .ssh/id_ed25519.pub
 ```
 
 ## Development Environment Online
