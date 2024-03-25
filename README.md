@@ -14,10 +14,10 @@
 - [Development Environment Online](#development-environment-online)
 - [Othre configuration](#othre-configuration)
   - [linux locale config](#linux-locale-config)
-- [How to debug program with arguments in CMakeTools](#how-to-debug-program-with-arguments-in-cmaketools)
+- [How to debug program with arguments in vscode](#how-to-debug-program-with-arguments-in-vscode)
 - [How to use vcpkg in vscode](#how-to-use-vcpkg-in-vscode)
   - [msvc](#msvc)
-  - [mingw](#mingw)
+  - [mingw(not recomended)](#mingwnot-recomended)
 - [linux](#linux)
 
 ## Development Environment in WSL
@@ -39,9 +39,6 @@ wsl uninstall distro
 ```powershell
 # help info
 wslconfig /h
-
-# list all linux
-wslconfig /l
 
 # uninstall linux
 wslconfig /u Debian
@@ -155,9 +152,7 @@ Debian11->testing problems
 
 ### GCC & Clang in VSCode
 
-Install vscode extenstion:
-1. install [ms-cpp-tools](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools), then `"C_Cpp.intelliSenseEngine": "disabled",`
-2. just install vscode extension [clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd)
+Just install vscode extension [clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd)
 
 config `setttings.json` in linux
 > gcc-13和clang-16都能使用gdb来调试
@@ -170,18 +165,10 @@ config `setttings.json` in linux
     "cmake.configureSettings": {
         "CMAKE_MAKE_PROGRAM": "/usr/bin/ninja"
     },
-    "[cpp]": {
-        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
-    },
-    "C_Cpp.intelliSenseEngine": "disabled",
     "clangd.path": "clangd-16",
     "clangd.arguments": [
         "--clang-tidy",
-    ],
-    "[python]": {
-        "editor.formatOnType": true,
-        "editor.defaultFormatter": "ms-python.black-formatter"
-    },
+    ]
 }
 ```
 
@@ -190,20 +177,18 @@ windows下的MinGw可以使用如下配置(不推荐MinGW)
 ```json
 // settings.json in windows of MingW by gcc and llvm
 {
-  "cmake.cmakePath": "D:/Dev/cmake/bin/cmake.exe",
+  "cmake.cmakePath": "D:/Dev/winlibs-mingw64/bin/cmake.exe",
   "cmake.generator": "Ninja",
   "cmake.configureSettings": {
-      "CMAKE_MAKE_PROGRAM": "D:/Dev/Ninja/ninja.exe"
+      "CMAKE_MAKE_PROGRAM": "D:/Dev/winlibs-mingw64/bin/ninja.exe"
   },
   "cmake.debugConfig": {
       "MIMode": "gdb",
-      "miDebuggerPath": "D:/Dev/w64devkit/bin/gdb.exe"
+      "miDebuggerPath": "D:/Dev/winlibs-mingw64/bin/gdb.exe"
   },
   // 给vscode提供其他compiler列表
   "cmake.additionalCompilerSearchDirs": [
-      "D:/Dev/w64devkit/bin",
-      "D:/Dev/llvm-mingw/bin",
-      // "D:/Dev/winlibs-mingw64/bin",
+      "D:/Dev/winlibs-mingw64/bin",
   ],
 }
 ```
@@ -228,29 +213,6 @@ in Linux:
 
 ```bash
 # /home/username/.clang-format
-BasedOnStyle: Google
-IndentWidth: 4
-ColumnLimit: 0
-```
-
-in Windows:
-1. download [llvm-mingw](https://github.com/mstorsjo/llvm-mingw/releases) or MSVC
-2. install vscode extension [clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd)
-3. config `settings.json` of vscode
-4. add global format file to `D:/.clang-format`, which is the top level of your projects
-
-```json
-// settings.json
-{
-    "clangd.path": "D:/Dev/llvm-mingw/bin/clangd.exe",
-    "clangd.arguments": [
-        "--clang-tidy",
-    ],
-}
-```
-
-```bash
-# D:/.clang-format
 BasedOnStyle: Google
 IndentWidth: 4
 ColumnLimit: 0
@@ -399,17 +361,6 @@ ssh-keygen -t ed25519 -C "your_email@example.com"
 cat .ssh/id_ed25519.pub
 ```
 
-show git config:  `git config --global --list`
-
-```bash
-# vi ~/.gitconfig
-[user]
-        name = BeFedora38
-        email = grey@pku.edu.cn
-[http]
-        proxy = http://192.168.0.108:7890
-```
-
 vscode **settings.json** for rawhide
 
 ```json
@@ -458,7 +409,9 @@ locale -a
 # zh_CN.gbk
 ```
 
-## How to debug program with arguments in CMakeTools
+## How to debug program with arguments in vscode
+
+instal vGDB extension
 
 ```cmake
 cmake_minimum_required(VERSION 3.24.0)
@@ -490,30 +443,13 @@ Method1: by `.vscode/launch.json`
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) Launch",
-            "type": "cppdbg",
+            "type": "vgdb",
             "request": "launch",
+            "name": "C/C++ Debug",
             "program": "${workspaceFolder}/build/proj1",
-            "args": ["10", "20", "30"],
-            "stopAtEntry": false,
-            "cwd": "${fileDirname}",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Set Disassembly Flavor to Intel",
-                    "text": "-gdb-set disassembly-flavor intel",
-                    "ignoreFailures": true
-                }
-            ]
+            "args": [],
+            "cwd": "${workspaceFolder}"
         }
-
     ]
 }
 ```
@@ -586,7 +522,7 @@ find_package(fmt CONFIG REQUIRED)
 target_link_libraries(proj1 PRIVATE fmt::fmt)
 ```
 
-### mingw
+### mingw(not recomended)
 
 step1: install vcpkg
 
