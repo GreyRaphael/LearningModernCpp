@@ -10,7 +10,6 @@
   - [GCC \& Clang in VSCode](#gcc--clang-in-vscode)
   - [clangd for C++](#clangd-for-c)
 - [Development Environment in CentOS7](#development-environment-in-centos7)
-- [Development Environment in Fedora38](#development-environment-in-fedora38)
 - [Development Environment in Fedora Rawhide](#development-environment-in-fedora-rawhide)
 - [Development Environment Online](#development-environment-online)
 - [Othre configuration](#othre-configuration)
@@ -319,45 +318,6 @@ wsl进入CentOS默认账号是root,需要切换成创建的账号, [method](http
 3. 创建`REG_DWORD`,值为decimal `1000`
 
 
-## Development Environment in Fedora38
-
-update Fedora38 to Fedora Rawhide
-- backup old wsl: `wsl --export Fedora38 "D:\BackUp\Fedora38.tar"`
-- run below commands to update
-
-```bash
-# vi ~/.gitconfig
-[user]
-        name = BeFedora38
-        email = grey@pku.edu.cn
-[http]
-        proxy = http://192.168.0.108:7890
-```
-
-change vscode settings
-
-```json
-{
-    "cmake.cmakePath": "/usr/bin/cmake",
-    "cmake.generator": "Ninja",
-    "cmake.configureSettings": {
-        "CMAKE_MAKE_PROGRAM": "/usr/bin/ninja"
-    },
-    "C_Cpp.intelliSenseEngine": "disabled",
-    "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 0}",
-    "C_Cpp.inlayHints.parameterNames.enabled": true,
-    "C_Cpp.inlayHints.referenceOperator.enabled": true,
-    "C_Cpp.inlayHints.autoDeclarationTypes.enabled": true,
-    "[cpp]": {
-        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
-    },
-    "clangd.path": "clangd",
-    "clangd.arguments": [
-        "--clang-tidy",
-    ],
-}
-```
-
 ## Development Environment in Fedora Rawhide
 
 download image from [Fedora-WSL-RootFS](https://github.com/VSWSL/Fedora-WSL-RootFS)
@@ -438,6 +398,37 @@ ln -s /mnt/c/Users/moris winhome
 ssh-keygen -t ed25519 -C "your_email@example.com"
 cat .ssh/id_ed25519.pub
 ```
+
+show git config:  `git config --global --list`
+
+```bash
+# vi ~/.gitconfig
+[user]
+        name = BeFedora38
+        email = grey@pku.edu.cn
+[http]
+        proxy = http://192.168.0.108:7890
+```
+
+vscode **settings.json** for rawhide
+
+```json
+{
+    "cmake.cmakePath": "/usr/bin/cmake",
+    "cmake.generator": "Ninja",
+    "cmake.configureSettings": {
+        "CMAKE_MAKE_PROGRAM": "/usr/bin/ninja",
+        "CMAKE_TOOLCHAIN_FILE": "${env:HOME}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+    },
+    "python.venvPath": "~/pyenvs",
+    "clangd.path": "clangd",
+    "clangd.arguments": [
+        "--clang-tidy"
+    ],
+}
+```
+
+backup wsl: `wsl --export Rawhide "D:\BackUp\Rawhide.tar"`
 
 ## Development Environment Online
 
