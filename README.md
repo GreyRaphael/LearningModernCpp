@@ -326,48 +326,6 @@ update Fedora38 to Fedora Rawhide
 - run below commands to update
 
 ```bash
-#Be sure that systemd is disabled
-cat /etc/wsl.conf
-
-# sudo dnf install dnf-plugin-system-upgrade
-sudo dnf -y system-upgrade --allowerasing --skip-broken download --releasever=rawhide  
-sudo dnf -y system-upgrade reboot
-# At this point, it will raise an error, ignore it, and execute the following commands:
-
-sudo dnf -y system-upgrade upgrade   
-
-sudo dnf -y autoremove   
-sudo dnf -y clean all   
-sudo mandb  
-update.sh  
-sudo dnf upgrade --refresh
-cat /etc/fedora-release
-exit
-```
-
-```bash
-# 1. download and install Fedora 38, https://github.com/WhitewaterFoundry/Fedora-Remix-for-WSL
-# 2. update
-sudo dnf update
-
-# cpp
-sudo dnf install clang gdb git cmake ninja-build
-# clangd
-sudo dnf install clang-tools-extra
-
-# rust
-sudo dnf install rust cargo rust-src rustfmt
-
-# golang
-sudo dnf install golang
-
-vi ~/.bashrc
-
-PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
-alias ll='ls -la'
-```
-
-```bash
 # vi ~/.gitconfig
 [user]
         name = BeFedora38
@@ -453,9 +411,11 @@ prepare develepment environment
 # for cpp
 sudo dnf install clang gdb git cmake ninja-build clang-tools-extra
 
-
 # for golang
 sudo dnf install golang
+
+# rust
+sudo dnf install rust cargo rust-src rustfmt
 
 # for python
 sudo dnf install python3.10
