@@ -18,7 +18,7 @@
 - [How to use vcpkg in vscode](#how-to-use-vcpkg-in-vscode)
   - [msvc](#msvc)
   - [mingw(not recomended)](#mingwnot-recomended)
-- [linux](#linux)
+  - [linux](#linux)
 
 ## Development Environment in WSL
 
@@ -569,7 +569,7 @@ find_package(fmt CONFIG REQUIRED)
 target_link_libraries(proj1 PRIVATE fmt::fmt)
 ```
 
-## linux
+### linux
 
 step1: install vcpkg
 
