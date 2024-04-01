@@ -948,8 +948,19 @@ void printTrade(const Trade& trade) {
 }
 
 // method1: by lambda
-auto printVisitor = [](auto&& arg) {
+auto printVisitor1 = [](auto&& arg) {
     using T = std::decay_t<decltype(arg)>;
+    if constexpr (std::is_same_v<T, Order>) {
+        std::cout << "Processing Order" << std::endl;
+        printOrder(arg);
+    } else if constexpr (std::is_same_v<T, Trade>) {
+        std::cout << "Processing Trade" << std::endl;
+        printTrade(arg);
+    }
+};
+
+// since C++20
+auto printVisitor2 = []<typename T>(T const& arg) {
     if constexpr (std::is_same_v<T, Order>) {
         std::cout << "Processing Order" << std::endl;
         printOrder(arg);
@@ -985,7 +996,8 @@ int main() {
 
     // Assigning an Order to the variant
     orderOrTrade = Order{"12345", 10, 99.99};
-    std::visit(printVisitor, orderOrTrade);
+    std::visit(printVisitor1, orderOrTrade);
+    std::visit(printVisitor2, orderOrTrade);
 
     // Assigning a Trade to the variant
     orderOrTrade = Trade{"54321", 'B', 20};
