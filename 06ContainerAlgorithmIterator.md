@@ -909,3 +909,89 @@ int main() {
                v1);
 }
 ```
+
+`std::variant` with struct and `std::visit`
+- method1: by lambda
+- method2: by struct operator(), recommended
+- method3: by functor operator()
+
+
+```cpp
+#include <iostream>
+#include <variant>
+
+struct Order {
+    char orderid[20];
+    int volume;
+    double price;
+};
+
+struct Trade {
+    char tradeid[20];
+    char direction;
+    int volume;
+};
+
+using StructVariant = std::variant<Order, Trade>;
+// Function to print Order
+void printOrder(const Order& order) {
+    std::cout << "Order ID: " << order.orderid
+              << ", Volume: " << order.volume
+              << ", Price: " << order.price << std::endl;
+}
+
+// Function to print Trade
+void printTrade(const Trade& trade) {
+    std::cout << "Trade ID: " << trade.tradeid
+              << ", Direction: " << trade.direction
+              << ", Volume: " << trade.volume << std::endl;
+}
+
+// method1: by lambda
+auto printVisitor = [](auto&& arg) {
+    using T = std::decay_t<decltype(arg)>;
+    if constexpr (std::is_same_v<T, Order>) {
+        std::cout << "Processing Order" << std::endl;
+        printOrder(arg);
+    } else if constexpr (std::is_same_v<T, Trade>) {
+        std::cout << "Processing Trade" << std::endl;
+        printTrade(arg);
+    }
+};
+
+// method2: by struct operator()
+struct Visitor {
+    void operator()(Order const& o) {
+        printOrder(o);
+    }
+    void operator()(Trade const& t) {
+        printTrade(t);
+    }
+};
+
+// method3: by functor operator()
+template <class... Ts>
+struct overload : Ts... {
+    using Ts::operator()...;
+};
+
+auto MyVisitor = overload{
+    [](Order const& o) { printOrder(o); },
+    [](Trade const& o) { printTrade(o); },
+};
+
+int main() {
+    StructVariant orderOrTrade;
+
+    // Assigning an Order to the variant
+    orderOrTrade = Order{"12345", 10, 99.99};
+    std::visit(printVisitor, orderOrTrade);
+
+    // Assigning a Trade to the variant
+    orderOrTrade = Trade{"54321", 'B', 20};
+    std::visit(Visitor{}, orderOrTrade);
+
+    orderOrTrade = Order{.orderid = "66666", .volume = 100, .price = 100.1};
+    std::visit(MyVisitor, orderOrTrade);
+}
+```
