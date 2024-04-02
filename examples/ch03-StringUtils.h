@@ -11,7 +11,7 @@
 namespace StringUtils {
 
 // Split input str to vector<string_view> by delimiter string
-inline std::vector<std::string_view> split(std::string_view strv, std::string_view delim_str = " ") {
+inline std::vector<std::string_view> split(std::string_view strv, std::string_view delims = " ") {
     std::vector<std::string_view> output;
     size_t first = 0;
 
@@ -25,6 +25,29 @@ inline std::vector<std::string_view> split(std::string_view strv, std::string_vi
             break;
 
         first = second + 1;
+    }
+
+    return output;
+}
+
+inlne std::vector<std::string_view> splitByRawpointer(std::string_view strv, std::string_view delims = " ") {
+    std::vector<std::string_view> output;
+    auto delim_len = delims.size();
+    if (delim_len == 0) {  // delims is empty
+        output.emplace_back(strv);
+        return output;
+    }
+
+    auto start = strv.data();
+    auto end = start + strv.size();
+    auto current = start;
+
+    while (start < end) {
+        current = std::search(start, end, delims.begin(), delims.end());
+        if (current != start)
+            output.emplace_back(std::string_view(start, current - start));
+
+        start = current + delim_len;
     }
 
     return output;
