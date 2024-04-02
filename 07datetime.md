@@ -72,7 +72,8 @@ int main() {
     // 构造时间字符串
     std::stringstream time_string_stream;
     time_string_stream << buffer << '.' << std::setw(3) << std::setfill('0') << milliseconds.count() << std::setw(3) << std::setfill('0') << microseconds.count();
-    std::string time_string = time_string_stream.str();
+    // std::string time_string = time_string_stream.str();
+    auto time_string = time_string_stream.view(); // since c++20
 
     // 打印结果
     std::cout << time_string << std::endl;
