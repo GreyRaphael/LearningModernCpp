@@ -11,24 +11,23 @@
 namespace StringUtils {
 
 // Split input str to vector<string_view> by delimiter string
-inline std::vector<std::string_view> split(std::string_view str, std::string_view delim_str) {
-    size_t pos_start = 0, pos_end, delim_len = delim_str.size();
-    std::string_view token;
-    std::vector<std::string_view> tokens;
+inline std::vector<std::string_view> split(std::string_view strv, std::string_view delim_str = " ") {
+    std::vector<std::string_view> output;
+    size_t first = 0;
 
-    // if str startswith delim_str, ignore
-    if (str.find(delim_str) == 0) pos_start = delim_len;
+    while (first < strv.size()) {
+        const auto second = strv.find_first_of(delims, first);
 
-    while ((pos_end = str.find(delim_str, pos_start)) != std::string_view::npos) {
-        token = str.substr(pos_start, pos_end - pos_start);
-        tokens.push_back(token);
-        pos_start = pos_end + delim_len;
+        if (first != second)
+            output.emplace_back(strv.substr(first, second - first));
+
+        if (second == std::string_view::npos)
+            break;
+
+        first = second + 1;
     }
-    // if str endswith delimi_str, ignore
-    if (pos_start < str.size()) {
-        tokens.push_back(str.substr(pos_start));
-    }
-    return tokens;
+
+    return output;
 }
 
 // Split input str to vector<string_view> by delimiter character
