@@ -15,6 +15,8 @@
   - [`fmt`](#fmt)
   - [`SQLite3`](#sqlite3)
   - [CLI11](#cli11)
+  - [range-v3](#range-v3)
+    - [zip \& zip\_with](#zip--zip_with)
 
 
 ## Code Organized by CMake
@@ -911,5 +913,46 @@ int main(int argc, char** argv) {
         fmt::println("query orders");
     } else {
     }
+}
+```
+
+## range-v3
+
+`vcpkg install range-v3`
+
+### zip & zip_with
+
+```cpp
+#include <format>
+#include <iostream>
+#include <map>
+#include <range/v3/view.hpp>
+#include <vector>
+
+int main() {
+    std::vector a{10, 20, 30, 40, 50};
+    std::vector<std::string> b{"one", "two", "three", "four"};
+    std::map<std::string, int> c{{"one", 1}, {"two", 2}, {"three", 3}, {"four", 4}};
+
+    for (const auto& [num, name, pair] : ranges::views::zip(a, b, c))
+        std::cout << std::format("{} -> {} -> {}\n", num, name, pair.second);
+}
+```
+
+```cpp
+#include <iostream>
+#include <range/v3/all.hpp>
+#include <vector>
+
+int main() {
+    std::vector prices = {100, 200, 150, 180, 130};
+    std::vector costs = {10, 20, 50, 40, 100};
+
+    auto compute = [](const auto& p, const auto& c) { return p - c; };
+    auto income = ranges::views::zip_with(compute, prices, costs);
+
+    std::cout << ranges::accumulate(income, 0);              // 540
+    std::cout << ranges::fold_left(income, 0, std::plus{});  // 540
+    auto vec_income = ranges::to<std::vector>(income);       // convert to vector
 }
 ```
