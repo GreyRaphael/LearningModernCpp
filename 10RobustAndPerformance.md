@@ -166,6 +166,36 @@ int main() {
 
 ## `unique_ptr`
 
+smart pointer auto clean up memory
+
+```cpp
+#include <iostream>
+#include <memory>
+
+void* operator new(std::size_t sz) {
+    std::cout << "Allocating: " << sz << '\n';
+    return std::malloc(sz);
+}
+
+void operator delete(void* ptr) noexcept {
+    std::cout << "Deallocating memory\n";
+    std::free(ptr);
+}
+
+int main() {
+    {
+        auto ptr_c = std::make_unique<char>(100);
+    }
+    {
+        auto ptr_d = new double{1.1};
+    }
+    {
+        auto ptr_i = new int{666};
+        delete ptr_i;
+    }
+}
+```
+
 simple example
 
 ```cpp
