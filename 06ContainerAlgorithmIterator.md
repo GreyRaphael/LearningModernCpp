@@ -1037,8 +1037,39 @@ void printTuple(const TupleT& tp) {
 
 int main() {
     std::tuple tp1{10, 20, "hello"};
-    printTuple(tp1);
+    printTuple(tp1); // (10, 20, hello)
     std::tuple tp2{false, 12.2, 10, 'a', "good"};
-    printTuple(tp2);
+    printTuple(tp2); // (0, 12.2, 10, a, good)
+}
+```
+
+print tuple elements with index
+
+```cpp
+#include <iostream>
+
+template <typename TupleT, std::size_t... Is>
+void printTupleImp(const TupleT& tp, std::index_sequence<Is...>) {
+    auto printElem = [](const auto& x, size_t index) {
+        if (index > 0)
+            std::cout << ", ";
+        std::cout << index << ": " << x;
+    };
+
+    std::cout << "(";
+    (printElem(std::get<Is>(tp), Is), ...);
+    std::cout << ")";
+}
+
+template <typename TupleT, std::size_t TupSize = std::tuple_size_v<TupleT>>
+void printTupleWithIndex(const TupleT& tp) {
+    printTupleImp(tp, std::make_index_sequence<TupSize>{});
+}
+
+int main() {
+    std::tuple tp1{10, 20, "hello"};
+    printTupleWithIndex(tp1); // (0: 10, 1: 20, 2: hello)
+    std::tuple tp2{false, 12.2, 10, 'a', "good"};
+    printTupleWithIndex(tp2); // (0: 0, 1: 12.2, 2: 10, 3: a, 4: good)
 }
 ```
