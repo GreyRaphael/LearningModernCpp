@@ -1073,3 +1073,67 @@ int main() {
     printTupleWithIndex(tp2); // (0: 0, 1: 12.2, 2: 10, 3: a, 4: good)
 }
 ```
+
+print tuple elements with `std::apply` & modify tuple elements with `std:apply`
+
+```cpp
+#include <iostream>
+#include <tuple>
+
+template <typename TupleT>
+void printTupleApply(const TupleT& tp) {
+    std::cout << "(";
+    std::apply([](const auto&... tupleArgs) {
+        size_t index = 0;
+        auto printElem = [&index](const auto& x) {
+            if (index++ > 0)
+                std::cout << ", ";
+            std::cout << x;
+        };
+
+        (printElem(tupleArgs), ...);
+    },
+               tp);
+    std::cout << ")";
+}
+
+// since c++20
+template <typename TupleT, typename Fn>
+void for_each_tuple1(TupleT&& tp, Fn&& fn) {
+    std::apply(
+        [&fn]<typename... T>(T&&... args) {
+            (fn(std::forward<T>(args)), ...);
+        },
+        std::forward<TupleT>(tp));
+}
+
+// c++17
+template <typename TupleT, typename Fn>
+void for_each_tuple2(TupleT&& tp, Fn&& fn) {
+    std::apply(
+        [&fn](auto&&... args) {
+            (fn(std::forward<decltype(args)>(args)), ...);
+        },
+        std::forward<TupleT>(tp));
+}
+
+template <typename TupleT, typename Fn>
+[[nodiscard]] auto transform_tuple(TupleT&& tp, Fn&& fn) {
+    return std::apply(
+        [&fn]<typename... T>(T&&... args) {
+            return std::make_tuple(fn(std::forward<T>(args))...);
+        },
+        std::forward<TupleT>(tp));
+}
+
+int main() {
+    std::tuple tp{10, 20, 30.0};
+    printTupleApply(tp);  // (10, 20, 30)
+    for_each_tuple1(tp, [](auto&& x) { x *= 2; });
+    for_each_tuple2(tp, [](auto&& x) { x *= 2; });
+    printTupleApply(tp);  // (40, 80, 120)
+    // transform tuple with return
+    auto tp2 = transform_tuple(tp, [](const auto& x) { return x * 2; });
+    printTupleApply(tp2);  // (80, 160, 240)
+}
+```
