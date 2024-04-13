@@ -11,6 +11,7 @@
   - [`std::any`](#stdany)
   - [`std::optional`](#stdoptional)
   - [`std::variant`](#stdvariant)
+  - [`std::tuple`](#stdtuple)
 
 C++ Standard Library core initially sat three main pillars: **containers**, **algorithms**,
 and **iterators**
@@ -1005,5 +1006,39 @@ int main() {
 
     orderOrTrade = Order{.orderid = "66666", .volume = 100, .price = 100.1};
     std::visit(MyVisitor, orderOrTrade);
+}
+```
+
+## `std::tuple`
+
+print tuple elements
+
+```cpp
+#include <iostream>
+
+template <typename TupleT, std::size_t... Is>
+void printTupleImp(const TupleT& tp, std::index_sequence<Is...>) {
+    size_t index = 0;
+    auto printElem = [&index](const auto& x) {
+        if (index++ > 0)
+            std::cout << ", ";
+        std::cout << x;
+    };
+
+    std::cout << "(";
+    (printElem(std::get<Is>(tp)), ...);
+    std::cout << ")";
+}
+
+template <typename TupleT, std::size_t TupSize = std::tuple_size_v<TupleT>>
+void printTuple(const TupleT& tp) {
+    printTupleImp(tp, std::make_index_sequence<TupSize>{});
+}
+
+int main() {
+    std::tuple tp1{10, 20, "hello"};
+    printTuple(tp1);
+    std::tuple tp2{false, 12.2, 10, 'a', "good"};
+    printTuple(tp2);
 }
 ```
