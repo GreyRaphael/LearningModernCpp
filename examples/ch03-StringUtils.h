@@ -123,26 +123,20 @@ inline bool contains(std::string_view str, char const character) {
 }
 
 //  Remove specified leading characters
-inline std::string_view lstrip(std::string_view str, std::string_view substring = " \t\r\n") {
-    auto pos_start = str.find_first_not_of(substring);
-    if (pos_start != std::string_view::npos) {
-        return str.substr(pos_start);
-    }
-    return str;
+inline std::string_view lstrip(std::string_view str) {
+    auto it = std::find_if_not(str.begin(), str.end(), isspace);
+    return {it, str.end()};
 }
 
 //  Remove specified trailing characters
-inline std::string_view rstrip(std::string_view str, std::string_view substring = " \t\r\n") {
-    auto pos_end = str.find_last_not_of(substring);
-    if (pos_end != std::string_view::npos) {
-        return str.substr(0, pos_end + 1);
-    }
-    return str;
+inline std::string_view rstrip(std::string_view str) {
+    auto it = std::find_if_not(str.rbegin(), str.rend(), isspace);
+    return {str.begin(), it.base()};
 }
 
 //  Remove specified leading and trailing characters
-inline std::string_view strip(std::string_view str, std::string_view substring = " \t\r\n") {
-    return rstrip(lstrip(str, substring), substring);
+inline std::string_view strip(std::string_view str) {
+    return rstrip(lstrip(str));
 }
 
 // Remove specified leading substring once
