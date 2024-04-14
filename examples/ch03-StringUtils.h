@@ -30,6 +30,7 @@ inline std::vector<std::string_view> split(std::string_view strv, std::string_vi
     return output;
 }
 
+// benchmark: https://quick-bench.com/q/G17t97jfEoIvdiBNe63h7LmTJJs
 inlne std::vector<std::string_view> splitByRawpointer(std::string_view strv, std::string_view delims = " ") {
     std::vector<std::string_view> output;
     auto delim_len = delims.size();
