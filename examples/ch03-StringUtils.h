@@ -147,25 +147,17 @@ inline std::string_view strip(std::string_view str, std::string_view substring =
 
 // Remove specified leading substring once
 inline std::string_view ltrim(std::string_view str, std::string_view substring) {
-    auto pos_start = str.find(substring);
-    if (pos_start != std::string_view::npos) {
-        return str.substr(pos_start + substring.size());
-    }
-    return str;
+    return str.substr(str.find_first_not_of(substring));
 }
 
 // Remove specified tailing substring once
 inline std::string_view rtrim(std::string_view str, std::string_view substring) {
-    auto pos_start = str.rfind(substring);
-    if (pos_start != std::string_view::npos) {
-        return str.substr(0, pos_start);
-    }
-    return str;
+    return str.substr(0, str.find_last_not_of(substring) + 1);
 }
 
 // Remove specified leading/tailing substring once respectively
 inline std::string_view trim(std::string_view str, std::string_view substring) {
-    return rtrim(ltrim(str, substring), substring);
+    return ltrim(rtrim(str, substring), substring);
 }
 
 // Checks if input str starts with specified substring.
