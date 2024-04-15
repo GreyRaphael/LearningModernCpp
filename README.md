@@ -112,6 +112,23 @@ Host github.com
   Port 443
 ```
 
+change dnf proxy
+
+```conf
+# /etc/dnf/dnf.conf
+[main]
+gpgcheck=True
+installonly_limit=3
+clean_requirements_on_remove=True
+best=False
+skip_if_unavailable=True
+max_parallel_downloads=10
+fastestmirror=True
+defaultyes=True
+# add this line
+proxy=http://127.0.0.1:2080
+```
+
 ## Development Environment in Debian
 
 > 实机和wsl均可这么配置，下文以WSL为例
