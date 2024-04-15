@@ -17,6 +17,7 @@
   - [CLI11](#cli11)
   - [range-v3](#range-v3)
     - [zip \& zip\_with](#zip--zip_with)
+  - [abseil](#abseil)
 
 
 ## Code Organized by CMake
@@ -954,5 +955,49 @@ int main() {
     std::cout << ranges::accumulate(income, 0);              // 540
     std::cout << ranges::fold_left(income, 0, std::plus{});  // 540
     auto vec_income = ranges::to<std::vector>(income);       // convert to vector
+}
+```
+
+## abseil
+
+`vcpkg install abseil`
+
+```cmake
+find_package(absl CONFIG REQUIRED)
+# # note: 181 additional targets are not displayed.
+target_link_libraries(proj1 PRIVATE absl::strings absl::str_format absl::time)
+```
+
+```cpp
+#include <absl/time/civil_time.h>
+#include <absl/time/clock.h>
+#include <absl/time/time.h>
+
+#include <iostream>
+
+int main() {
+    absl::Time currentTime = absl::Now();
+    std::cout << currentTime << '\n';  // 2024-04-16T02:02:18.5981171+08:00
+
+    auto cs = absl::ToCivilSecond(currentTime, absl::LocalTimeZone());
+    std::cout << cs.year() << '\n';
+    std::cout << cs.month() << '\n';
+    std::cout << cs.day() << '\n';
+    std::cout << cs.hour() << '\n';
+    std::cout << cs.minute() << '\n';
+    std::cout << cs.second() << '\n';
+    auto v = absl::GetCurrentTimeNanos();
+    auto civil_time = absl::FromCivil(cs, absl::LocalTimeZone());
+    auto dur = currentTime - civil_time;
+    std::cout << dur / absl::Milliseconds(1) << '\n';  // 598
+
+    auto lat = absl::LocalTimeZone();
+    auto info = lat.At(currentTime);
+    std::cout << info.zone_abbr << '\n';  // CST
+    std::cout << info.cs << '\n';         // 2024-04-16T02:02:18
+
+    auto wd = absl::GetWeekday(info.cs);
+    std::cout << wd << '\n';       // Tuesday
+    std::cout << int(wd) << '\n';  // 1
 }
 ```
