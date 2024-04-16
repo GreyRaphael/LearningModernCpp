@@ -18,6 +18,7 @@
   - [range-v3](#range-v3)
     - [zip \& zip\_with](#zip--zip_with)
   - [abseil](#abseil)
+  - [avro-cpp](#avro-cpp)
 
 
 ## Code Organized by CMake
@@ -1001,3 +1002,27 @@ int main() {
     std::cout << int(wd) << '\n';  // 1
 }
 ```
+
+## avro-cpp
+
+```bash
+# 1. change ~/vcpkg/ports/avro-cpp/portfile.cmake
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}/lang/c++"
+    OPTIONS
+        -DBUILD_TESTING=OFF
+        # add this line
+        -DCMAKE_CXX_STANDARD=20
+        ${FEATURE_OPTIONS}
+)
+# 2. change ~/vcpkg/triplets/x64-linux.cmake
+set(VCPKG_TARGET_ARCHITECTURE x64)
+set(VCPKG_CRT_LINKAGE dynamic)
+set(VCPKG_LIBRARY_LINKAGE dynamic) # static to dynamic
+
+set(VCPKG_CMAKE_SYSTEM_NAME Linux)
+
+# 3. install avro-cpp
+vcpkg install avro-cpp
+```
+
