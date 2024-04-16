@@ -1026,3 +1026,33 @@ set(VCPKG_CMAKE_SYSTEM_NAME Linux)
 vcpkg install avro-cpp
 ```
 
+read avro file with `re` and `im` field
+
+```cpp
+#include <avro/DataFile.hh>
+#include <avro/Generic.hh>
+#include <format>
+#include <iostream>
+
+int main(int argc, char** argv) {
+    if (argc < 2) {
+        std::cout << "provide an avro file!" << '\n';
+        return -1;
+    }
+
+    avro::DataFileReader<avro::GenericDatum> reader(argv[1]);
+    auto dataSchema = reader.dataSchema();
+
+    avro::GenericDatum datum(dataSchema);
+    while (reader.read(datum)) {
+        if (datum.type() == avro::AVRO_RECORD) {
+            const avro::GenericRecord& r = datum.value<avro::GenericRecord>();
+            // TODO: pull out each field
+            auto x1 = r.field("re").value<double>();
+            auto x2 = r.field("im").value<double>();
+            std::cout << std::format("{} + {}i\n", x1, x2);
+        }
+    }
+    std::cout << dataSchema.toJson() << '\n';
+}
+```
