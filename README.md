@@ -344,6 +344,72 @@ su - moris
 sudo dnf update
 ```
 
+```bash
+# /etc/yum.repo.d/fedora.repo for wsl
+[fedora]
+name=Fedora $releasever - $basearch - aliyun
+failovermethod=priority
+baseurl=http://mirrors.aliyun.com/fedora/development/rawhide/Everything/$basearch/os/
+#mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=fedora-$releasever&arch=$basearch
+enabled=1
+metadata_expire=7d
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$basearch
+
+[fedora-debuginfo]
+name=Fedora $releasever - $basearch - Debug - aliyun
+failovermethod=priority
+baseurl=http://mirrors.aliyun.com/fedora/development/rawhide/Everything/$basearch/debug/
+#mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=fedora-debug-$releasever&arch=$basearch
+enabled=0
+metadata_expire=7d
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$basearch
+
+[fedora-source]
+name=Fedora $releasever - Source - aliyun
+failovermethod=priority
+baseurl=http://mirrors.aliyun.com/fedora/development/rawhide/Everything/source/SRPMS/
+#mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=fedora-source-$releasever&arch=$basearch
+enabled=0
+metadata_expire=7d
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$basearch
+```
+
+```bash
+# /etc/yum.repo.d/fedora.repo for aliyun
+[fedora]
+name=Fedora $releasever - $basearch - aliyun
+failovermethod=priority
+baseurl=http://mirrors.cloud.aliyuncs.com/fedora/development/rawhide/Everything/$basearch/os/
+#mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=fedora-$releasever&arch=$basearch
+enabled=1
+metadata_expire=7d
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$basearch
+
+[fedora-debuginfo]
+name=Fedora $releasever - $basearch - Debug - aliyun
+failovermethod=priority
+baseurl=http://mirrors.cloud.aliyuncs.com/fedora/development/rawhide/Everything/$basearch/debug/
+#mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=fedora-debug-$releasever&arch=$basearch
+enabled=0
+metadata_expire=7d
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$basearch
+
+[fedora-source]
+name=Fedora $releasever - Source - aliyun
+failovermethod=priority
+baseurl=http://mirrors.cloud.aliyuncs.com/fedora/development/rawhide/Everything/source/SRPMS/
+#mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=fedora-source-$releasever&arch=$basearch
+enabled=0
+metadata_expire=7d
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$basearch
+```
+
 prepare develepment environment
 
 ```bash
