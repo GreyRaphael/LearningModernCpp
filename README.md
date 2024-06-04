@@ -16,6 +16,7 @@
   - [linux locale config](#linux-locale-config)
 - [How to debug program with arguments in vscode](#how-to-debug-program-with-arguments-in-vscode)
 - [How to use vcpkg in vscode](#how-to-use-vcpkg-in-vscode)
+  - [add proxy for aliyun](#add-proxy-for-aliyun)
   - [msvc](#msvc)
   - [mingw(not recomended)](#mingwnot-recomended)
   - [linux](#linux)
@@ -555,6 +556,19 @@ Method2: by `.vscode/settings.json`
 ```
 
 ## How to use vcpkg in vscode
+
+### add proxy for aliyun
+
+> by [ShellCrash](https://github.com/juewuy/ShellCrash/blob/dev/README_CN.md)
+
+```bash
+sudo -i #切换到root用户，如果需要密码，请输入密码
+bash #如已处于bash环境可跳过
+export url='https://gh.jwsc.eu.org/master' && bash -c "$(curl -kfsSl $url/install.sh)" && source /etc/profile &> /dev/null
+
+# 直接配置订阅地址，不转换
+# 配置本机证书和代理
+```
 
 ### msvc
 
