@@ -4,6 +4,9 @@
   - [Code Organized by CMake](#code-organized-by-cmake)
   - [pybind11](#pybind11)
     - [pybind11 wheels without external libs](#pybind11-wheels-without-external-libs)
+    - [pybind11 wheels with external libs](#pybind11-wheels-with-external-libs)
+      - [preprepared libs](#preprepared-libs)
+      - [use preprepared libs in pybind11 project](#use-preprepared-libs-in-pybind11-project)
   - [`nlohmann::json`](#nlohmannjson)
     - [`json` with struct](#json-with-struct)
     - [`json` with vector](#json-with-vector)
@@ -241,7 +244,6 @@ PYBIND11_MODULE(proj1, m) {
 ### pybind11 wheels without external libs
 
 prerequisites: `pip install pybind11 wheel`
-> `python setup bdist_wheel`
 
 ```bash
 # input
@@ -325,19 +327,21 @@ setup(
 )
 ```
 
+> `python setup bdist_wheel`
+
 ```bash
 # output
 .
 ├── build
 │   ├── bdist.linux-x86_64
 │   ├── lib.linux-x86_64-cpython-310
-│   │   └── proj1.cpython-310-x86_64-linux-gnu.so
+│   │   └── proj1.cpython-310-x86_64-linux-gnu.so # maybe usable
 │   └── temp.linux-x86_64-cpython-310
 │       ├── towrapper
 │       │   └── tools.o
 │       └── wrapped_source.o
 ├── dist
-│   └── proj1-1.0.0-cp310-cp310-linux_x86_64.whl
+│   └── proj1-1.0.0-cp310-cp310-linux_x86_64.whl # target file
 ├── proj1.egg-info
 │   ├── PKG-INFO
 │   ├── SOURCES.txt
@@ -348,6 +352,219 @@ setup(
 ├── towrapper
 │   ├── tools.cpp
 │   └── tools.h
+└── wrapped_source.cpp
+```
+
+### pybind11 wheels with external libs
+
+prerequisites: `pip install pybind11 wheel`
+
+#### preprepared libs
+
+```bash
+.
+├── CMakeLists.txt
+├── xxx.cpp
+├── xxx.h
+├── yyy.cpp
+└── yyy.h
+```
+
+```cmake
+cmake_minimum_required(VERSION 3.28.0)
+project(xxxyyy VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON) # must be set for pybind11
+add_library(xxx STATIC xxx.cpp)
+add_library(yyy SHARED yyy.cpp)
+```
+
+```cpp
+// xxx.h
+#pragma once
+#include <cstdio>
+#include <string>
+
+int mymul(int a, int b);
+
+template <typename T>
+struct Student {
+    T value;
+    std::string name;
+    void say_hello() {
+        printf("hello, I am %s", name.c_str());
+    }
+    T calc(T x, T y) {
+        return x + y + value;
+    }
+};
+
+auto do_somthing(Student<double>& stu, double value);
+
+double wrapped_do_somthing(double value);
+```
+
+```cpp
+// xxx.cpp
+#include "xxx.h"
+
+#include <cstdio>
+
+int mymul(int a, int b) {
+    return a * b;
+}
+
+auto do_somthing(Student<double> &stu, double value) {
+    stu.value = value;
+    return stu.calc(100.1, 200.2);
+}
+
+double wrapped_do_somthing(double value) {
+    Student<double> stu{.name = "gewei"};
+    auto result = do_somthing(stu, value);
+    printf("name=%s, result=%f", stu.name.c_str(), result);
+    return result;
+}
+```
+
+```cpp
+// yyy.h
+#pragma once
+
+double mydiv(double a, double b);
+```
+
+```cpp
+// yyy.cpp
+#include "yyy.h"
+
+double mydiv(double a, double b) {
+    return a / b;
+}
+```
+
+```bash
+# build release output
+build/
+    libxxx.a    # recommended
+    libyyy.so
+```
+
+#### use preprepared libs in pybind11 project
+
+```bash
+.
+├── setup.py
+├── shared_lib1
+│   ├── libyyy.so
+│   └── yyy.h
+├── static_lib2
+│   ├── libxxx.a
+│   └── xxx.h
+└── wrapped_source.cpp
+```
+
+```cpp
+// simplified xxx.h
+#pragma once
+
+int mymul(int a, int b);
+
+double wrapped_do_somthing(double value);
+```
+
+```cpp
+// yyy.h
+#pragma once
+
+double mydiv(double a, double b);
+```
+
+```cpp
+// wrapped_source.cpp
+#include <pybind11/pybind11.h>
+
+#include "xxx.h"
+#include "yyy.h"
+
+// proj1 must be consistent with setup.py module name
+PYBIND11_MODULE(proj1, m) {
+    m.def("muli", &mymul, "multiply add two integers, proj1.muli(x,y)");
+    m.def("do_somthing", &wrapped_do_somthing, "custom do_something, proj1.do_somthing(value)");
+
+    m.def("divd", &mydiv, "divide two doubles, proj1.divd(x, y)");
+
+    m.def("subi", [](int i, int j) { return i - j; }, "integer substract y from x, proj1.sub(x,y)");
+    m.def("subd", [](double i, double j) { return i - j; }, "double substract y from x, proj1.sub(x,y)");
+}
+```
+
+```py
+# setup.py
+from setuptools import setup, Extension
+from setuptools.command.build_ext import build_ext
+import pybind11
+
+ext_modules = [
+    Extension(
+        name="proj1",
+        sources=["wrapped_source.cpp"],
+        include_dirs=[
+            pybind11.get_include(),  # Path to pybind11 headers
+            "shared_lib1",  # Any other include paths
+            "static_lib2",  # Any other include paths
+        ],
+        library_dirs=[
+            "shared_lib1",  # Any other library paths
+            "static_lib2",  # Any other library paths
+        ],
+        libraries=[
+            "xxx",
+            "yyy",
+        ],
+        language="c++",
+        extra_link_args=["-Wl,-rpath=./"],
+    ),
+]
+
+setup(
+    name="proj1",
+    version="1.0.0",
+    author="GeWei",
+    author_email="grey@pku.edu.cn",
+    description="A simple template project using pybind11",
+    long_description="",
+    ext_modules=ext_modules,
+    cmdclass={"build_ext": build_ext},
+    zip_safe=False,
+)
+```
+
+> `python setup.py bdist_wheel`
+
+```bash
+.
+├── build
+│   ├── bdist.linux-x86_64
+│   ├── lib.linux-x86_64-cpython-310
+│   │   └── proj1.cpython-310-x86_64-linux-gnu.so # # maybe usable
+│   └── temp.linux-x86_64-cpython-310
+│       └── wrapped_source.o
+├── dist
+│   └── proj1-1.0.0-cp310-cp310-linux_x86_64.whl # target whl file
+├── proj1.egg-info
+│   ├── PKG-INFO
+│   ├── SOURCES.txt
+│   ├── dependency_links.txt
+│   ├── not-zip-safe
+│   └── top_level.txt
+├── setup.py
+├── shared_lib1
+│   ├── libyyy.so
+│   └── yyy.h
+├── static_lib2
+│   ├── libxxx.a
+│   └── xxx.h
 └── wrapped_source.cpp
 ```
 
