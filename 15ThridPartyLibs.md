@@ -3,7 +3,7 @@
 - [Third-Party Library](#third-party-library)
   - [Code Organized by CMake](#code-organized-by-cmake)
   - [pybind11](#pybind11)
-    - [pybind11 wheels without linkage](#pybind11-wheels-without-linkage)
+    - [pybind11 wheels without external libs](#pybind11-wheels-without-external-libs)
   - [`nlohmann::json`](#nlohmannjson)
     - [`json` with struct](#json-with-struct)
     - [`json` with vector](#json-with-vector)
@@ -238,7 +238,7 @@ PYBIND11_MODULE(proj1, m) {
 }
 ```
 
-### pybind11 wheels without linkage
+### pybind11 wheels without external libs
 
 prerequisites: `pip install pybind11 wheel`
 > `python setup bdist_wheel`
@@ -299,14 +299,16 @@ import pybind11
 
 ext_modules = [
     Extension(
-        "proj1",  # Name of the module
-        ["wrapped_source.cpp", "towrapper/tools.cpp"],  # Source file
+        name="proj1",
+        sources=["wrapped_source.cpp", "towrapper/tools.cpp"],
         include_dirs=[
             pybind11.get_include(),  # Path to pybind11 headers
             "towrapper",  # Any other include paths
         ],
         language="c++",
-        extra_compile_args=["-std=c++17"],
+        # extra_compile_args=["-std=c++17"], # depends on compiler
+        # py_limited_api=True, # not support in pybind11, but in cython
+        # define_macros=[("Py_LIMITED_API", "0x03090000")], # not support in pybind11, but in cython
     ),
 ]
 
