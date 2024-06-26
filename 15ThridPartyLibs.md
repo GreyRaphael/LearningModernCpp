@@ -3,6 +3,7 @@
 - [Third-Party Library](#third-party-library)
   - [Code Organized by CMake](#code-organized-by-cmake)
   - [pybind11](#pybind11)
+    - [pybind11 wheels without linkage](#pybind11-wheels-without-linkage)
   - [`nlohmann::json`](#nlohmannjson)
     - [`json` with struct](#json-with-struct)
     - [`json` with vector](#json-with-vector)
@@ -235,6 +236,117 @@ PYBIND11_MODULE(proj1, m) {
 
     m.def("add", &add, "A function that adds two numbers");
 }
+```
+
+### pybind11 wheels without linkage
+
+prerequisites: `pip install pybind11 wheel`
+> `python setup bdist_wheel`
+
+```bash
+# input
+.
+├── setup.py
+├── towrapper
+│   ├── tools.cpp
+│   └── tools.h
+└── wrapped_source.cpp
+```
+
+```cpp
+// tools.h
+#pragma once
+
+int myadd(int x, int y);
+```
+
+```cpp
+// tools.cpp
+#include "tools.h"
+
+int myadd(int x, int y) {
+    return x + y;
+}
+```
+
+```cpp
+// wrapped_source.cpp
+#include <pybind11/pybind11.h>
+#include "tools.h"
+
+double myadd2(double x, double y) {
+    return x + y;
+}
+
+// proj1 must be consistent with setup.py module name
+PYBIND11_MODULE(proj1, m) {
+    m.def("addi", &myadd, "integer add two integers, proj1.add(x,y)");
+
+    m.def("addd", &myadd2, "integer add two doubles, proj1.add(x,y)");
+
+    m.def("subi", [](int i, int j) { return i - j; }, "integer substract y from x, proj1.sub(x,y)");
+
+    m.def("subd", [](double i, double j) { return i - j; }, "double substract y from x, proj1.sub(x,y)");
+}
+```
+
+```py
+# setup.py
+from setuptools import setup, Extension
+from setuptools.command.build_ext import build_ext
+import pybind11
+
+
+ext_modules = [
+    Extension(
+        "proj1",  # Name of the module
+        ["wrapped_source.cpp", "towrapper/tools.cpp"],  # Source file
+        include_dirs=[
+            pybind11.get_include(),  # Path to pybind11 headers
+            "towrapper",  # Any other include paths
+        ],
+        language="c++",
+        extra_compile_args=["-std=c++17"],
+    ),
+]
+
+setup(
+    name="proj1",
+    version="1.0.0",
+    author="GeWei",
+    author_email="grey@pku.edu.cn",
+    description="A simple template project using pybind11",
+    long_description="",
+    ext_modules=ext_modules,
+    cmdclass={"build_ext": build_ext},
+    zip_safe=False,
+)
+```
+
+```bash
+# output
+.
+├── build
+│   ├── bdist.linux-x86_64
+│   ├── lib.linux-x86_64-cpython-310
+│   │   └── proj1.cpython-310-x86_64-linux-gnu.so
+│   └── temp.linux-x86_64-cpython-310
+│       ├── towrapper
+│       │   └── tools.o
+│       └── wrapped_source.o
+├── dist
+│   └── proj1-1.0.0-cp310-cp310-linux_x86_64.whl
+├── proj1.egg-info
+│   ├── PKG-INFO
+│   ├── SOURCES.txt
+│   ├── dependency_links.txt
+│   ├── not-zip-safe
+│   └── top_level.txt
+├── setup.py
+├── towrapper
+│   ├── tools.cpp
+│   └── tools.h
+└── wrapped_source.cpp
 ```
 
 ## `nlohmann::json`
