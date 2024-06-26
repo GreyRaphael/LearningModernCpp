@@ -594,10 +594,19 @@ def py_div(double a, double b):
     return mydiv(a, b)
 ```
 
+> `python setup.py bdist_wheel --py-limited-api=cp37`
+
 ```py
 # setup.py
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 from Cython.Build import cythonize
+import sysconfig
+
+
+def get_lib_dir():
+    py_version = "".join(sysconfig.get_python_version().split("."))
+    return f"{sysconfig.get_platform()}-cpython-{py_version}"  # linux-x86_64-cpython-310
+
 
 extensions = [
     Extension(
@@ -606,8 +615,8 @@ extensions = [
         include_dirs=["static_lib2", "shared_lib1"],
         library_dirs=["static_lib2", "shared_lib1"],
         libraries=["xxx", "yyy"],
-        # extra_link_args=["-Wl,-rpath=./", "-obuild/lib.linux-x86_64-cpython-310/proj1.so"],
-        extra_link_args=["-Wl,-rpath=./"],
+        extra_link_args=["-Wl,-rpath=./", f"-obuild/lib.{get_lib_dir()}/proj1.so"],
+        # extra_link_args=["-Wl,-rpath=./"],
         language="c++",
         define_macros=[("CYTHON_LIMITED_API", "0x03070000"), ("Py_LIMITED_API", "0x03070000")],
         py_limited_api=True,
@@ -617,12 +626,7 @@ extensions = [
 setup(
     name="proj1",
     version="1.0.0",
-    author="GeWei",
-    author_email="grey@pku.edu.cn",
-    description="A simple template project using pybind11",
-    long_description="",
     ext_modules=cythonize(extensions),
-    platforms="any",
 )
 ```
 
