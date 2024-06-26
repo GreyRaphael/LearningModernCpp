@@ -7,6 +7,7 @@
     - [pybind11 wheels with external libs](#pybind11-wheels-with-external-libs)
       - [preprepared libs](#preprepared-libs)
       - [use preprepared libs in pybind11 project](#use-preprepared-libs-in-pybind11-project)
+    - [by cython](#by-cython)
   - [`nlohmann::json`](#nlohmannjson)
     - [`json` with struct](#json-with-struct)
     - [`json` with vector](#json-with-vector)
@@ -566,6 +567,63 @@ setup(
 │   ├── libxxx.a
 │   └── xxx.h
 └── wrapped_source.cpp
+```
+
+### by cython
+
+> `python setup.py bdist_wheel`
+
+```py
+# cython: language_level=3
+
+# Declare the external C function from the static library
+cdef extern from "xxx.h":
+    int mymul(int a, int b)
+    double wrapped_do_somthing(double value)
+
+def py_mul(int a, int b):
+    return mymul(a, b)
+
+def py_do_somthing(double value):
+    return wrapped_do_somthing(value)
+
+cdef extern from "yyy.h":
+    double mydiv(double a, double b)
+
+def py_div(double a, double b):
+    return mydiv(a, b)
+```
+
+```py
+# setup.py
+from setuptools import setup, Extension
+from Cython.Build import cythonize
+
+extensions = [
+    Extension(
+        name="proj1",
+        sources=["proj1.pyx"],
+        include_dirs=["static_lib2", "shared_lib1"],
+        library_dirs=["static_lib2", "shared_lib1"],
+        libraries=["xxx", "yyy"],
+        # extra_link_args=["-Wl,-rpath=./", "-obuild/lib.linux-x86_64-cpython-310/proj1.so"],
+        extra_link_args=["-Wl,-rpath=./"],
+        language="c++",
+        define_macros=[("CYTHON_LIMITED_API", "0x03070000"), ("Py_LIMITED_API", "0x03070000")],
+        py_limited_api=True,
+    )
+]
+
+setup(
+    name="proj1",
+    version="1.0.0",
+    author="GeWei",
+    author_email="grey@pku.edu.cn",
+    description="A simple template project using pybind11",
+    long_description="",
+    ext_modules=cythonize(extensions),
+    platforms="any",
+)
 ```
 
 ## `nlohmann::json`
