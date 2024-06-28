@@ -308,6 +308,8 @@ wsl进入CentOS默认账号是root,需要切换成创建的账号, [method](http
 
 ### Build GCC-13 from source
 
+> not recommended, there are many problems
+
 ```bash
 # GMP (GNU Multiple Precision Arithmetic Library)
 # MPFR (Multiple Precision Floating-Point Reliable Library)
