@@ -8,6 +8,8 @@
       - [preprepared libs](#preprepared-libs)
       - [use preprepared libs in pybind11 project](#use-preprepared-libs-in-pybind11-project)
     - [by cython](#by-cython)
+      - [cpp\_lib project](#cpp_lib-project)
+      - [cython\_proj](#cython_proj)
   - [`nlohmann::json`](#nlohmannjson)
     - [`json` with struct](#json-with-struct)
     - [`json` with vector](#json-with-vector)
@@ -571,62 +573,184 @@ setup(
 
 ### by cython
 
-> `python setup.py bdist_wheel`
+```bash
+# tree
+.
+├── cpp_lib
+│   ├── CMakeLists.txt
+│   ├── build
+│   │   ├── libxxx.a
+│   │   └── libyyy.so
+│   ├── build_script.sh
+│   ├── xxx.cpp
+│   ├── xxx.h
+│   ├── yyy.cpp
+│   └── yyy.h
+└── cython_proj
+    ├── libs
+    │   ├── libxxx.a -> ../../cpp_lib/build/libxxx.a
+    │   ├── libyyy.so -> ../../cpp_lib/build/libyyy.so
+    │   ├── sim_xxx.h
+    │   └── sim_yyy.h
+    ├── setup.py
+    └── wrapper.pyx
+```
+
+#### cpp_lib project
+
+> `source build_script.sh`
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.28.0)
+project(xxxyyy VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON) # must exist
+add_library(xxx STATIC xxx.cpp)
+add_library(yyy SHARED yyy.cpp)
+```
+
+```bash
+# build_script.sh
+cmake -DCMAKE_BUILD_TYPE:STRING=Release -DCMAKE_TOOLCHAIN_FILE:STRING=$HOME/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_MAKE_PROGRAM:STRING=ninja -Bbuild -G Ninja
+cmake --build build --config Release --target all --
+```
+
+```cpp
+// xxx.h
+#pragma once
+#include <cstdio>
+#include <string>
+
+int mymul(int a, int b);
+
+template <typename T>
+struct Student {
+    T value;
+    std::string name;
+    void say_hello() {
+        printf("hello, I am %s\n", name.c_str());
+    }
+    T calc(T x, T y) {
+        return x + y + value;
+    }
+};
+
+auto do_somthing(Student<double>& stu, double value);
+
+double wrapped_do_somthing(double value);
+```
+
+```cpp
+// xxx.cpp
+#include "xxx.h"
+
+#include <cstdio>
+
+int mymul(int a, int b) {
+    return a * b;
+}
+
+auto do_somthing(Student<double> &stu, double value) {
+    stu.value = value;
+    return stu.calc(100.1, 200.2);
+}
+
+double wrapped_do_somthing(double value) {
+    Student<double> stu{.name = "gewei"};
+    auto result = do_somthing(stu, value);
+    printf("name=%s, result=%f\n", stu.name.c_str(), result);
+    return result;
+}
+```
+
+```cpp
+// yyy.h
+#pragma once
+double mydiv(double a, double b);
+```
+
+```cpp
+// yyy.cpp
+#include "yyy.h"
+
+double mydiv(double a, double b) {
+    return a / b;
+}
+```
+
+#### cython_proj
+
+in windows: `python setup.py bdist_wheel --py-limited-api=cp37`
+
+in linux
+- `python setup.py bdist_wheel --py-limited-api=cp37`
+- `auditwheel repair dist/*.whl --plat manylinux_2_24_x86_64`
+
+```cpp
+// sim_xxx.h
+int mymul(int a, int b);
+double wrapped_do_somthing(double value);
+```
+
+```cpp
+// sim_yyy.h
+double mydiv(double a, double b);
+```
 
 ```py
 # cython: language_level=3
 
-# Declare the external C function from the static library
-cdef extern from "xxx.h":
+cdef extern from "sim_xxx.h":
     int mymul(int a, int b)
     double wrapped_do_somthing(double value)
 
-def py_mul(int a, int b):
-    return mymul(a, b)
-
-def py_do_somthing(double value):
-    return wrapped_do_somthing(value)
-
-cdef extern from "yyy.h":
+cdef extern from "sim_yyy.h":
     double mydiv(double a, double b)
 
-def py_div(double a, double b):
-    return mydiv(a, b)
-```
+def py_mul(int x, int y):
+    return mymul(x, y)
 
-> `python setup.py bdist_wheel --py-limited-api=cp37`
+def py_div(double x, double y):
+    return mydiv(x, y)
+
+def py_do(double x):
+    return wrapped_do_somthing(x)
+```
 
 ```py
 # setup.py
-from setuptools import setup, Extension, find_packages
+from setuptools import setup, Extension
 from Cython.Build import cythonize
-import sysconfig
+import shutil
+import os
 
-
-def get_lib_dir():
-    py_version = "".join(sysconfig.get_python_version().split("."))
-    return f"{sysconfig.get_platform()}-cpython-{py_version}"  # linux-x86_64-cpython-310
-
+build_lib_dir = "build_lib"
+os.makedirs(build_lib_dir, exist_ok=True)
+shutil.copy("libs/libyyy.so", f"{build_lib_dir}/libyyy.so")
 
 extensions = [
     Extension(
         name="proj1",
-        sources=["proj1.pyx"],
-        include_dirs=["static_lib2", "shared_lib1"],
-        library_dirs=["static_lib2", "shared_lib1"],
-        libraries=["xxx", "yyy"],
-        extra_link_args=["-Wl,-rpath=./", f"-obuild/lib.{get_lib_dir()}/proj1.so"],
-        # extra_link_args=["-Wl,-rpath=./"],
+        sources=["wrapper.pyx"],
+        include_dirs=["libs"],
+        library_dirs=["libs"],
+        libraries=["xxx"],
+        runtime_library_dirs=["$ORIGIN"],
+        extra_link_args=["-lyyy", "-Wl,-rpath,$ORIGIN", f"-o{build_lib_dir}/proj1.so"],
         language="c++",
-        define_macros=[("CYTHON_LIMITED_API", "0x03070000"), ("Py_LIMITED_API", "0x03070000")],
+        # support python3.7 and above
         py_limited_api=True,
+        define_macros=[("CYTHON_LIMITED_API", "0x03070000"), ("Py_LIMITED_API", "0x03070000")],
     )
 ]
+
 
 setup(
     name="proj1",
     version="1.0.0",
     ext_modules=cythonize(extensions),
+    options={"build": {"build_lib": build_lib_dir}},
 )
 ```
 
