@@ -291,6 +291,13 @@ sudo yum install openssl-devel
 sudo yum install curl-devel
 sudo yum install expat-devel
 sudo yum install zlib-devel
+
+# config python3.8
+sudo yum install rh-python38
+scl enable rh-python38 bash
+python3 --version
+python3 -m venv jupy8
+source jupy8/bin/activate
 ```
 
 wsl进入CentOS默认账号是root,需要切换成创建的账号, [method](https://github.com/microsoft/WSL/issues/4276#issuecomment-509364493)
