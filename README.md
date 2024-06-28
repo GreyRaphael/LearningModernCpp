@@ -10,6 +10,7 @@
   - [GCC \& Clang in VSCode](#gcc--clang-in-vscode)
   - [clangd for C++](#clangd-for-c)
 - [Development Environment in CentOS7](#development-environment-in-centos7)
+  - [Build GCC-13 from source](#build-gcc-13-from-source)
 - [Development Environment in Fedora Rawhide](#development-environment-in-fedora-rawhide)
 - [Development Environment Online](#development-environment-online)
 - [Othre configuration](#othre-configuration)
@@ -297,6 +298,38 @@ wsl进入CentOS默认账号是root,需要切换成创建的账号, [method](http
 2. 找到对应CentOS的注册表: `Computer\HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Lxss\{xxxx}`
 3. 创建`REG_DWORD`,值为decimal `1000`
 
+
+### Build GCC-13 from source
+
+```bash
+# GMP (GNU Multiple Precision Arithmetic Library)
+# MPFR (Multiple Precision Floating-Point Reliable Library)
+# MPC (Multiple Precision Complex Library)
+# ISL (Integer Set Library)
+sudo yum install gmp-devel mpfr-devel libmpc-devel
+
+sudo yum install wget
+wget https://ftp.gnu.org/gnu/gcc/gcc-13.3.0/gcc-13.3.0.tar.xz
+tar -xJf gcc-13.3.0.tar.xz
+cd gcc-13.3.0
+
+mkdir build
+cd build
+
+../configure --prefix=/usr/local/gcc-13 --enable-languages=c,c++ --disable-multilib
+# --disable-multilib: This option is often necessary on a 64-bit system to avoid building both 32-bit and 64-bit files.
+
+# Compiles using all available cores
+make -j $(nproc)
+sudo make install
+
+# post-build: vi .bashrc
+export PATH=/usr/local/gcc-13/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/gcc-13/lib64:$LD_LIBRARY_PATH
+
+# check version
+gcc --version
+```
 
 ## Development Environment in Fedora Rawhide
 
