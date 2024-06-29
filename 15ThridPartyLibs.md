@@ -139,117 +139,15 @@ void Point3D::print() {
 
 ## pybind11
 
-> [pybind11](https://github.com/pybind/pybind11) is a lightweight header-only library that exposes C++ types in Python and vice versa, mainly to create Python bindings of existing C++ code.
-
-simple example of **pybind11** in Linux
-
-```bash
-├── CMakeLists.txt
-├── main.cpp
-└── pybind11-2.11.1
-    └── include
-        └── pybind11
-```
-
-```cmake
-# CMakeLists.txt
-cmake_minimum_required(VERSION 3.25.0)
-project(proj1 VERSION 0.1.0)
-set(CMAKE_CXX_STANDARD 20)
-
-# cmake version > 3.12.0, https://cmake.org/cmake/help/latest/module/FindPython.html
-find_package (Python COMPONENTS Development REQUIRED)
-message("> Python_INCLUDE_DIRS = ${Python_INCLUDE_DIRS}")
-
-add_library(proj1 SHARED main.cpp)
-# include Python.h
-target_include_directories(proj1 PRIVATE ${Python_INCLUDE_DIRS})
-# include pybind11/*.hpp
-# download from https://github.com/pybind/pybind11/tree/master/include/pybind11
-target_include_directories(proj1 PRIVATE pybind11-2.11.1/include)
-# remove prefix "lib": libproj1->proj1
-set(CMAKE_SHARED_LIBRARY_PREFIX "")
-```
-
-```cpp
-// main.cpp
-#include <pybind11/pybind11.h>
-
-int add(int i, int j) {
-    return i + j;
-}
-
-// 因为编译出来是`proj1.so`, 所以需要`PYBIND11_MODULE(proj1, m)`中设置为`proj1`
-PYBIND11_MODULE(proj1, m) { // change here libproj1->proj1
-    m.doc() = "pybind11 proj1 plugin"; 
-
-    m.def("add", &add, "A function that adds two numbers");
-}
-```
-
-```py
-# test proj1.so
-import proj1
-
-num = proj1.add(200, 100) # 300
-```
-
-example: support Linux & Windows
-> output is `proj1.cp39-win_amd64.pyd` or `proj1.cpython-310-x86_64-linux-gnu.so`
-
-```cmake
-cmake_minimum_required(VERSION 3.25.0)
-project(proj1 VERSION 0.1.0)
-set(CMAKE_CXX_STANDARD 20)
-
-find_package (Python COMPONENTS Interpreter Development REQUIRED)
-message("> Python_INCLUDE_DIRS = ${Python_INCLUDE_DIRS}")
-
-# get .cp39-win_amd64.pyd or .cpython-310-x86_64-linux-gnu.so
-execute_process(
-  COMMAND "${Python_EXECUTABLE}" "-c" "import sys, importlib; s = importlib.import_module('distutils.sysconfig' if sys.version_info < (3, 10) else 'sysconfig'); print(s.get_config_var('EXT_SUFFIX') or s.get_config_var('SO'))"
-  OUTPUT_VARIABLE _PYTHON_MODULE_EXTENSION
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-message("> _PYTHON_MODULE_EXTENSION = ${_PYTHON_MODULE_EXTENSION}")
-# proj1.cp39-win_amd64.pyd or proj1.cpython-310-x86_64-linux-gnu.so
-set(CMAKE_SHARED_LIBRARY_SUFFIX "${_PYTHON_MODULE_EXTENSION}")
-# libxxxx.so -> xxxx.so
-set(CMAKE_SHARED_LIBRARY_PREFIX "")
-
-add_library(proj1 SHARED main.cpp)
-# include pybind11/*.hpp
-target_include_directories(proj1 PRIVATE pybind11-2.11.1/include)
-# include Python.h
-target_include_directories(proj1 PRIVATE ${Python_INCLUDE_DIRS})
-
-if(WIN32)
-    # in windows, should linked with python3x.lib, compiler can be MSVC or mingw
-    target_link_libraries(proj1 PRIVATE Python::Python)
-endif()
-```
-
-```cpp
-// main.cpp
-#include <pybind11/pybind11.h>
-
-int add(int i, int j) {
-    return i + j;
-}
-
-PYBIND11_MODULE(proj1, m) {
-    m.doc() = "pybind11 proj1 plugin";  // optional module docstring
-
-    m.def("add", &add, "A function that adds two numbers");
-}
-```
+> [pybind11](https://github.com/pybind/pybind11) is a lightweight header-only library that exposes C++ types in Python and vice versa, mainly to create Python bindings of existing C++ code.  
+> but, `Cython` is a better choice.
 
 ### pybind11 wheels without external libs
 
 prerequisites: `pip install pybind11 wheel`
 
 ```bash
-# input
+# files structure
 .
 ├── setup.py
 ├── towrapper
@@ -301,7 +199,6 @@ from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 import pybind11
 
-
 ext_modules = [
     Extension(
         name="proj1",
@@ -320,10 +217,6 @@ ext_modules = [
 setup(
     name="proj1",
     version="1.0.0",
-    author="GeWei",
-    author_email="grey@pku.edu.cn",
-    description="A simple template project using pybind11",
-    long_description="",
     ext_modules=ext_modules,
     cmdclass={"build_ext": build_ext},
     zip_safe=False,
@@ -469,17 +362,12 @@ build/
 
 ```cpp
 // simplified xxx.h
-#pragma once
-
 int mymul(int a, int b);
-
 double wrapped_do_somthing(double value);
 ```
 
 ```cpp
 // yyy.h
-#pragma once
-
 double mydiv(double a, double b);
 ```
 
@@ -533,10 +421,6 @@ ext_modules = [
 setup(
     name="proj1",
     version="1.0.0",
-    author="GeWei",
-    author_email="grey@pku.edu.cn",
-    description="A simple template project using pybind11",
-    long_description="",
     ext_modules=ext_modules,
     cmdclass={"build_ext": build_ext},
     zip_safe=False,
@@ -682,8 +566,10 @@ double mydiv(double a, double b) {
 #### cython_proj
 
 in windows: `python setup.py bdist_wheel --py-limited-api=cp37`
+> Require: `pip install cython wheel`
 
 in linux
+> Require: `pip install cython wheel auditwheel patchelf`
 - `python setup.py bdist_wheel --py-limited-api=cp37`
 - `auditwheel repair dist/*.whl --plat manylinux_2_24_x86_64`
 
