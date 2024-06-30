@@ -1035,40 +1035,22 @@ Solution for parse, visit [solutions](examples/ch15-json-nan-inf.cc):
 
 ## `zlib`
 
-download [zlib](https://github.com/madler/zlib/releases) and build(`Release`) by its `CMakeLists.txt`, copy the output to following project in `zilb` directory
-
-zlib Read/Write *.gz file
+`vcpkg install zlib`
 
 ```bash
 ├─main.cpp
 ├─CMakeLists.txt
-│ 
-└─zlib
-    ├─include
-    │  ├─zconf.h
-    │  └─zlib.h
-    └─lib
-        ├─zlib.lib
-        ├─zlib.dll
-        └─zlibstatic.lib
 ```
 
 ```cmake
-# current project CMakeLists.txt
-cmake_minimum_required(VERSION 3.25.0)
-project(proj1 VERSION 0.1.0)
-set(CMAKE_CXX_STANDARD 20)
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.28.0)
+project(proj1 VERSION 0.1.0 LANGUAGES C CXX)
 
 add_executable(proj1 main.cpp)
-target_include_directories(proj1 PRIVATE zlib/include)
 
-target_link_directories(proj1 PRIVATE zlib/lib)
-
-# # static library, link zlibstatic.lib
-# target_link_libraries(proj1 PRIVATE zlibstatic)
-
-# shared library, link zlib.lib
-target_link_libraries(proj1 PRIVATE zlib)
+find_package(ZLIB REQUIRED)
+target_link_libraries(proj1 PRIVATE ZLIB::ZLIB)
 ```
 
 ```cpp
