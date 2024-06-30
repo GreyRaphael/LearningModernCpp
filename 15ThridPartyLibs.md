@@ -7,9 +7,9 @@
     - [pybind11 wheels with external libs](#pybind11-wheels-with-external-libs)
       - [preprepared libs](#preprepared-libs)
       - [use preprepared libs in pybind11 project](#use-preprepared-libs-in-pybind11-project)
-    - [by cython](#by-cython)
-      - [cpp\_lib project](#cpp_lib-project)
-      - [cython\_proj](#cython_proj)
+  - [by cython](#by-cython)
+    - [cpp\_lib project](#cpp_lib-project)
+    - [cython\_proj](#cython_proj)
   - [`nlohmann::json`](#nlohmannjson)
     - [`json` with struct](#json-with-struct)
     - [`json` with vector](#json-with-vector)
@@ -455,7 +455,7 @@ setup(
 └── wrapped_source.cpp
 ```
 
-### by cython
+## by cython
 
 ```bash
 # tree
@@ -480,7 +480,7 @@ setup(
     └── wrapper.pyx
 ```
 
-#### cpp_lib project
+### cpp_lib project
 
 > `source build_script.sh`
 
@@ -563,7 +563,7 @@ double mydiv(double a, double b) {
 }
 ```
 
-#### cython_proj
+### cython_proj
 
 in windows: `python setup.py bdist_wheel --py-limited-api=cp37`
 > Require: `pip install cython wheel`
