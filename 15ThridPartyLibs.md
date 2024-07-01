@@ -571,6 +571,7 @@ in windows: `python setup.py bdist_wheel --py-limited-api=cp37`
 in linux
 > Require: `pip install cython wheel auditwheel patchelf`
 - `python setup.py bdist_wheel --py-limited-api=cp37`
+- `auditwheel show dist/*.whl`: check manylinux platform
 - `auditwheel repair dist/*.whl --plat manylinux_2_24_x86_64`
 
 ```cpp
