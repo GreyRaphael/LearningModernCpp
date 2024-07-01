@@ -275,6 +275,8 @@ mv /usr/bin/g++ /usr/bin/g++-4.8.5
 ln -s /opt/rh/devtoolset-11/root/bin/g++ /usr/bin/g++
 gcc --version
 g++ --version
+# or vi .bashrc
+export PATH=/opt/rh/devtoolset-11/root/bin/:$PATH
 ```
 
 ```bash
