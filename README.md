@@ -21,6 +21,7 @@
   - [msvc](#msvc)
   - [mingw(not recomended)](#mingwnot-recomended)
   - [linux](#linux)
+  - [vcpkg tips](#vcpkg-tips)
 
 ## Development Environment in WSL
 
@@ -755,4 +756,25 @@ target_link_libraries(proj1 PRIVATE spdlog::spdlog)
 
 find_package(fmt CONFIG REQUIRED)
 target_link_libraries(proj1 PRIVATE fmt::fmt)
+```
+
+### vcpkg tips
+
+```cmake
+# scripts/buildsystems/vcpkg.cmake
+# ...
+# add this line to the bottom
+set(CMAKE_CXX_STANDARD 20)
+```
+
+```cmake
+# triplets/x64-linux.cmake
+set(VCPKG_TARGET_ARCHITECTURE x64)
+set(VCPKG_CRT_LINKAGE dynamic)
+set(VCPKG_LIBRARY_LINKAGE dynamic)
+set(VCPKG_BUILD_TYPE release)
+
+set(VCPKG_CMAKE_SYSTEM_NAME Linux)
+
+set(VCPKG_FIXUP_ELF_RPATH ON)
 ```
