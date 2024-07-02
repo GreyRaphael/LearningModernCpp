@@ -6,6 +6,7 @@
   - [wsl basic cmds](#wsl-basic-cmds)
   - [wsl with proxy](#wsl-with-proxy)
   - [wsl with git](#wsl-with-git)
+  - [disable windows path](#disable-windows-path)
 - [Development Environment in Debian](#development-environment-in-debian)
   - [GCC \& Clang in VSCode](#gcc--clang-in-vscode)
   - [clangd for C++](#clangd-for-c)
@@ -130,6 +131,19 @@ fastestmirror=True
 defaultyes=True
 # add this line
 proxy=http://127.0.0.1:2080
+```
+
+### disable windows path
+
+```bash
+sudo vi /etc/wsl.conf
+
+# /etc/wsl.conf
+[interop]
+appendWindowsPath = false
+
+# restart wsl
+wsl --shutdown
 ```
 
 ## Development Environment in Debian
