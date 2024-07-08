@@ -27,6 +27,7 @@
   - [abseil](#abseil)
   - [avro-cpp](#avro-cpp)
   - [`atomic_queue`](#atomic_queue)
+  - [safe queue with lock](#safe-queue-with-lock)
 
 
 ## Code Organized by CMake
@@ -1500,6 +1501,101 @@ int main() {
 
     for (size_t i = 0; i < num_threads; ++i) {
         input_queues[i].push(std::nullopt);
+    }
+}
+```
+
+## safe queue with lock
+
+```cpp
+#include <condition_variable>
+#include <format>
+#include <iostream>
+#include <mutex>
+#include <optional>
+#include <queue>
+#include <thread>
+#include <vector>
+
+template <typename T>
+class ThreadSafeQueue {
+   private:
+    std::queue<std::optional<T>> queue;
+    mutable std::mutex mutex;
+    std::condition_variable cond;
+
+   public:
+    ThreadSafeQueue() = default;
+    ThreadSafeQueue(const ThreadSafeQueue<T>&) = delete;
+    ThreadSafeQueue& operator=(const ThreadSafeQueue<T>&) = delete;
+
+    void push(std::optional<T> value) {
+        std::lock_guard<std::mutex> lock(mutex);
+        queue.push(std::move(value));
+        cond.notify_one();
+    }
+
+    std::optional<T> try_pop() {
+        std::lock_guard<std::mutex> lock(mutex);
+        if (queue.empty()) {
+            return std::nullopt;
+        }
+        T tmp = std::move(queue.front());
+        queue.pop();
+        return tmp;
+    }
+
+    std::optional<T> wait_and_pop() {
+        std::unique_lock<std::mutex> lock(mutex);
+        cond.wait(lock, [this] { return !queue.empty(); });
+        auto tmp = std::move(queue.front());
+        queue.pop();
+        return tmp;
+    }
+
+    bool empty() const {
+        std::lock_guard<std::mutex> lock(mutex);
+        return queue.empty();
+    }
+};
+
+template <typename T>
+void worker_function(int idx, ThreadSafeQueue<T>& input_queue, ThreadSafeQueue<T>& output_queue) {
+    while (true) {
+        auto item = input_queue.wait_and_pop();
+        if (!item) break;  // Assuming std::nullopt is used to signal shutdown
+        std::cout << std::format("thread-{} processing {}\n", idx, *item);
+        output_queue.push(*item * 100000);
+    }
+    std::cout << std::format("thread-{} stop\n", idx);
+}
+
+int main() {
+    constexpr int num_threads = 2;
+    std::vector<ThreadSafeQueue<int>> input_queues(num_threads);
+    ThreadSafeQueue<int> output_queue;
+    std::vector<std::jthread> workers;
+
+    // Start worker threads
+    for (int i = 0; i < num_threads; ++i) {
+        workers.emplace_back(worker_function<int>, i, std::ref(input_queues[i]), std::ref(output_queue));
+    }
+
+    // Push data to input queues
+    for (int i = 0; i < 10; ++i) {
+        input_queues[i % num_threads].push(i);
+    }
+
+    // Collect results from output queue
+    for (int i = 0; i < 10; ++i) {
+        auto result = output_queue.wait_and_pop();
+        std::cout << std::format("mainthread receive:{}\n", *result);
+    }
+    std::cout << "mainthread finished\n";
+
+    // Signal workers to stop (could use a special sentinel value or a shutdown signal)
+    for (auto& queue : input_queues) {
+        queue.push(std::nullopt);  // Assuming using std::optional<int>
     }
 }
 ```
