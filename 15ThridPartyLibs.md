@@ -26,6 +26,7 @@
     - [zip \& zip\_with](#zip--zip_with)
   - [abseil](#abseil)
   - [avro-cpp](#avro-cpp)
+  - [`atomic_queue`](#atomic_queue)
 
 
 ## Code Organized by CMake
@@ -1440,5 +1441,65 @@ int main(int argc, char** argv) {
         }
     }
     std::cout << dataSchema.toJson() << '\n';
+}
+```
+
+## `atomic_queue`
+
+[atomic_queue](https://github.com/max0x7ba/atomic_queue): C++14 multiple-producer-multiple-consumer lock-free queues based on circular buffer and std::atomic. Designed with a goal to minimize the latency between one thread pushing an element into a queue and another thread popping it from the queue.
+
+```cpp
+#include <format>
+#include <iostream>
+#include <optional>
+#include <thread>
+#include <vector>
+
+#include "atomic_queue/atomic_queue.h"
+
+template <typename T>
+concept IsOptional = std::is_same_v<T, std::optional<typename T::value_type>>;
+
+template <typename T>
+using ThreadSafeQueue = atomic_queue::AtomicQueue2<T, 100>;
+
+template <IsOptional T>
+void worker_function(int idx, ThreadSafeQueue<T>& input_queue, ThreadSafeQueue<T>& output_queue) {
+    while (true) {
+        T item = input_queue.pop();
+        if (!item) break;
+        std::cout << std::format("thread-{} processing {}\n", idx, *item);
+        output_queue.push(*item * 100000);
+    }
+    std::cout << std::format("thread-{} stop\n", idx);
+}
+
+int main() {
+    const int num_threads = std::thread::hardware_concurrency();
+
+    std::vector<ThreadSafeQueue<std::optional<int>>> input_queues(num_threads);
+    ThreadSafeQueue<std::optional<int>> output_queue;
+    std::vector<std::jthread> workers;
+
+    // Start worker threads
+    for (int i = 0; i < num_threads; ++i) {
+        workers.emplace_back(worker_function<std::optional<int>>, i, std::ref(input_queues[i]), std::ref(output_queue));
+    }
+
+    // Push data to input queues
+    for (int i = 0; i < 10; ++i) {
+        input_queues[i % num_threads].push(i);
+    }
+
+    // Collect results from output queue
+    for (int i = 0; i < 10; ++i) {
+        auto result = output_queue.pop();
+        std::cout << std::format("mainthread receive: {:06d}\n", *result);
+    }
+    std::cout << "mainthreaed receive all!\n";
+
+    for (size_t i = 0; i < num_threads; ++i) {
+        input_queues[i].push(std::nullopt);
+    }
 }
 ```
