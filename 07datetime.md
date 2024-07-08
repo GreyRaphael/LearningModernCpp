@@ -4,6 +4,7 @@
   - [chrono](#chrono)
     - [`strftime` \& `strptime`](#strftime--strptime)
     - [Measure exection time](#measure-exection-time)
+    - [conversion between int64\_t \& time\_point](#conversion-between-int64_t--time_point)
 
 ## chrono
 
@@ -208,5 +209,38 @@ int main() {
     auto d = perf_timer<>::duration(task, 100000000);
     std::cout << d << '\n';                                             // 485352µs
     std::cout << std::chrono::duration<double, std::milli>(d) << '\n';  // 485.352ms
+}
+```
+
+### conversion between int64_t & time_point
+
+```cpp
+
+#include <chrono>
+#include <cstdint>
+#include <iostream>
+
+int64_t timePointToInt64(const std::chrono::system_clock::time_point& tp) {
+    return tp.time_since_epoch() / std::chrono::milliseconds(1);
+}
+
+auto int64ToTimePoint(int64_t ms_since_epoch) {
+    return std::chrono::system_clock::time_point(std::chrono::milliseconds(ms_since_epoch));
+}
+
+int main() {
+    // Current time as time_point
+    auto now_time_point = std::chrono::system_clock::now();
+    std::cout << now_time_point.time_since_epoch() << '\n';  // ns
+
+    // Convert time_point to int64_t
+    int64_t time_as_int = timePointToInt64(now_time_point);
+    std::cout << "Time as int64_t: " << time_as_int << " ms since epoch\n";
+
+    // Convert back from int64_t to time_point
+    auto restored_time_point = int64ToTimePoint(time_as_int);
+    auto diff = now_time_point - restored_time_point;
+
+    std::cout << "Difference after conversion: " << diff.count() << " ns\n";
 }
 ```
