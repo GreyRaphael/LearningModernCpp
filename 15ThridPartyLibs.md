@@ -25,6 +25,7 @@
   - [range-v3](#range-v3)
     - [zip \& zip\_with](#zip--zip_with)
   - [abseil](#abseil)
+    - [abseil Swiss tables map](#abseil-swiss-tables-map)
   - [avro-cpp](#avro-cpp)
   - [`atomic_queue`](#atomic_queue)
   - [safe queue with lock](#safe-queue-with-lock)
@@ -1389,6 +1390,92 @@ int main() {
     auto wd = absl::GetWeekday(info.cs);
     std::cout << wd << '\n';       // Tuesday
     std::cout << int(wd) << '\n';  // 1
+}
+```
+
+### abseil Swiss tables map
+
+`vcpkg install abseil`
+
+[abseil container](https://abseil.io/docs/cpp/guides/container) better than `std::map` & `std::unordered_map`
+
+```cpp
+#include <absl/container/node_hash_map.h>
+
+#include <BS_thread_pool.hpp>
+#include <cmath>
+#include <cstdlib>
+#include <format>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
+
+struct TickData {
+    std::string secucode;
+    double total_ask_volume;
+    double total_bid_volume;
+};
+
+template <typename T>
+concept HqData = std::is_constructible_v<TickData>;
+
+template <typename T>
+concept NumericVal = std::is_floating_point_v<T> || std::is_integral_v<T>;
+
+template <HqData T, NumericVal U>
+struct Factor {
+    std::string name;
+    U feature;
+    virtual U update_feature(T const& hq) = 0;
+};
+
+struct Factor01 : Factor<TickData, double> {
+    double update_feature(TickData const& tick) override {
+        std::cout << std::format("invoke Factor01\n");
+        return tick.total_bid_volume;
+    }
+};
+
+struct Factor02 : Factor<TickData, double> {
+    double update_feature(TickData const& tick) {
+        std::cout << std::format("invoke Factor02\n");
+        return tick.total_ask_volume;
+    }
+};
+
+struct Factor03 : Factor<TickData, double> {
+    double update_feature(TickData const& tick) {
+        std::cout << std::format("invoke Factor03\n");
+        return tick.total_ask_volume / tick.total_bid_volume;
+    }
+};
+
+using FactorData = Factor<TickData, double>;
+using FactorResults = absl::node_hash_map<std::string, std::vector<double>>;
+
+int main() {
+    BS::thread_pool pool;
+    TickData tick{
+        .secucode = "000001",
+        .total_ask_volume = 233,
+        .total_bid_volume = 166,
+    };
+
+    constexpr int factor_num = 3;
+    std::vector<std::shared_ptr<FactorData>> factor_ptrs;
+    factor_ptrs.reserve(factor_num);
+    factor_ptrs.emplace_back(std::make_shared<Factor01>());
+    factor_ptrs.emplace_back(std::make_shared<Factor02>());
+    factor_ptrs.emplace_back(std::make_shared<Factor03>());
+
+    auto futures = pool.submit_sequence(0, factor_num, [&factor_ptrs, &tick](int i) {
+        return factor_ptrs[i]->update_feature(tick);
+    });
+
+    FactorResults results;
+    results[tick.secucode] = futures.get();
+    std::cout << results["000001"][0] << '\n';
 }
 ```
 
