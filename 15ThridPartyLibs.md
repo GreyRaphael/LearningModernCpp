@@ -28,6 +28,7 @@
   - [avro-cpp](#avro-cpp)
   - [`atomic_queue`](#atomic_queue)
   - [safe queue with lock](#safe-queue-with-lock)
+  - [bshoshany-thread-pool](#bshoshany-thread-pool)
 
 
 ## Code Organized by CMake
@@ -1597,5 +1598,35 @@ int main() {
     for (auto& queue : input_queues) {
         queue.push(std::nullopt);  // Assuming using std::optional<int>
     }
+}
+```
+
+## bshoshany-thread-pool
+
+> a fast, lightweight, and easy-to-use C++17 thread pool library
+
+`vcpkg install bshoshany-thread-pool`
+
+```cpp
+#include <cstddef>
+#include <iostream>
+#include <ranges>
+#include <vector>
+
+#include "BS_thread_pool.hpp"
+
+auto r = std::ranges::views::iota(0, 1001);
+
+auto worker(int const index) {
+    return r[index] * 1.1;
+}
+
+int main() {
+    BS::thread_pool pool;
+    int last_idx = 1000;
+    auto sequence_future = pool.submit_sequence(0, last_idx + 1, worker);
+    auto results = sequence_future.get();
+    for (size_t i = 0; i < last_idx + 1; ++i)
+        std::cout << std::format("in={:04d},out={:.2f}\n", i, results[i]);
 }
 ```
