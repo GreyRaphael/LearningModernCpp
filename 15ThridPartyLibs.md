@@ -1593,6 +1593,132 @@ int main() {
 }
 ```
 
+safe queue in a class
+
+```cpp
+#include <absl/container/node_hash_map.h>
+#include <atomic_queue/atomic_queue.h>
+#include <fmt/core.h>
+
+#include <iostream>
+#include <nlohmann/json.hpp>
+#include <optional>
+#include <ranges>
+#include <string>
+#include <thread>
+#include <vector>
+
+#include "factors.h"
+
+template <typename T>
+using ThreadSafeQueue = atomic_queue::AtomicQueue2<std::optional<T>, 100>;
+
+template <HqData T>
+class FactorEngine {
+   public:
+    using QuoteQueue = ThreadSafeQueue<T>;
+    using FactorQueue = ThreadSafeQueue<nlohmann::json>;
+    using FactorPtrs = absl::node_hash_map<std::string, std::vector<std::shared_ptr<Factor<T>>>>;
+    FactorEngine(QuoteQueue& quote_queue, FactorQueue& output_queue, FactorPtrs& fptr, size_t n_threads = 4) : _fptrs(fptr) {
+        _workers.reserve(n_threads);
+        for (size_t i = 0; i < n_threads; ++i) {
+            _workers.emplace_back(
+                [this, i, &quote_queue, &output_queue]() {
+                    this->worker_function(i, quote_queue, output_queue);
+                });
+        }
+    }
+
+    void worker_function(size_t idx, QuoteQueue& quote_queue, FactorQueue& output_queue) {
+        while (auto quote = quote_queue.pop()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            std::cout << fmt::format("thread-{} processing {}\n", idx, quote->secucode);
+            nlohmann::json j = calc_factors(*quote);
+            output_queue.push(j);
+        }
+        std::cout << std::format("thread-{} stop\n", idx);
+    }
+
+    nlohmann::json calc_factors(T const& quote) {
+        nlohmann::json j;
+        j["symbol"] = quote.secucode;
+        j["timestamp"] = quote.timestamp;
+
+        for (auto& factor : _fptrs[quote.secucode]) {
+            j[factor->name] = factor->update_feature(quote);
+        }
+        return j;
+    }
+
+   private:
+    std::vector<std::jthread> _workers;
+    FactorPtrs _fptrs;
+};
+
+using TickFactorPtrVec = std::vector<std::shared_ptr<Factor<TickData>>>;
+
+auto create_factorptrs() {
+    TickFactorPtrVec vec{};
+
+    vec.emplace_back(std::make_shared<Factor01>());
+    vec.emplace_back(std::make_shared<Factor02>());
+    vec.emplace_back(std::make_shared<Factor03>());
+    vec.emplace_back(std::make_shared<Factor04>());
+
+    return vec;
+}
+
+auto init_factorptrs_map(std::vector<std::string> const& codeVec) {
+    absl::node_hash_map<std::string, TickFactorPtrVec> factorptrs_map{};
+    for (auto&& code : codeVec) {
+        factorptrs_map[code] = create_factorptrs();
+    }
+    return factorptrs_map;
+}
+
+int main(int argc, char const* argv[]) {
+    constexpr int n_threads = 4;
+
+    ThreadSafeQueue<TickData> input_queue;
+    ThreadSafeQueue<nlohmann::json> output_queue;
+
+    auto numbers = std::views::iota(0, 10) | std::views::transform([](int i) { return fmt::format("{:06d}", i); });
+    std::vector<std::string> vec(numbers.begin(), numbers.end());
+    auto fptr = init_factorptrs_map(vec);
+
+    {
+        for (size_t i = 0; i < 10; ++i) {
+            float tot_av = 100 + i;
+            float tot_bv = 200 + i;
+            float dt = 1000000 + i;
+            TickData tick{.timestamp = dt, .secucode = fmt::format("{:06d}", i), .total_ask_volume = tot_av, .total_bid_volume = tot_bv};
+            input_queue.push(tick);
+        }
+        for (size_t i = 0; i < 10; ++i) {
+            float tot_av = 100 + i;
+            float tot_bv = 200 + i;
+            float dt = 1000000 + i;
+            TickData tick{.timestamp = dt, .secucode = fmt::format("{:06d}", i), .total_ask_volume = tot_av, .total_bid_volume = tot_bv};
+            input_queue.push(tick);
+        }
+    }
+    {
+        FactorEngine<TickData> engine(input_queue, output_queue, fptr, n_threads);
+
+        // Collect results from output queue
+        for (int i = 0; i < 20; ++i) {
+            auto result = output_queue.pop();
+            std::cout << std::format("mainthread receive: {}\n", result->dump());
+        }
+        std::cout << "mainthreaed receive all!\n";
+
+        for (size_t i = 0; i < n_threads; ++i) {
+            input_queue.push(std::nullopt);
+        }
+    }
+}
+```
+
 ## safe queue with lock
 
 ```cpp
