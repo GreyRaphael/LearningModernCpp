@@ -359,7 +359,7 @@ export LD_LIBRARY_PATH=/usr/local/gcc-13/lib64:$LD_LIBRARY_PATH
 gcc --version
 ```
 
-## Development Environment in CentOS9 stream(recommended)
+## Development Environment in CentOS9 stream
 
 download image from [CentOS 9-stream](https://github.com/mishamosher/CentOS-WSL/releases/)
 
