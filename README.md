@@ -407,6 +407,20 @@ set(CMAKE_CXX_STANDARD 20)
 set(VCPKG_BUILD_TYPE release)
 ```
 
+```json
+# vscode setting.json
+{
+    "cmake.configureSettings": {
+        "CMAKE_TOOLCHAIN_FILE": "${env:HOME}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+    },
+    "python.venvPath": "~/pyenvs",
+    "clangd.path": "clangd",
+    "clangd.arguments": [
+        "--clang-tidy"
+    ],
+}
+```
+
 ## Development Environment in Fedora Rawhide
 
 download image from [Fedora-WSL-RootFS](https://github.com/VSWSL/Fedora-WSL-RootFS)
