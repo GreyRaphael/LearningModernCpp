@@ -115,6 +115,7 @@ for csc to use `git clone ssh@xxxx.git`, change `vi ~/.ssh/config`, [solution](h
 Host github.com
   HostName 20.200.245.248
   Port 443
+  #ProxyCommand nc -X connect -x 127.0.0.1:2080 %h %p  
 ```
 
 change dnf proxy
