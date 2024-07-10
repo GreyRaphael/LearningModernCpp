@@ -1537,6 +1537,8 @@ int main(int argc, char** argv) {
 
 [atomic_queue](https://github.com/max0x7ba/atomic_queue): C++14 multiple-producer-multiple-consumer lock-free queues based on circular buffer and std::atomic. Designed with a goal to minimize the latency between one thread pushing an element into a queue and another thread popping it from the queue.
 
+> `vcpkg install atomic-queue`
+
 ```cpp
 #include <format>
 #include <iostream>
