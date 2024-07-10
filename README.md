@@ -373,12 +373,19 @@ dnf --enablerepo=crb install ninja-build
 
 dnf install golang
 
+# vi /etc/wsl.conf
+[interop]
+appendWindowsPath = false
+# restart wsl in windows
+wsl --terminate CentOS9
+
 # add sudo user
 adduser frank
 passwd frank
 # userdel -r cauchy
 usermod -aG wheel frank
-lid -g wheel
+lid -g wheel 
+# change Computer\HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Lxss\{} to decimal 1000
 
 sudo - frank
 vi .bashrc
