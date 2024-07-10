@@ -387,7 +387,7 @@ usermod -aG wheel frank
 lid -g wheel 
 # change Computer\HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Lxss\{} to decimal 1000
 
-sudo - frank
+su - frank
 vi .bashrc
 PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 alias ll='ls -la'
