@@ -359,7 +359,7 @@ export LD_LIBRARY_PATH=/usr/local/gcc-13/lib64:$LD_LIBRARY_PATH
 gcc --version
 ```
 
-## Development Environment in CentOS9 stream
+## Development Environment in CentOS9 stream(recommended)
 
 download image from [CentOS 9-stream](https://github.com/mishamosher/CentOS-WSL/releases/)
 
@@ -408,7 +408,7 @@ set(VCPKG_BUILD_TYPE release)
 ```
 
 ```json
-# vscode setting.json
+// vscode setting.json
 {
     "cmake.configureSettings": {
         "CMAKE_TOOLCHAIN_FILE": "${env:HOME}/vcpkg/scripts/buildsystems/vcpkg.cmake",
@@ -855,4 +855,53 @@ set(VCPKG_BUILD_TYPE release)
 set(VCPKG_CMAKE_SYSTEM_NAME Linux)
 
 set(VCPKG_FIXUP_ELF_RPATH ON)
+```
+
+simple vcpkg with version project
+
+```bash
+.
+├── CMakeLists.txt
+├── main.cpp
+└── vcpkg.json
+```
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.28.0)
+project(proj1 VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/release)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/debug)
+
+add_executable(proj1 main.cpp)
+
+find_package(spdlog CONFIG REQUIRED)
+target_link_libraries(proj1 PRIVATE spdlog::spdlog)
+```
+
+```cpp
+// main.cpp
+#include <spdlog/spdlog.h>
+
+int main(int, char**) {
+    SPDLOG_INFO("HELLO-{}", 100);
+}
+```
+
+```json
+// vcpkg.json
+{
+    "dependencies": [
+        "spdlog"
+    ],
+    "builtin-baseline": "01f602195983451bc83e72f4214af2cbc495aa94",
+    "overrides": [
+        {
+            "name": "spdlog",
+            "version": "1.13.0"
+        }
+    ]
+}
 ```
