@@ -12,6 +12,7 @@
   - [clangd for C++](#clangd-for-c)
 - [Development Environment in CentOS7](#development-environment-in-centos7)
   - [Build GCC-13 from source](#build-gcc-13-from-source)
+- [Development Environment in CentOS9 stream](#development-environment-in-centos9-stream)
 - [Development Environment in Fedora Rawhide](#development-environment-in-fedora-rawhide)
 - [Development Environment Online](#development-environment-online)
 - [Othre configuration](#othre-configuration)
@@ -355,6 +356,47 @@ export LD_LIBRARY_PATH=/usr/local/gcc-13/lib64:$LD_LIBRARY_PATH
 
 # check version
 gcc --version
+```
+
+## Development Environment in CentOS9 stream
+
+download image from [CentOS 9-stream](https://github.com/mishamosher/CentOS-WSL/releases/)
+
+```bash
+dnf update
+# default python3.9
+
+# extra install gcc 11
+dnf install clang clang-tools-extra cmake git gdb
+dnf --enablerepo=crb install ninja-build
+
+dnf install golang
+
+# add sudo user
+adduser frank
+passwd frank
+# userdel -r cauchy
+usermod -aG wheel frank
+lid -g wheel
+
+sudo - frank
+vi .bashrc
+PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+alias ll='ls -la'
+
+export VCPKG_FORCE_SYSTEM_BINARIES=1
+export VCPKG_ROOT=$HOME/vcpkg
+export PATH=$VCPKG_ROOT:$PATH
+
+git clone https://github.com/microsoft/vcpkg
+./vcpkg/bootstrap-vcpkg.sh
+```
+
+```bash
+# vi vcpkg/scripts/buildsystems/vcpkg.cmake add to last line
+set(CMAKE_CXX_STANDARD 20)
+# vi vcpkg/triplets/x64-linux.cmake add to last line
+set(VCPKG_BUILD_TYPE release)
 ```
 
 ## Development Environment in Fedora Rawhide
