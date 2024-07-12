@@ -30,7 +30,7 @@
 ### wsl basic cmds
 
 ```bash
-# update wsl program itself, not distro
+# update wsl itself, not distro
 wsl --update
 
 # set to wsl1
@@ -54,7 +54,7 @@ wsl export & import
 
 ```bash
 # help info
-wsl -h 
+wsl --help
 
 # show all WSL image names
 wsl -l -v
@@ -87,16 +87,7 @@ source ~/set_proxy.txt
 
 ### wsl with git
 
-config git proxy
-
-```bash
-# the config is saved in ~/.gitconfig
-git config --global user.name "yourname"
-git config --global user.email "yourmail"
-git config --global http.proxy http://192.168.0.108:2080
-```
-
-or just change file `vi ~/.gitconfig`, then `git config --global --list`
+config git proxy, just change file `vi ~/.gitconfig`, then `git config --global --list`
 
 ```bash
 [user]
