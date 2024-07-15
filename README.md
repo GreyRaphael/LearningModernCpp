@@ -24,6 +24,7 @@
   - [mingw(not recomended)](#mingwnot-recomended)
   - [linux](#linux)
   - [vcpkg tips](#vcpkg-tips)
+    - [fix vcpkg hash mismatch](#fix-vcpkg-hash-mismatch)
 - [check hash](#check-hash)
 
 ## Development Environment in WSL
@@ -896,6 +897,26 @@ int main(int, char**) {
         }
     ]
 }
+```
+
+#### fix vcpkg hash mismatch
+
+```bash
+/home/cauchy/vcpkg/buildtrees/versioning_/versions/thrift/6855be1ce96497811d4eb0a9879baf6cf1b3610c: info: installing overlay port from here
+-- Downloading https://github.com/apache/thrift/archive/0.20.0.tar.gz -> apache-thrift-0.20.0.tar.gz...
+error: Missing apache-thrift-0.20.0.tar.gz and downloads are blocked by x-block-origin.
+error: File does not have the expected hash:
+url: https://github.com/apache/thrift/archive/0.20.0.tar.gz
+File: /home/cauchy/vcpkg/downloads/apache-thrift-0.20.0.tar.gz.142.part
+Expected hash: 5e4ee9870b30fe5ba484d39781c435716f7f3903793dc8aae96594ca813b1a5a73363b84719038ca8fa3ab8ef0a419a28410d936ff7b3bbadf36fc085a6883ae
+Actual hash: 86a609f5725506abc2109902b338cbaad85abf980f9d28c63e6e50a5c265dc10699372c4e91f5ee85d8d09fbcbb0dc17c19745b86d215b96bbf7d0a9270f0932
+```
+
+```bash
+# how to fix
+cd /home/cauchy/vcpkg/buildtrees/versioning_/versions/thrift/6855be1ce96497811d4eb0a9879baf6cf1b3610c
+vi port.cmake
+# change the expected hash to 86a609f5725506abc2109902b338cbaad85abf980f9d28c63e6e50a5c265dc10699372c4e91f5ee85d8d09fbcbb0dc17c19745b86d215b96bbf7d0a9270f0932
 ```
 
 ## check hash
