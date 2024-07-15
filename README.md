@@ -24,6 +24,7 @@
   - [mingw(not recomended)](#mingwnot-recomended)
   - [linux](#linux)
   - [vcpkg tips](#vcpkg-tips)
+- [check hash](#check-hash)
 
 ## Development Environment in WSL
 
@@ -904,4 +905,14 @@ int main(int, char**) {
         }
     ]
 }
+```
+
+## check hash
+
+```bash
+# in windows
+certutil -hashfile .\thrift-0.20.0.tar.gz SHA512
+
+# in linux
+sha512sum apache-thrift-0.20.0.tar.gz
 ```
