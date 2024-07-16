@@ -25,6 +25,7 @@
   - [linux](#linux)
   - [vcpkg tips](#vcpkg-tips)
     - [fix vcpkg hash mismatch](#fix-vcpkg-hash-mismatch)
+    - [Export vcpkg](#export-vcpkg)
 - [check hash](#check-hash)
 
 ## Development Environment in WSL
@@ -917,6 +918,70 @@ Actual hash: 86a609f5725506abc2109902b338cbaad85abf980f9d28c63e6e50a5c265dc10699
 cd /home/cauchy/vcpkg/buildtrees/versioning_/versions/thrift/6855be1ce96497811d4eb0a9879baf6cf1b3610c
 vi port.cmake
 # change the expected hash to 86a609f5725506abc2109902b338cbaad85abf980f9d28c63e6e50a5c265dc10699372c4e91f5ee85d8d09fbcbb0dc17c19745b86d215b96bbf7d0a9270f0932
+```
+
+#### Export vcpkg
+
+> export vcpkg libraries to a zip file, then other people can use libraries without install vcpkg
+
+```bash
+# vcpkg.json in a project
+.
+└── vcpkg.json
+```
+
+```json
+// vcpkg.json
+{
+    "dependencies": [
+        "spdlog",
+        "boost-circular-buffer",
+        {
+            "name": "arrow",
+            "default-features": false
+        }
+    ],
+    "builtin-baseline": "f7423ee180c4b7f40d43402c2feb3859161ef625",
+    "overrides": [
+        {
+            "name": "spdlog",
+            "version": "1.13.0"
+        },
+        {
+            "name": "boost-circular-buffer",
+            "version": "1.85.0"
+        },
+        {
+            "name": "arrow",
+            "version": "16.1.0"
+        }
+    ]
+}
+```
+
+```bash
+# install libraries
+vcpkg install
+vcpkg export --zip --output-dir=.\exports
+
+# Zip archive exported at: proj2/.exports/vcpkg-export-20240716-222831.zip
+# To use exported libraries in CMake projects, add -DCMAKE_TOOLCHAIN_FILE=[...]/scripts/buildsystems/vcpkg.cmake to your CMake command line.
+```
+
+```bash
+.
+├── .exports
+│   └── vcpkg-export-20240716-222831.zip
+├── vcpkg_installed
+│   ├── vcpkg
+│   │   ├── info
+│   │   ├── status
+│   │   └── updates
+│   └── x64-linux
+│       ├── include
+│       ├── lib
+│       └── share
+└── vcpkg.json
 ```
 
 ## check hash
