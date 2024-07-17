@@ -26,6 +26,7 @@
   - [vcpkg tips](#vcpkg-tips)
     - [fix vcpkg hash mismatch](#fix-vcpkg-hash-mismatch)
     - [Export vcpkg](#export-vcpkg)
+    - [prohibit from pdb genenration](#prohibit-from-pdb-genenration)
 - [check hash](#check-hash)
 
 ## Development Environment in WSL
@@ -982,6 +983,21 @@ vcpkg export --zip --output-dir=.\exports
 │       ├── lib
 │       └── share
 └── vcpkg.json
+```
+
+#### prohibit from pdb genenration
+
+```cmake
+# vcpkg/triplets/x64-windows.cmake
+set(VCPKG_TARGET_ARCHITECTURE x64)
+set(VCPKG_CRT_LINKAGE dynamic)
+set(VCPKG_LIBRARY_LINKAGE dynamic)
+set(VCPKG_BUILD_TYPE release)
+
+# Disable PDB generation
+set(VCPKG_C_FLAGS_RELEASE "/Zi-")
+set(VCPKG_CXX_FLAGS_RELEASE "/Zi-")
+set(VCPKG_LINKER_FLAGS_RELEASE "/DEBUG:NONE")
 ```
 
 ## check hash
