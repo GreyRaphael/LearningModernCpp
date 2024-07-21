@@ -12,6 +12,7 @@
     - [std::format with user-defined types](#stdformat-with-user-defined-types)
       - [user-defined formatter with single value](#user-defined-formatter-with-single-value)
       - [user-defined formatter with multiple values](#user-defined-formatter-with-multiple-values)
+  - [Initialize a String Member](#initialize-a-string-member)
 
 ## built-in literals
 
@@ -1148,5 +1149,44 @@ int main()
     std::cout << s1 << std::endl; // [12] John Doe
     std::cout << s2 << std::endl; // [12] Doe, John
     std::cout << s4 << std::endl; // [12] Doe, John
+}
+```
+
+## Initialize a String Member
+
+> passing by value and then moving from a string argument is the preferred solution in Modern C++
+
+```cpp
+#include <iostream>
+#include <string>
+
+class UserName {
+    std::string mName;
+
+   public:
+    // UserName(const std::string& str) : mName(str) {
+    //     std::cout << "by ref" << '\n';
+    // }
+    // UserName(std::string_view sv) : mName(sv) {
+    //     std::cout << "by string_view" << '\n';
+    // }
+
+    // best recommended
+    UserName(std::string s) : mName(std::move(s)) {
+        std::cout << "by move" << '\n';
+    }
+};
+
+int main(int argc, char const* argv[]) {
+    // creation from a string literal
+    UserName u1{"John With Very Long Name"};
+
+    // creation from l-value:
+    std::string s1{"Marc With Very Long Name"};
+    UserName u2{s1};
+
+    // from r-value reference
+    std::string s2{"Marc With Very Long Name"};
+    UserName u3{std::move(s2)};
 }
 ```
