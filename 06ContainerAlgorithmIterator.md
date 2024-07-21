@@ -11,6 +11,7 @@
   - [`std::any`](#stdany)
   - [`std::optional`](#stdoptional)
   - [`std::variant`](#stdvariant)
+    - [`std::variant` for duck-typing polymorphism](#stdvariant-for-duck-typing-polymorphism)
   - [`std::tuple`](#stdtuple)
 
 C++ Standard Library core initially sat three main pillars: **containers**, **algorithms**,
@@ -1006,6 +1007,171 @@ int main() {
 
     orderOrTrade = Order{.orderid = "66666", .volume = 100, .price = 100.1};
     std::visit(MyVisitor, orderOrTrade);
+}
+```
+
+### `std::variant` for duck-typing polymorphism
+
+polymorphism by virtual function
+
+```cpp
+class Base {
+   public:
+    virtual ~Base() = default;
+
+    virtual void PrintName() const {
+        std::cout << "calling Bases!\n"
+    }
+};
+
+class Derived : public Base {
+   public:
+    void PrintName() const override {
+        std::cout << "calling Derived!\n"
+    }
+};
+
+class ExtraDerived : public Base {
+   public:
+    void PrintName() const override {
+        std::cout << "calling ExtraDerived!\n"
+    }
+};
+
+std::unique_ptr<Base> pObject = std::make_unique<Derived>();
+pObject->PrintName();
+```
+
+
+polymorphism(duck-typing) example by `std::variant` & `std::visit`:
+> [tutorial](https://www.cppstories.com/2020/04/variant-virtual-polymorphism.html/) & [notes](https://www.cppstories.com/2018/06/variant/)
+
+```cpp
+#include <fmt/core.h>
+#include <string_view>
+#include <variant>
+
+struct Derived {
+    void PrintName(std::string_view txt) const {
+        fmt::println("in Derived, {}", txt);
+    }
+};
+
+struct ExtraDerived {
+    void PrintName(std::string_view txt) const {
+        fmt::println("in ExtraDerived, {}", txt);
+    }
+};
+
+struct CallPrintName {
+    std::string_view intro;
+    void operator()(const Derived& d) { d.PrintName(intro); }
+    void operator()(const ExtraDerived& ed) { ed.PrintName(intro); }
+};
+
+int main(int argc, char const* argv[]) {
+    using MyType = std::variant<Derived, ExtraDerived>;
+    MyType var = ExtraDerived{};
+    std::visit(CallPrintName{"intro text"}, var);
+}
+```
+
+complicated example with c++20 concept
+
+```cpp
+#include <concepts>
+#include <iostream>
+#include <string>
+#include <variant>
+#include <vector>
+
+template <typename T>
+concept ILabel = requires(const T v) {
+    { v.buildHtml() } -> std::convertible_to<std::string>;
+};
+
+class HtmlLabelBuilder {
+   public:
+    template <ILabel... Label>
+    [[nodiscard]] std::string buildHtml(const std::variant<Label...>& label) {
+        return std::visit(*this, label);
+    }
+
+    // private: //some friend declaration for std::visit?
+    template <ILabel Label>
+    std::string operator()(const Label& label) const {
+        return label.buildHtml();
+    }
+};
+
+class SimpleLabel {
+   public:
+    SimpleLabel(std::string str) : _str(std::move(str)) {}
+
+    [[nodiscard]] std::string buildHtml() const {
+        return "<p>" + _str + "</p>";
+    }
+
+   private:
+    std::string _str;
+};
+
+class DateLabel {
+   public:
+    DateLabel(std::string dateStr) : _str(std::move(dateStr)) {}
+
+    [[nodiscard]] std::string buildHtml() const {
+        return "<p class=\"date\">Date: " + _str + "</p>";
+    }
+
+   private:
+    std::string _str;
+};
+
+class IconLabel {
+   public:
+    IconLabel(std::string str, std::string iconSrc) : _str(std::move(str)), _iconSrc(std::move(iconSrc)) {}
+
+    [[nodiscard]] std::string buildHtml() const {
+        return "<p><img src=\"" + _iconSrc + "\"/>" + _str + "</p>";
+    }
+
+   private:
+    std::string _str;
+    std::string _iconSrc;
+};
+
+class HelloLabel {
+   public:
+    [[nodiscard]] const char* buildHtml() const {  // doesn't return std::string
+        return "<p>Hello</p>";
+    }
+};
+
+int main() {
+    using LabelVariant = std::variant<SimpleLabel, DateLabel, IconLabel, HelloLabel>;
+    std::vector<LabelVariant> vecLabels;
+    vecLabels.emplace_back(HelloLabel{});
+    vecLabels.emplace_back(SimpleLabel{"Hello World"});
+    vecLabels.emplace_back(DateLabel{"10th August 2020"});
+    vecLabels.emplace_back(IconLabel{"Error", "error.png"});
+
+    {
+        std::string finalHTML;
+        auto builder = HtmlLabelBuilder{};
+        for (auto& label : vecLabels)
+            finalHTML += builder.buildHtml(label) + '\n';
+
+        std::cout << finalHTML;
+    }
+    {
+        std::string finalHTML;
+        auto caller = [](ILabel auto& l) -> std::string { return l.buildHtml(); };
+        for (auto& label : vecLabels)
+            finalHTML += std::visit(caller, label) + '\n';
+
+        std::cout << finalHTML;
+    }
 }
 ```
 
