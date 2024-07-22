@@ -106,11 +106,25 @@ for csc to use `git clone ssh@xxxx.git`, change `vi ~/.ssh/config`, [solution](h
 - problem2: *kex_exchange_identification: Connection closed by remote host*
 
 ```bash
+# in Fedora 40
+sudo dnf install netcat
+
 # ~/.ssh/config
 Host github.com
   HostName 20.200.245.248
   Port 443
   #ProxyCommand nc -X connect -x 127.0.0.1:2080 %h %p  
+```
+
+```bash
+# in CentOS9 Stream
+sudo dnf install nmap-ncat
+
+# ~/.ssh/config
+Host github.com
+  HostName 20.200.245.248
+  Port 443
+  #ProxyCommand ncat --proxy 127.0.0.1:2080 --proxy-type socks5 %h %p
 ```
 
 change dnf proxy
