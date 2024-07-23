@@ -1113,6 +1113,7 @@ class DerivedA : public Base {
 
     static std::unique_ptr<Base> create() { return std::make_unique<DerivedA>(); }
 
+    // static inline: intialized the static variable in header file, before c++17, it in source file
     static inline bool registered = Factory::getInstance().registerType("DerivedA", create);
 };
 
