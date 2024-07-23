@@ -9,6 +9,8 @@
   - [curiously recurring template pattern (`CRTP`)](#curiously-recurring-template-pattern-crtp)
   - [thread-safe singleton](#thread-safe-singleton)
   - [Factory With Self-Registering Types](#factory-with-self-registering-types)
+    - [by Singleton](#by-singleton)
+    - [by making factor method static](#by-making-factor-method-static)
 
 Definition:
 - **Idioms**: provide instructions on how to resolve implementation-specific issues in a programming language, such as memory management in C++
@@ -1049,6 +1051,8 @@ int main() {
 
 ## Factory With Self-Registering Types
 
+### by Singleton
+
 ```cpp
 #include <iostream>
 #include <map>
@@ -1131,6 +1135,171 @@ int main() {
     if (objB) objB->doSomething();
 
     auto objC = Factory::getInstance().create("DerivedC");
+    if (objC) objC->doSomething();
+}
+```
+
+### by making factor method static
+
+```cpp
+#include <iostream>
+#include <map>
+#include <memory>
+#include <string_view>
+
+// Base class
+class Base {
+   public:
+    virtual ~Base() = default;
+    virtual void doSomething() = 0;
+};
+
+// Factory class
+class Factory {
+   public:
+    // using CreatorFunc = std::function<std::unique_ptr<Base>()>;  // modern style
+    using CreatorFunc = std::unique_ptr<Base> (*)();  // function pointer
+
+   public:
+    Factory() = delete;  // cannot be instantiated
+
+    static bool registerType(std::string_view id, CreatorFunc creator) {
+        if (map.find(id) == map.end()) {
+            map[id] = creator;
+            return true;
+        }
+        return false;
+    }
+
+    static std::unique_ptr<Base> create(std::string_view id) {
+        if (auto it = map.find(id); it != map.end()) {
+            // invoke second to make pointer
+            return it->second();
+        }
+        return nullptr;
+    }
+
+   private:
+    static inline std::map<std::string_view, CreatorFunc> map;
+};
+
+// Derived classes
+class DerivedA : public Base {
+   public:
+    void doSomething() override {
+        std::cout << "DerivedA doing something." << std::endl;
+    }
+
+    static std::unique_ptr<Base> create() { return std::make_unique<DerivedA>(); }
+
+    static inline bool registered = Factory::registerType("DerivedA", create);
+};
+
+class DerivedB : public Base {
+   public:
+    void doSomething() override {
+        std::cout << "DerivedB doing something." << std::endl;
+    }
+
+    static std::unique_ptr<Base> create() { return std::make_unique<DerivedB>(); }
+
+    static inline bool registered = Factory::registerType("DerivedB", create);
+};
+
+int main() {
+    auto objA = Factory::create("DerivedA");
+    if (objA) objA->doSomething();
+
+    auto objB = Factory::create("DerivedB");
+    if (objB) objB->doSomething();
+
+    auto objC = Factory::create("DerivedC");
+    if (objC) objC->doSomething();
+}
+```
+
+add info to the register
+
+```cpp
+#include <iostream>
+#include <map>
+#include <memory>
+#include <string_view>
+
+// Base class
+class Base {
+   public:
+    virtual ~Base() = default;
+    virtual void doSomething() = 0;
+};
+
+struct CreatorInfo {
+    using CreatorFunc = std::unique_ptr<Base> (*)();
+    CreatorFunc m_CreateFunc;
+    std::string_view m_Description;
+};
+
+// Factory class
+class Factory {
+   public:
+    // using CreatorFunc = std::function<std::unique_ptr<Base>()>;  // modern style
+    using CreatorFunc = std::unique_ptr<Base> (*)();  // function pointer
+
+   public:
+    Factory() = delete;  // cannot be instantiated
+
+    static bool registerType(std::string_view id, CreatorInfo const& creator) {
+        if (map.find(id) == map.end()) {
+            map[id] = creator;
+            return true;
+        }
+        return false;
+    }
+
+    static std::unique_ptr<Base> create(std::string_view id) {
+        if (auto it = map.find(id); it != map.end()) {
+            // invoke second to make pointer
+            std::cout << "create: " << it->second.m_Description << '\n';
+            return it->second.m_CreateFunc();
+        }
+        return nullptr;
+    }
+
+   private:
+    static inline std::map<std::string_view, CreatorInfo> map;
+};
+
+// Derived classes
+class DerivedA : public Base {
+   public:
+    void doSomething() override {
+        std::cout << "DerivedA doing something." << std::endl;
+    }
+
+    static std::unique_ptr<Base> create() { return std::make_unique<DerivedA>(); }
+
+    static inline bool registered = Factory::registerType("DerivedA", {create, "some info about DerivedA create"});
+};
+
+class DerivedB : public Base {
+   public:
+    void doSomething() override {
+        std::cout << "DerivedB doing something." << std::endl;
+    }
+
+    static std::unique_ptr<Base> create() { return std::make_unique<DerivedB>(); }
+
+    static inline bool registered = Factory::registerType("DerivedB", {create, "some info about DerivedB create"});
+};
+
+int main() {
+    auto objA = Factory::create("DerivedA");
+    if (objA) objA->doSomething();
+
+    auto objB = Factory::create("DerivedB");
+    if (objB) objB->doSomething();
+
+    auto objC = Factory::create("DerivedC");
     if (objC) objC->doSomething();
 }
 ```
