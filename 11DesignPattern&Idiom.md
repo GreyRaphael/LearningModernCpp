@@ -1327,6 +1327,19 @@ set(CMAKE_CXX_STANDARD 20)
 add_executable(proj3 main.cpp IBase.cpp DerivedA.cpp DerivedB.cpp)
 ```
 
+```cmake
+# CMakeLists.txt with base as library
+cmake_minimum_required(VERSION 3.26.0)
+project(proj3 VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+#add_library(base SHARED IBase.cpp)
+add_library(base STATIC IBase.cpp)
+
+add_executable(proj3 main.cpp DerivedA.cpp DerivedB.cpp)
+target_link_libraries(proj3 PRIVATE base)
+```
+
 ```cpp
 // IBase.h
 #pragma once
