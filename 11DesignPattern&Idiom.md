@@ -1303,3 +1303,102 @@ int main() {
     if (objC) objC->doSomething();
 }
 ```
+
+seperate the project to header files and source files
+
+```bash
+.
+├── CMakeLists.txt
+├── DerivedA.cpp
+├── DerivedA.h
+├── DerivedB.cpp
+├── DerivedB.h
+├── IBase.cpp
+├── IBase.h
+└── main.cpp
+```
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.26.0)
+project(proj3 VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+add_executable(proj3 main.cpp IBase.cpp DerivedA.cpp DerivedB.cpp)
+```
+
+```cpp
+// IBase.h
+#pragma once
+#include <map>
+#include <memory>
+#include <string_view>
+
+// Base class
+class Base {
+   public:
+    virtual ~Base() = default;
+    virtual void doSomething() = 0;
+};
+
+// Factory class
+class Factory {
+   public:
+    using CreatorFunc = std::unique_ptr<Base> (*)();  // function pointer
+
+   public:
+    Factory() = delete;  // cannot be instantiated
+    static bool registerType(std::string_view id, CreatorFunc creator);
+    static std::unique_ptr<Base> create(std::string_view id);
+
+   private:
+    static inline std::map<std::string_view, CreatorFunc> map;
+};
+```
+
+```cpp
+// IBase.cpp
+#include "IBase.h"
+
+bool Factory::registerType(std::string_view id, CreatorFunc creator) {
+    if (map.find(id) == map.end()) {
+        map[id] = creator;
+        return true;
+    }
+    return false;
+}
+
+std::unique_ptr<Base> Factory::create(std::string_view id) {
+    if (auto it = map.find(id); it != map.end()) {
+        // invoke second to make pointer
+        return it->second();
+    }
+    return nullptr;
+}
+```
+
+```cpp
+// DerivedA.h
+#pragma once
+
+#include "IBase.h"
+
+class DerivedA : public Base {
+   public:
+    void doSomething() override;
+
+    static std::unique_ptr<Base> create() { return std::make_unique<DerivedA>(); }
+    static inline bool registered = Factory::registerType("DerivedA", create);
+};
+```
+
+```cpp
+// DerivedA.cpp
+#include "DerivedA.h"
+
+#include <iostream>
+
+void DerivedA::doSomething() {
+    std::cout << "DerivedA doing something." << std::endl;
+}
+```
