@@ -12,6 +12,7 @@
   - [`std::optional`](#stdoptional)
   - [`std::variant`](#stdvariant)
     - [`std::variant` for duck-typing polymorphism](#stdvariant-for-duck-typing-polymorphism)
+    - [polymorphism by `std::variant` with concept](#polymorphism-by-stdvariant-with-concept)
   - [`std::tuple`](#stdtuple)
 
 C++ Standard Library core initially sat three main pillars: **containers**, **algorithms**,
@@ -1171,6 +1172,91 @@ int main() {
             finalHTML += std::visit(caller, label) + '\n';
 
         std::cout << finalHTML;
+    }
+}
+```
+
+### polymorphism by `std::variant` with concept
+
+```cpp
+#include <fmt/core.h>
+
+#include <concepts>
+#include <string>
+#include <variant>
+#include <vector>
+
+struct TickData {
+    double open;
+    double high;
+    double low;
+    double last;
+};
+
+// Define a concept for factor types
+template <typename T>
+concept TickFactorLike = requires(T t, const TickData& quote) {
+    { t.factor } -> std::same_as<double&>;
+    { t.name } -> std::same_as<std::string&>;
+    t.update(quote);
+};
+
+struct Factor01 {
+    double feature{};
+    std::string name{"Factor01"};
+    void update(TickData const& quote) {
+        feature = quote.low;
+    }
+};
+
+struct Factor02 {
+    double factor{};
+    std::string name{"Factor02"};
+    void update(TickData const& quote) {
+        factor = quote.last;
+    }
+};
+
+struct Factor03 {
+    double factor{};
+    std::string name{"Factor03"};
+    void update(TickData const& quote) {
+        factor = quote.high;
+    }
+};
+
+int main(int argc, char const* argv[]) {
+    TickData quote{10, 20, 30, 40};
+
+    {
+        // // error case
+        // using TickFactor = std::variant<Factor01, Factor02, Factor03>;  // error
+        // std::vector<TickFactor> vec{Factor01{}, Factor02{}, Factor03{}};
+
+        // // Update factors with a single visitation per factor
+        // for (auto&& f : vec) {
+        //     std::visit([&quote](auto& factor) { factor.update(quote); }, f);
+        // }
+
+        // // Print factors with a single visitation per factor
+        // for (auto&& f : vec) {
+        //     std::visit([](auto& factor) { fmt::print("name={}, factor={}\n", factor.name, factor.factor); }, f);
+        // }
+    }
+    {
+        using TickFactor = std::variant<Factor02, Factor03>;
+        std::vector<TickFactor> vec{Factor02{}, Factor03{}};
+
+        // Update factors with a single visitation per factor
+        for (auto&& f : vec) {
+            // std::visit([&quote](auto& factor) { factor.update(quote); }, f); // mehtod1
+            std::visit([&quote](TickFactorLike auto& factor) { factor.update(quote); }, f);  // method2: with concept
+        }
+
+        // Print factors with a single visitation per factor
+        for (auto&& f : vec) {
+            std::visit([](auto& factor) { fmt::print("name={}, factor={}\n", factor.name, factor.factor); }, f);
+        }
     }
 }
 ```
