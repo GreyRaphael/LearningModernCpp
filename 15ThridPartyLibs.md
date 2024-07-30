@@ -30,6 +30,9 @@
   - [`atomic_queue`](#atomic_queue)
   - [safe queue with lock](#safe-queue-with-lock)
   - [bshoshany-thread-pool](#bshoshany-thread-pool)
+  - [apache arrow](#apache-arrow)
+    - [compute](#compute)
+    - [get string from ipc file](#get-string-from-ipc-file)
 
 
 ## Code Organized by CMake
@@ -1846,7 +1849,7 @@ int main() {
 }
 ```
 
-## arrow
+## apache arrow
 
 `vcpkg install arrow`
 
@@ -1898,5 +1901,70 @@ int main() {
     } else {
         std::cerr << "Failed to create RecordBatch: " << result.status().message() << std::endl;
     }
+}
+```
+
+### get string from ipc file
+
+```py
+# export ipc
+import polars as pl
+
+df = pl.DataFrame({"col1": ["hello", "world"], "col2": [1, 2]})
+df.write_ipc("test.ipc")
+```
+
+```cpp
+#include <arrow/api.h>
+#include <arrow/io/api.h>
+#include <arrow/ipc/api.h>
+
+#include <iostream>
+
+arrow::Status read_ipc(std::string const& filename) {
+    ARROW_ASSIGN_OR_RAISE(auto infile, arrow::io::ReadableFile::Open(filename, arrow::default_memory_pool()));
+    ARROW_ASSIGN_OR_RAISE(auto reader, arrow::ipc::RecordBatchFileReader::Open(infile));
+    // only 1 record batch
+    auto rb = reader->ReadRecordBatch(0).MoveValueUnsafe();
+
+    std::cout << rb->schema()->ToString() << '\n';  // get the schema to know the Array type
+
+    auto col1_arr = std::static_pointer_cast<arrow::StringViewArray>(rb->GetColumnByName("col1"));
+    std::cout << col1_arr->GetString(0) << '\n';  // type is std::string
+
+    auto col2_arr = std::static_pointer_cast<arrow::Int64Array>(rb->GetColumnByName("col2"));
+    std::cout << col2_arr->Value(0) << '\n';
+
+    return arrow::Status::OK();
+}
+
+int main(int, char**) {
+    auto result = read_ipc("test.ipc");
+}
+#include <arrow/api.h>
+#include <arrow/io/api.h>
+#include <arrow/ipc/api.h>
+
+#include <iostream>
+
+arrow::Status read_ipc(std::string const& filename) {
+    ARROW_ASSIGN_OR_RAISE(auto infile, arrow::io::ReadableFile::Open(filename, arrow::default_memory_pool()));
+    ARROW_ASSIGN_OR_RAISE(auto reader, arrow::ipc::RecordBatchFileReader::Open(infile));
+    // only 1 record batch
+    auto rb = reader->ReadRecordBatch(0).MoveValueUnsafe();
+
+    std::cout << rb->schema()->ToString() << '\n';  // get the schema to know the Array type
+
+    auto col1_arr = std::static_pointer_cast<arrow::StringViewArray>(rb->GetColumnByName("col1"));
+    std::cout << col1_arr->GetString(0) << '\n';  // type is std::string
+
+    auto col2_arr = std::static_pointer_cast<arrow::Int64Array>(rb->GetColumnByName("col2"));
+    std::cout << col2_arr->Value(0) << '\n';
+
+    return arrow::Status::OK();
+}
+
+int main(int, char**) {
+    auto result = read_ipc("test.ipc");
 }
 ```
