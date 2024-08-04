@@ -33,6 +33,8 @@
   - [apache arrow](#apache-arrow)
     - [compute](#compute)
     - [get string from ipc file](#get-string-from-ipc-file)
+  - [nng messing library](#nng-messing-library)
+    - [one producer multiple consume](#one-producer-multiple-consume)
 
 
 ## Code Organized by CMake
@@ -1967,4 +1969,172 @@ arrow::Status read_ipc(std::string const& filename) {
 int main(int, char**) {
     auto result = read_ipc("test.ipc");
 }
+```
+
+## nng messing library
+
+history: ZeroMQ -> nanomsg -> nng
+> `vcpkg install nng`
+
+### one producer multiple consume
+
+```bash
+├── CMakeLists.txt
+├── recver.cpp
+└── sender.cpp
+```
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.5.0)
+project(proj4 VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+add_executable(sender sender.cpp)
+add_executable(recver recver.cpp)
+
+find_package(nng CONFIG REQUIRED)
+target_link_libraries(sender PRIVATE nng::nng)
+target_link_libraries(recver PRIVATE nng::nng)
+
+find_package(spdlog CONFIG REQUIRED)
+target_link_libraries(sender PRIVATE spdlog::spdlog)
+target_link_libraries(recver PRIVATE spdlog::spdlog)
+```
+
+```cpp
+// sender.cpp
+#include <nng/nng.h>
+#include <nng/protocol/pubsub0/pub.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/spdlog.h>
+
+struct Data {
+    int id;
+    int preclose;
+    int open;
+    int high;
+    int low;
+    int last;
+    double amount;
+    int64_t volume;
+    int ask_vols[10];
+    int bid_vols[10];
+    double ask_pxs[10];
+    double bid_pxs[10];
+};
+
+int main() {
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("send.log");
+    spdlog::logger logger("mylogger", {file_sink});
+    spdlog::set_default_logger(std::make_shared<spdlog::logger>(logger));  // SPDLOG_XXX is default logger
+    spdlog::set_pattern("%T.%F,%v");
+
+    nng_socket pub_sock;
+    nng_pub0_open(&pub_sock);
+    nng_listen(pub_sock, "ipc:///tmp/pubsub.ipc", NULL, 0);
+
+    Data data{};
+    size_t idx = 0;
+    while (true) {
+        data.id = idx;
+        data.ask_pxs[5] = idx * 1.1;
+
+        SPDLOG_INFO("BEGIN SEND");
+        nng_send(pub_sock, &data, sizeof(Data), 0);
+        SPDLOG_INFO("END SEND;{};{}", data.id, data.ask_pxs[5]);
+        ++idx;
+    }
+
+    nng_close(pub_sock);
+}
+```
+
+```cpp
+// recver.cpp
+#include <nng/nng.h>
+#include <nng/protocol/pubsub0/sub.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/spdlog.h>
+
+struct Data {
+    int id;
+    int preclose;
+    int open;
+    int high;
+    int low;
+    int last;
+    double amount;
+    int64_t volume;
+    int ask_vols[10];
+    int bid_vols[10];
+    double ask_pxs[10];
+    double bid_pxs[10];
+};
+
+int main(int argc, char** argv) {
+    if (argc < 2) {
+        printf("too less arguments, enter ./sender filename.log\n");
+        exit(-1);
+    }
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(argv[1]);
+    spdlog::logger logger("mylogger", {file_sink});
+    spdlog::set_default_logger(std::make_shared<spdlog::logger>(logger));  // SPDLOG_XXX is default logger
+    spdlog::set_pattern("%T.%F,%v");
+
+    nng_socket sub_sock;
+    nng_sub0_open(&sub_sock);
+    nng_socket_set(sub_sock, NNG_OPT_SUB_SUBSCRIBE, "", 0);
+    nng_dial(sub_sock, "ipc:///tmp/pubsub.ipc", NULL, 0);
+
+    Data data{};
+    size_t sz = sizeof(Data);
+    while (true) {
+        SPDLOG_INFO("BEGIN RECV");
+        int bytes_received = nng_recv(sub_sock, &data, &sz, 0);
+        SPDLOG_INFO("END RECV;{};{}", data.id, data.ask_pxs[5]);
+    }
+
+    nng_close(sub_sock);
+}
+```
+
+```py
+# statistic.py
+import polars as pl
+
+
+def get_df(logfile: str) -> pl.DataFrame:
+    return pl.read_csv(logfile, separator=",", has_header=False).select(
+        pl.col("column_1").str.to_time().cast(pl.Int64).alias("time"),
+        pl.col("column_2").str.split(";").list.get(1, null_on_oob=True).alias("id"),
+        pl.col("column_2").str.split(";").list.get(2, null_on_oob=True).alias("value"),
+    )
+
+
+df_send = get_df("build/send.log")
+df_recv1 = get_df("build/recv1.log")
+df_recv2 = get_df("build/recv2.log")
+
+
+def calc_diff(df: pl.DataFrame) -> pl.DataFrame:
+    df1 = df.filter(pl.col("id").is_null()).rename({"time": "t1", "id": "id1", "value": "v1"})
+    df2 = df.filter(pl.col("id").is_not_null()).rename({"time": "t2", "id": "id2", "value": "v2"})
+    return pl.concat([df1, df2], how="horizontal").with_columns((pl.col("t2") - pl.col("t1")).alias("diff"))
+
+
+stat_send = calc_diff(df_send)  # mean 15.25us, mid 11.7us
+stat_recv1 = calc_diff(df_recv1)  # mean 21.52us, mid 18.6us
+stat_recv2 = calc_diff(df_recv2)
+
+stat_send.describe()  # mean 17.6us, mid 16.1us, max 8.1 ms
+
+stat_recv1.describe()  # mean 22.86us, mid 20.2us, max 7.5ms
+
+stat_recv2.describe()  # mean 25.44us, mid 26.9us, max 9.2ms
+
+dfx = df_recv1.join(df_send, on="id", how="left").with_columns((pl.col("time") - pl.col("time_right")).alias("diff"))
+dfx.describe()  # mean 96.9us, mid 11.9us max 7.47ms
+
+dfx[dfx.select(pl.col("diff").arg_max()).row(0)]
 ```
