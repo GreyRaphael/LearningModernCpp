@@ -2163,6 +2163,7 @@ struct MyStruct {
 
 std::vector<char> serialize(const MyStruct& data) {
     std::vector<char> buffer(sizeof(data));
+    // stack to heap
     std::memcpy(buffer.data(), &data, sizeof(data));
     return buffer;
 }
@@ -2192,7 +2193,9 @@ MyStruct deserializeAndDecompress(const std::vector<char>& compressedData) {
     }
 
     MyStruct result;
+    // // just ref heap
     // auto xx = std::bit_cast<MyStruct*>(decompressedData.data());
+    // heap to stack
     std::memcpy(&result, decompressedData.data(), decompressedSize);
     return result;
 }
