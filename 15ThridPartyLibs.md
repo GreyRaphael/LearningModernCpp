@@ -35,6 +35,8 @@
     - [get string from ipc file](#get-string-from-ipc-file)
   - [nng messing library](#nng-messing-library)
     - [one producer multiple consume](#one-producer-multiple-consume)
+  - [compresssion](#compresssion)
+    - [zstd](#zstd)
 
 
 ## Code Organized by CMake
@@ -2137,4 +2139,73 @@ dfx = df_recv1.join(df_send, on="id", how="left").with_columns((pl.col("time") -
 dfx.describe()  # mean 96.9us, mid 11.9us max 7.47ms
 
 dfx[dfx.select(pl.col("diff").arg_max()).row(0)]
+```
+
+## compresssion
+
+### zstd
+
+`vcpkg install zstd`
+
+```cpp
+#include <zstd.h>  // Zstandard library
+
+#include <bit>
+#include <cstring>  // for std::memcpy
+#include <iostream>
+#include <vector>
+
+struct MyStruct {
+    int id;
+    double value;
+    char name[10];
+};
+
+std::vector<char> serialize(const MyStruct& data) {
+    std::vector<char> buffer(sizeof(data));
+    std::memcpy(buffer.data(), &data, sizeof(data));
+    return buffer;
+}
+
+std::vector<char> compress(const std::vector<char>& data) {
+    size_t compressedSize = ZSTD_compressBound(data.size());
+    std::vector<char> compressedData(compressedSize);
+    size_t actualCompressedSize = ZSTD_compress(compressedData.data(), compressedSize, data.data(), data.size(), 10);
+
+    if (ZSTD_isError(actualCompressedSize)) {
+        std::cerr << "Compression error: " << ZSTD_getErrorName(actualCompressedSize) << std::endl;
+        return {};
+    }
+
+    compressedData.resize(actualCompressedSize);
+    return compressedData;
+}
+
+MyStruct deserializeAndDecompress(const std::vector<char>& compressedData) {
+    size_t originalSize = sizeof(MyStruct);
+    std::vector<char> decompressedData(originalSize);
+    size_t decompressedSize = ZSTD_decompress(decompressedData.data(), originalSize, compressedData.data(), compressedData.size());
+
+    if (ZSTD_isError(decompressedSize)) {
+        std::cerr << "Decompression error: " << ZSTD_getErrorName(decompressedSize) << std::endl;
+        throw std::runtime_error("Decompression failed");
+    }
+
+    MyStruct result;
+    // auto xx = std::bit_cast<MyStruct*>(decompressedData.data());
+    std::memcpy(&result, decompressedData.data(), decompressedSize);
+    return result;
+}
+
+int main() {
+    MyStruct original = {1, 3.14, "example"};
+
+    auto serialized = serialize(original);
+    auto compressed = compress(serialized);
+    auto decompressedStruct = deserializeAndDecompress(compressed);
+
+    std::cout << "Original ID: " << original.id << ", Decompressed ID: " << decompressedStruct.id << std::endl;
+    std::cout << "Original Value: " << original.value << ", Decompressed Value: " << decompressedStruct.value << std::endl;
+    std::cout << "Original Name: " << original.name << ", Decompressed Name: " << decompressedStruct.name << std::endl;
+}
 ```
