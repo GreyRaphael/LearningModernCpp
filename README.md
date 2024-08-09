@@ -380,6 +380,10 @@ dnf update
 dnf install clang clang-tools-extra cmake git gdb
 dnf --enablerepo=crb install ninja-build
 
+sudo dnf install gcc-toolset-13-gcc
+scl -l # list all
+scl enable gcc-toolset-13 bash
+
 dnf install golang
 
 # vi /etc/wsl.conf
