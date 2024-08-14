@@ -26,6 +26,7 @@
     - [zip \& zip\_with](#zip--zip_with)
   - [abseil](#abseil)
     - [abseil Swiss tables map](#abseil-swiss-tables-map)
+    - [btree\_multiset](#btree_multiset)
   - [avro-cpp](#avro-cpp)
   - [`atomic_queue`](#atomic_queue)
   - [safe queue with lock](#safe-queue-with-lock)
@@ -1483,6 +1484,43 @@ int main() {
     FactorResults results;
     results[tick.secucode] = futures.get();
     std::cout << results["000001"][0] << '\n';
+}
+```
+
+### btree_multiset
+
+```cpp
+#include <iostream>
+
+#include "absl/container/btree_set.h"  // Include the B-tree multiset header
+
+struct MyData {
+    int id;
+    double value;
+
+    // Implement the correct comparator as operator<
+    bool operator<(const MyData& other) const {
+        if (id != other.id) {
+            return id < other.id;
+        }
+        return value > other.value;
+    }
+};
+
+int main() {
+    // Create a multiset with the default comparator, which is operator<
+    absl::btree_multiset<MyData> mySet;
+
+    // Insert some elements
+    mySet.insert({1, 100.0});
+    mySet.insert({1, 200.0});
+    mySet.insert({2, 300.0});
+    mySet.insert({2, 150.0});
+
+    // Output the elements in the multiset
+    for (const auto& element : mySet) {
+        std::cout << "ID: " << element.id << ", Value: " << element.value << std::endl;
+    }
 }
 ```
 
