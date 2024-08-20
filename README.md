@@ -944,6 +944,9 @@ vi port.cmake
 
 > export vcpkg libraries to a zip file, then other people can use libraries without install vcpkg
 
+当使用vcpkg导出得库得时候，debug对应debug, release对应release
+> 如果配置了`set(VCPKG_BUILD_TYPE release)`, debug使用release的版本，会报错
+
 ```bash
 # vcpkg.json in a project
 .
