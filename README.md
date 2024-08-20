@@ -28,6 +28,7 @@
     - [Export vcpkg](#export-vcpkg)
     - [prohibit from pdb genenration](#prohibit-from-pdb-genenration)
 - [check hash](#check-hash)
+- [cmake](#cmake)
 
 ## Development Environment in WSL
 
@@ -1026,4 +1027,36 @@ certutil -hashfile .\thrift-0.20.0.tar.gz SHA512
 
 # in linux
 sha512sum apache-thrift-0.20.0.tar.gz
+```
+
+## cmake
+
+use pthread in linux CMakeLists.txt
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.24.0)
+project(proj1 VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+add_executable(server server.cpp)
+add_executable(client client.cpp)
+
+find_package(Threads REQUIRED)
+
+include(FetchContent)
+FetchContent_Declare(
+    yalantinglibs
+    GIT_REPOSITORY https://github.com/alibaba/yalantinglibs.git
+    GIT_TAG main # optional ( default master / main )
+    GIT_SHALLOW 1 # optional ( --depth=1 )
+)
+FetchContent_MakeAvailable(yalantinglibs)
+
+target_link_libraries(server PRIVATE yalantinglibs::yalantinglibs)
+target_link_libraries(client PRIVATE yalantinglibs::yalantinglibs)
+
+# link pthread in cmake
+target_link_libraries(server PRIVATE Threads::Threads)
+target_link_libraries(client PRIVATE Threads::Threads)
 ```
