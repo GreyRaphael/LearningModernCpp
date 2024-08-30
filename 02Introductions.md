@@ -19,6 +19,7 @@
   - [inline namespace for versioning](#inline-namespace-for-versioning)
   - [structured bindings for multi-return](#structured-bindings-for-multi-return)
   - [template argument deduction](#template-argument-deduction)
+  - [class use outer vector](#class-use-outer-vector)
 
 ## const
 
@@ -1046,5 +1047,64 @@ int main(){
     // std::pair<> p2{2, "world"}; // error
     // std::pair<int> p3{3, "tom"}; // error
     std::cout<<typeid(p1.second).name()<<std::endl; // basic_string
+}
+```
+
+## class use outer vector
+
+- method1: use `std::vector<int>&`, be caucious with the outer vector lifetime
+- method2: use pointer, be caucious with the lifetime
+- method3: use smart pointer, be caucious with the ownership, use `std::move`
+
+```cpp
+#include <iostream>
+#include <memory>
+#include <vector>
+
+struct MyClass01 {
+    std::vector<int>& vec;
+    MyClass01(std::vector<int>& v) : vec(v) {
+        // must initialied vec in ctor
+    }
+};
+
+struct MyClass02 {
+    std::vector<int>* ptr;
+};
+
+struct MyClass03 {
+    std::unique_ptr<std::vector<int>> ptr;
+};
+
+int main() {
+    {
+        // method 1: ref
+        std::vector<int> a{1, 2, 3, 4, 5, 6};
+        std::cout << "Original vector address: " << a.data() << '\n';
+        MyClass01 obj{a};
+        std::cout << "MyClass01 vector address: " << obj.vec.data() << '\n';
+        std::cout << "Original vector address: " << a.data() << '\n';  // address not changed
+    }
+    {
+        // method 2: raw pointer
+        std::vector<int> a{1, 2, 3, 4, 5, 6};
+        std::cout << "Original vector address: " << a.data() << '\n';
+
+        MyClass02 obj;
+        obj.ptr = &a;
+        std::cout << "MyClass01 vector address: " << obj.ptr->data() << '\n';
+        std::cout << "Original vector address: " << a.data() << '\n';  // address not changed
+    }
+    {
+        // method 3: smart pointer
+        std::vector<int> a{1, 2, 3, 4, 5, 6};
+        std::cout << "Original vector address: " << a.data() << '\n';
+
+        MyClass03 obj;
+        // smart pointer must take ownership, if not move, will cause copy
+        obj.ptr = std::make_unique<std::vector<int>>(std::move(a));
+        std::cout << "MyClass03 vector address: " << obj.ptr->data() << '\n';
+        std::cout << "Original vector address: " << a.data() << '\n';  // address is nullptr
+    }
 }
 ```
