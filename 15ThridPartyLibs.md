@@ -1407,6 +1407,21 @@ int main() {
 
 [abseil container](https://abseil.io/docs/cpp/guides/container) better than `std::map` & `std::unordered_map`
 
+```cmake
+cmake_minimum_required(VERSION 3.20.0)
+project(prj1 VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+add_executable(prj1 main.cpp)
+
+# this is heuristically generated, and may not be correct
+find_package(absl CONFIG REQUIRED)
+# note: 180 additional targets are not displayed.
+target_link_libraries(prj1 PRIVATE absl::node_hash_map)
+```
+
+> not use `target_link_libraries(prj1 PRIVATE absl::absl_node_hash_map)`
+
 ```cpp
 #include <absl/container/node_hash_map.h>
 
