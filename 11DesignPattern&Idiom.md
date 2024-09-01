@@ -176,6 +176,120 @@ int main() {
 }
 ```
 
+pImpl常常用于将第三方库藏住
+
+```bash
+.
+├── CMakeLists.txt
+├── base.h
+├── base.cpp
+└── main.cpp
+```
+
+1. 将第三方库封装到base.h, base.cpp中，build成library
+2. 在main.cpp中，通过include引入base.h，main.cpp中调用base.h中的函数, 并link上面的library即可
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.20.0)
+project(proj VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+
+# client_base library 对libhv进行封装
+add_library(clien_base base.cpp)
+find_package(libhv CONFIG REQUIRED)
+target_link_libraries(clien_base PRIVATE hv_static)
+
+# main executable使用client_base library
+add_executable(proj main.cpp)
+target_link_libraries(proj PRIVATE clien_base)
+```
+
+```cpp
+// main.cpp
+#include <cstdio>
+#include "base.h"
+
+class MyClient : public ClientBase {
+   public:
+    MyClient(char const* addr) : ClientBase(addr) {}
+    void onMessage(std::string const& msg) {
+        printf("MyClient Receive: %s\n", msg.c_str());
+    }
+};
+
+int main(int, char**) {
+    MyClient client{"ws://localhost:8888/ws_echo"};
+    client.sendMessage("hello", 5);
+    getchar();
+}
+```
+
+```cpp
+// base.h
+#pragma once
+
+#include <memory>
+
+class ClientBase {
+   public:
+    ClientBase(char const* addr);
+    virtual ~ClientBase();
+
+    void sendMessage(char const* buf, int size);
+
+   protected:
+    virtual void onMessage(std::string const& msg) = 0;
+
+   private:
+    class Impl;  // Forward declaration
+    std::unique_ptr<Impl> pImpl;
+};
+```
+
+```cpp
+// base.cpp
+#include "base.h"
+
+#include <hv/WebSocketClient.h>
+
+#include <chrono>
+#include <cstdio>
+#include <memory>
+#include <thread>
+
+class ClientBase::Impl {
+   public:
+    Impl(char const* addr, ClientBase* parent) : parent_(parent) {
+        client_.setPingInterval(0);  // turn off ping
+        client_.onopen = [] { printf("on open...\n"); };
+        client_.onclose = [] { printf("closing...\n"); };
+        client_.onmessage = [this](std::string const& msg) {
+            parent_->onMessage(msg);
+        };
+        client_.open(addr);  // Connect to the WebSocket server
+    }
+
+    void sendMessage(char const* buf, int size) {
+        client_.send(buf, size);
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
+    }
+
+   private:
+    hv::WebSocketClient client_;
+    ClientBase* parent_;  // must store parent pointer
+};
+
+ClientBase::ClientBase(char const* addr) : pImpl(std::make_unique<Impl>(addr, this)) {}
+
+ClientBase::~ClientBase() = default;
+
+void ClientBase::sendMessage(char const* buf, int size) {
+    pImpl->sendMessage(buf, size);
+}
+```
+
 ## named parameter idiom
 
 > The named parameter idiom has the advantage that it allows you to specify values only for the parameters that you want, in any order, using a name, which is much more intuitive than a fixed, positional order.
