@@ -38,6 +38,8 @@
     - [one producer multiple consume](#one-producer-multiple-consume)
   - [compresssion](#compresssion)
     - [zstd](#zstd)
+  - [testing](#testing)
+    - [gtest](#gtest)
 
 
 ## Code Organized by CMake
@@ -2263,5 +2265,89 @@ int main() {
     std::cout << "Original ID: " << original.id << ", Decompressed ID: " << decompressedStruct.id << std::endl;
     std::cout << "Original Value: " << original.value << ", Decompressed Value: " << decompressedStruct.value << std::endl;
     std::cout << "Original Name: " << original.name << ", Decompressed Name: " << decompressedStruct.name << std::endl;
+}
+```
+
+## testing
+
+### gtest
+
+`vcpkg install gtest`
+
+simple gtest framework
+
+```bash
+.
+├── CMakeLists.txt
+├── main.cpp
+├── ops.cpp
+├── ops.h
+└── ops_test.cpp
+```
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.20.0)
+project(proj1 VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+add_executable(proj1 main.cpp ops.cpp)
+
+# Option to build tests
+option(BUILD_TESTS "Build test programs" OFF)
+
+if(BUILD_TESTS)
+    find_package(GTest CONFIG REQUIRED)
+    enable_testing()
+
+    add_executable(ops_test ops.cpp ops_test.cpp)
+    target_link_libraries(ops_test PRIVATE GTest::gtest GTest::gtest_main)
+    add_test(NAME OpsTest COMMAND ops_test)
+endif()
+```
+
+```cpp
+// ops.h
+#pragma once
+
+int myadd(int x, int y);
+int mysub(int x, int y);
+```
+
+```cpp
+// ops.cpp
+#include "ops.h"
+
+int myadd(int x, int y) {
+    return x + y;
+}
+
+int mysub(int x, int y) {
+    return x - y;
+}
+```
+
+```cpp
+// ops_test.cpp
+#include "ops.h"
+
+#include <gtest/gtest.h>
+
+TEST(OpsTest, Add) {
+    EXPECT_EQ(myadd(1, 2), 3);
+}
+
+TEST(OpsTest, Sub) {
+    EXPECT_EQ(mysub(1, 2), -1);
+}
+```
+
+```cpp
+// main.cpp
+#include <cstdio>
+#include "ops.h"
+
+int main(int argc, char const *argv[]) {
+    printf("myadd(10, 20)=%d\n", myadd(10, 20));
 }
 ```
