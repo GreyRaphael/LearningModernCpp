@@ -2351,3 +2351,54 @@ int main(int argc, char const *argv[]) {
     printf("myadd(10, 20)=%d\n", myadd(10, 20));
 }
 ```
+
+normal file tree of gtest
+
+```bash
+.
+├── CMakeLists.txt
+├── main.cpp
+├── ops.cpp
+├── ops.h
+└── tests
+    ├── CMakeLists.txt
+    └── ops_test.cpp
+```
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.20.0)
+project(proj1 VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+add_executable(proj1 main.cpp ops.cpp)
+
+# Option to build tests
+option(BUILD_TESTS "Build test programs" ON)
+
+if(BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+```
+
+```cmake
+# tests/CMakeLists.txt
+find_package(GTest CONFIG REQUIRED)
+
+# Test executable for Student
+add_executable(ops_test ops_test.cpp ${PROJECT_SOURCE_DIR}/ops.cpp)
+target_link_libraries(ops_test PRIVATE GTest::gtest GTest::gtest_main)
+add_test(NAME OpsTest COMMAND ops_test)
+```
+
+```cpp
+// tests/ops_test.cpp
+#include <gtest/gtest.h>
+
+#include "../ops.h"
+
+TEST(OpsTest, CheckFunction) {
+    EXPECT_EQ(myadd(10, 20), 30);
+}
+```
