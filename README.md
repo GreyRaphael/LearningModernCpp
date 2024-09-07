@@ -446,8 +446,10 @@ How to make your own centos10 rootfs.tar.gz for wsl
 - in windows, wsl import rootfs.tar.gz: `wsl --import <DistroName> <InstallLocation> rootfs.tar.gz`
 
 ```bash
+# login as root
 cd /
 mkdir tmp
+chmod 1777 /tmp
 
 dnf update
 # default python3.12
