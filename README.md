@@ -443,7 +443,7 @@ How to make your own centos10 rootfs.tar.gz for wsl
 - install centos in VMWare17 by boot.iso(**Minimal**), and create a *root* user, connect to wsl by ssh in vmware17 meanu: `ssh root@xxx.xxx.xxx.xxx`
 - `cd /` and `tar --exclude=/dev --exclude=/proc --exclude=/sys --exclude=/mnt --exclude=/media --exclude=/run --exclude=/tmp --exclude=/rootfs.tar.gz  -czvf rootfs.tar.gz /`
 - transfer rootfs.tar.gz out of vmware17: `scp root@xxx.xxx.xxx.xxx:/rootfs.tar.gz .`
-- wsl import rootfs.tar.gz: `wsl --import CentOS10 D:\Dev\CentOS10 rootfs.tar.gz`
+- in windows, wsl import rootfs.tar.gz: `wsl --import <DistroName> <InstallLocation> rootfs.tar.gz`
 
 ```bash
 cd /
@@ -462,6 +462,8 @@ appendWindowsPath = false
 
 # restart wsl in windows
 wsl --terminate CentOS10
+
+# create user
 ```
 
 ## Development Environment in Fedora Rawhide
