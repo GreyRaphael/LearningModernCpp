@@ -13,6 +13,7 @@
 - [Development Environment in CentOS7](#development-environment-in-centos7)
   - [Build GCC-13 from source](#build-gcc-13-from-source)
 - [Development Environment in CentOS9 stream](#development-environment-in-centos9-stream)
+- [Development Environment in CentOS10 stream](#development-environment-in-centos10-stream)
 - [Development Environment in Fedora Rawhide](#development-environment-in-fedora-rawhide)
 - [Development Environment Online](#development-environment-online)
 - [Othre configuration](#othre-configuration)
@@ -433,6 +434,34 @@ set(VCPKG_BUILD_TYPE release)
         "--clang-tidy"
     ],
 }
+```
+
+## Development Environment in CentOS10 stream
+
+How to make your own centos10 rootfs.tar.gz for wsl
+- download [boot.iso](https://mirror.stream.centos.org/10-stream/BaseOS/x86_64/iso/CentOS-Stream-10-latest-x86_64-boot.iso)
+- install centos in VMWare17 by boot.iso(**Minimal**), and create a *root* user, connect to wsl by ssh in vmware17 meanu: `ssh root@xxx.xxx.xxx.xxx`
+- `cd /` and `tar --exclude=/dev --exclude=/proc --exclude=/sys --exclude=/mnt --exclude=/media --exclude=/run --exclude=/tmp --exclude=/rootfs.tar.gz  -czvf rootfs.tar.gz /`
+- transfer rootfs.tar.gz out of vmware17: `scp root@xxx.xxx.xxx.xxx:/rootfs.tar.gz .`
+- wsl import rootfs.tar.gz: `wsl --import CentOS10 D:\Dev\CentOS10 rootfs.tar.gz`
+
+```bash
+cd /
+mkdir tmp
+
+dnf update
+# default python3.12
+
+# install gcc automatically
+dnf install clang clang-tools-extra cmake git gdb
+dnf --enablerepo=crb install ninja-build
+
+# vi /etc/wsl.conf
+[interop]
+appendWindowsPath = false
+
+# restart wsl in windows
+wsl --terminate CentOS10
 ```
 
 ## Development Environment in Fedora Rawhide
