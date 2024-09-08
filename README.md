@@ -409,7 +409,8 @@ alias ll='ls -la'
 
 export VCPKG_FORCE_SYSTEM_BINARIES=1
 export VCPKG_ROOT=$HOME/vcpkg
-export PATH=$VCPKG_ROOT:$PATH
+export CAPNPROTO_TOOLS=$VCPKG_ROOT/installed/x64-linux/tools/capnproto
+export PATH=$VCPKG_ROOT:$CAPNPROTO_TOOLS:$PATH
 
 git clone https://github.com/microsoft/vcpkg
 ./vcpkg/bootstrap-vcpkg.sh
