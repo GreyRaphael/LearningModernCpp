@@ -9,6 +9,7 @@
   - [custom deleter for `unique_ptr` and `shared_ptr`](#custom-deleter-for-unique_ptr-and-shared_ptr)
   - [`move` semantic](#move-semantic)
   - [operator `<=>`](#operator-)
+  - [`std::move`](#stdmove)
 
 ## exception
 
@@ -771,6 +772,82 @@ int main() {
         std::cout << (b1 > b3) << '\n';   // false, member-wise compare
         std::cout << (b1 <= b3) << '\n';  // true, member-wise compare
         std::cout << (b1 >= b3) << '\n';  // false, member-wise compare
+    }
+}
+```
+
+## `std::move`
+
+explain the move semantics
+
+```cpp
+#include <fmt/core.h>
+#include <vector>
+
+struct MyStruct0 {
+    std::vector<int> vec_;
+
+    // v is lvalue, trigger copy of argument, then move the temp object to vec_
+    MyStruct0(std::vector<int> v) : vec_(std::move(v)) {}
+    void display() const {
+        fmt::println("in struct addr: {}", fmt::ptr(vec_.data()));
+    }
+};
+
+struct MyStruct1 {
+    std::vector<int> vec_;
+
+    // v is ref, just copy ref, just then move origin data to vec_
+    MyStruct1(std::vector<int>& v) : vec_(std::move(v)) {}
+    void display() const {
+        fmt::println("in struct addr: {}", fmt::ptr(vec_.data()));
+    }
+};
+
+struct MyStruct2 {
+    std::vector<int> vec_;
+
+    // v can only bind to rvalues
+    // Even though v is declared as an rvalue reference, once inside the constructor, v itself is treated as an lvalue.
+    // v is a lvlaue, bound to a temporary object
+    // This is because all named variables (like v) are considered lvalues, regardless of their type. that is reference collapsing
+    MyStruct2(std::vector<int>&& v) : vec_(std::move(v)) {}
+    void display() const {
+        fmt::println("in struct addr: {}", fmt::ptr(vec_.data()));
+    }
+};
+
+// in the above 3 structs, if not use `vec_(std::move(v))` but `vec_(v)`, will cause data copy
+
+int main() {
+    // In C++, when you use std::move, it casts the object to an rvalue reference (a reference to a tempory object),
+    // which allows the resources to be transferred from one object to another.
+    {
+        // addr is different
+        std::vector<int> v{1, 2, 3, 4, 5};
+        fmt::println("origin addr: {}", fmt::ptr(v.data()));
+        auto obj = MyStruct0(v);
+        obj.display();
+    }
+    {
+        // addr is the same
+        std::vector<int> v{1, 2, 3, 4, 5};
+        fmt::println("origin addr: {}", fmt::ptr(v.data()));
+        auto obj = MyStruct1(v);
+        obj.display();
+        v[0] = 100;  // cause core dumped
+        obj.display();
+    }
+    {
+        // addr is the same
+        std::vector<int> v{1, 2, 3, 4, 5};
+        fmt::println("origin addr: {}", fmt::ptr(v.data()));
+        // here should be std::move(), because to meet std::vector<int>&& requirement,
+        // just std::move can cast object to rvalue reference
+        auto obj = MyStruct2(std::move(v));
+        obj.display();
+        v[0] = 100;  // cause core dumped
+        obj.display();
     }
 }
 ```
