@@ -30,6 +30,7 @@
     - [prohibit from pdb genenration](#prohibit-from-pdb-genenration)
 - [check hash](#check-hash)
 - [cmake](#cmake)
+- [build clangd from source](#build-clangd-from-source)
 
 ## Development Environment in WSL
 
@@ -1096,4 +1097,25 @@ target_link_libraries(client PRIVATE yalantinglibs::yalantinglibs)
 # link pthread in cmake
 target_link_libraries(server PRIVATE Threads::Threads)
 target_link_libraries(client PRIVATE Threads::Threads)
+```
+
+## build clangd from source
+
+download source like `llvm-project-15.0.7.src.tar.xz` from [release](https://github.com/llvm/llvm-project/releases)
+
+```bash
+wget https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.7/llvm-project-15.0.7.src.tar.xz
+tar -xvf *.xz
+
+cd llvm-project-15.0.7.src
+mkdir build && cd build
+cmake -G "Unix Makefiles" -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra" -DCMAKE_INSTALL_PREFIX=~/tools -DCMAKE_BUILD_TYPE=Release ../llvm
+make -j 16
+make install
+
+# check
+~/tools/bin/clangd --version
+
+vi .bashrc
+export PATH=$HOME/tools/bin:$PATH
 ```
