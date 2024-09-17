@@ -27,9 +27,9 @@
   - [vcpkg tips](#vcpkg-tips)
     - [fix vcpkg hash mismatch](#fix-vcpkg-hash-mismatch)
     - [Export vcpkg](#export-vcpkg)
-    - [prohibit from pdb genenration](#prohibit-from-pdb-genenration)
 - [check hash](#check-hash)
 - [cmake](#cmake)
+  - [use pthread in cmake](#use-pthread-in-cmake)
 - [build clangd from source](#build-clangd-from-source)
 
 ## Development Environment in WSL
@@ -1042,7 +1042,10 @@ vcpkg export --zip --output-dir=.\exports
 └── vcpkg.json
 ```
 
-#### prohibit from pdb genenration
+prohibit from pdb genenration in windows is not recommended
+- in windows, debug project need *.dll built in debug mode
+- in windows, release project need *.dll built in release mode
+- debug project cannot use *.dll built in release mode, release project cannot use *.dll built in debug mode, 
 
 ```cmake
 # vcpkg/triplets/x64-windows.cmake
@@ -1069,7 +1072,7 @@ sha512sum apache-thrift-0.20.0.tar.gz
 
 ## cmake
 
-use pthread in linux CMakeLists.txt
+### use pthread in cmake
 
 ```cmake
 # CMakeLists.txt
@@ -1100,6 +1103,8 @@ target_link_libraries(client PRIVATE Threads::Threads)
 ```
 
 ## build clangd from source
+
+`clangd` is a tool in `clang-tools-extra`, and the build of `clang-tools-extra` dependends on `clang`
 
 download source like `llvm-project-15.0.7.src.tar.xz` from [release](https://github.com/llvm/llvm-project/releases)
 
