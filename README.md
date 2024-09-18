@@ -30,6 +30,7 @@
 - [check hash](#check-hash)
 - [cmake](#cmake)
   - [use pthread in cmake](#use-pthread-in-cmake)
+  - [linux library usage](#linux-library-usage)
   - [windows library usage](#windows-library-usage)
 - [build clangd from source](#build-clangd-from-source)
 
@@ -1103,11 +1104,50 @@ target_link_libraries(server PRIVATE Threads::Threads)
 target_link_libraries(client PRIVATE Threads::Threads)
 ```
 
+### linux library usage
+
+for shared library, the output files will be
+- `libmylib.so`
+- `proj1`
+
+```cmake
+cmake_minimum_required(VERSION 3.20.0)
+project(proj VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+# shared library here
+add_library(mylib SHARED mylib.cpp)
+
+find_package(fmt CONFIG REQUIRED)
+target_link_libraries(mylib PRIVATE fmt::fmt)
+
+add_executable(proj1 main.cpp)
+target_link_libraries(proj1 PRIVATE mylib)
+```
+
+for static libray, the output files will be
+- `libmylib.a`
+- `proj1`
+
+```cmake
+cmake_minimum_required(VERSION 3.20.0)
+project(proj VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+add_library(mylib mylib.cpp)
+# default is static library
+# add_library(mylib STATIC mylib.cpp)
+
+find_package(fmt CONFIG REQUIRED)
+target_link_libraries(mylib PRIVATE fmt::fmt)
+
+add_executable(proj1 main.cpp)
+target_link_libraries(proj1 PRIVATE mylib)
+```
+
 ### windows library usage
 
-for shared library, set dlexport by `WINDOWS_EXPORT_ALL_SYMBOLS`
-
-the output files will be
+for shared library, must set `__declspec(dllexport)` manually or `WINDOWS_EXPORT_ALL_SYMBOLS` in cmake, the output files will be
 - `mylib.dll`: **Dynamic Link Library**, *necessary*.
 - `mylib.lib`: **import library**, used by other project when linking. *necessary*
 - `mylib.exp`: **export file**. It contains information about the symbols (functions, variables) that are exported from the DLL. This file is used by the linker to create the **import library** (.lib) and to resolve references to the exported symbols. *not necessary*
@@ -1129,9 +1169,7 @@ add_executable(proj1 main.cpp)
 target_link_libraries(proj1 PRIVATE mylib)
 ```
 
-for static library, there is no need
-
-the output files will be
+for static library, there is no need set `WINDOWS_EXPORT_ALL_SYMBOLS`, the output files will be
 - `mylib.lib`: **static library**, used by other project when linking. *necessary*
 - `proj1.exe`
 
@@ -1140,7 +1178,8 @@ cmake_minimum_required(VERSION 3.20.0)
 project(proj VERSION 0.1.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 
-add_library(mylib STATIC mylib.cpp)
+add_library(mylib mylib.cpp)
+# add_library(mylib STATIC mylib.cpp)
 
 find_package(fmt CONFIG REQUIRED)
 target_link_libraries(mylib PRIVATE fmt::fmt)
