@@ -2,6 +2,7 @@
 
 - [System](#system)
   - [shared library and static library](#shared-library-and-static-library)
+  - [memory order](#memory-order)
 
 ## shared library and static library
 
@@ -76,3 +77,10 @@ int main() {
     return 0;
 }
 ```
+
+## memory order
+
+[volatile tutorial](https://blog.csdn.net/sinat_38293503/article/details/134710547)
+- before C++11, there is no memory order, just `volatile`;
+- after C++11, `memory_order_seq_cst` is better
+
