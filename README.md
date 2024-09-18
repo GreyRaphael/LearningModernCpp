@@ -1104,6 +1104,8 @@ target_link_libraries(client PRIVATE Threads::Threads)
 
 ## build clangd from source
 
+[tutorial](https://jdhao.github.io/2021/07/03/install_clangd_on_linux/)
+
 `clangd` is a tool in `clang-tools-extra`, and the build of `clang-tools-extra` dependends on `clang`
 
 download source like `llvm-project-15.0.7.src.tar.xz` from [release](https://github.com/llvm/llvm-project/releases)
