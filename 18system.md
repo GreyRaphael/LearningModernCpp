@@ -139,7 +139,102 @@ int main() {
 1. Ensures that all memory reads and writes after the acquire operation are not moved before it.
 2. It prevents subsequent reads/writes in the current thread from being reordered before the acquire operation.
 
-atomic SPSC
+atomic SPSC without `wait`
+
+why use `std::memory_order_relaxed` in consumer thread
+- reset `data_ready` to `false`: not need to synchronize any data with the producer, can make `flag` to `false` avoiding repeated consuming `data`
+- Using `memory_order_relaxed` avoids the overhead of unnecessary memory fences or barriers, which can improve performance
+
+```cpp
+#include <atomic>
+#include <chrono>
+#include <format>
+#include <iostream>
+#include <thread>
+
+std::atomic<bool> data_ready(false);
+int data = 0;
+
+void producer() {
+    while (true) {
+        // Produce data
+        ++data;
+        std::cout << std::format("produce data: {}\n", data);
+
+        data_ready.store(true, std::memory_order_release);
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
+}
+
+void consumer(int id) {
+    while (true) {
+        auto flag = data_ready.load(std::memory_order_acquire);
+        if (flag) {
+            // Consume data
+            std::cout << std::format("thread-{:02d} consume data: {}\n", id, data);
+
+            // Reset the data_ready flag
+            data_ready.store(false, std::memory_order_relaxed);
+        } else {
+            std::cout << std::format("thread-{:02d} wait for data\n", id);
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+}
+
+int main() {
+    std::jthread producer_thread(producer);
+    std::jthread consumer_thread1(consumer, 1);
+}
+```
+
+atomic SPSC with data_ready syncronization back to producer, `acquire-release` mode
+
+```cpp
+void producer() {
+    while (true) {
+        // Wait until data_ready is false
+        while (data_ready.load(std::memory_order_acquire)) {
+            std::this_thread::yield();  // Avoid busy waiting
+        }
+
+        // Produce data
+        ++data;
+        std::cout << std::format("produce data: {}\n", data);
+
+        data_ready.store(true, std::memory_order_release);
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
+}
+
+void consumer(int id) {
+    while (true) {
+        auto flag = data_ready.load(std::memory_order_acquire);
+        if (flag) {
+            // Consume data
+            std::cout << std::format("thread-{:02d} consume data: {}\n", id, data);
+
+            // Reset the data_ready flag with release semantics
+            data_ready.store(false, std::memory_order_release);
+        } else {
+            std::cout << std::format("thread-{:02d} wait for data\n", id);
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+}
+```
+
+```cpp
+// Wait until data_ready is false
+while (data_ready.load(std::memory_order_acquire)) {
+    std::this_thread::yield();  // Avoid busy waiting
+}
+
+// interesting, the above can be replaced by the following, not recommended
+data_ready.wait(true, std::memory_order_acquire);
+```
+
+atomic SPSC with `wait`
 
 ```cpp
 #include <atomic>
@@ -186,5 +281,70 @@ void consumer(int id) {
 int main() {
     std::jthread producer_thread(producer);
     std::jthread consumer_thread1(consumer, 1);
+}
+```
+
+atomic SPMC
+
+```cpp
+#include <atomic>
+#include <chrono>
+#include <format>
+#include <iostream>
+#include <thread>
+
+std::atomic<bool> data_ready(false);
+int data = 0;
+
+const int num_consumers = 2;
+std::atomic<int> consumers_remaining(0);
+
+void producer() {
+    while (true) {
+        // Wait until data_ready is false before producing new data
+        while (data_ready.load(std::memory_order_acquire)) {
+            data_ready.wait(true, std::memory_order_acquire);
+        }
+
+        // Reset consumers_remaining
+        consumers_remaining.store(num_consumers, std::memory_order_release);
+
+        // Produce data
+        ++data;
+        std::cout << std::format("produce data: {}\n", data);
+
+        // Signal the consumers that data is ready
+        data_ready.store(true, std::memory_order_release);
+        // Notify all consumers
+        data_ready.notify_all();
+    }
+}
+
+void consumer(int id) {
+    while (true) {
+        // Wait until data_ready becomes true
+        while (!data_ready.load(std::memory_order_acquire)) {
+            data_ready.wait(false, std::memory_order_acquire);
+        }
+
+        // Consume data
+        std::cout << std::format("thread-{:02d} consume data: {}\n", id, data);
+        std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+
+        // Decrement consumers_remaining
+        if (consumers_remaining.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+            // Last consumer to consume, reset data_ready and notify producer
+            data_ready.store(false, std::memory_order_release);
+            data_ready.notify_one();
+        } else {
+            std::cout << std::format("thread-{:02d} wait for data_ready\n", id);
+        }
+    }
+}
+
+int main() {
+    std::jthread producer_thread(producer);
+    std::jthread consumer1_thread(consumer, 1);
+    std::jthread consumer2_thread(consumer, 2);
 }
 ```
