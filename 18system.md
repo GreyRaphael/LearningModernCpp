@@ -3,6 +3,7 @@
 - [System](#system)
   - [shared library and static library](#shared-library-and-static-library)
   - [memory order](#memory-order)
+    - [memory\_order\_relaxed](#memory_order_relaxed)
 
 ## shared library and static library
 
@@ -84,3 +85,34 @@ int main() {
 - before C++11, there is no memory order, just `volatile`;
 - after C++11, `memory_order_seq_cst` is better
 
+### memory_order_relaxed
+
+use cases:
+- Suitable for scenarios where you don't need to enforce any ordering constraints between operations, but you still require atomicity.
+- **simple counters**(e.g. counter in `shared_ptr`) or **flags** where the exact order of operations across threads doesn't matter.
+
+```cpp
+#include <atomic>
+#include <iostream>
+#include <thread>
+#include <vector>
+
+std::atomic<int> cnt = {0};
+
+void f() {
+    for (int n = 0; n < 1e8; ++n) {
+        cnt.fetch_add(1, std::memory_order_relaxed);
+    }
+}
+
+int main() {
+    std::vector<std::thread> v;
+    for (int n = 0; n < 10; ++n) {
+        v.emplace_back(f);
+    }
+    for (auto& t : v) {
+        t.join();
+    }
+    std::cout << "Final counter value is " << cnt << '\n';  // 1000000000
+}
+```
