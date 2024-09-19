@@ -85,6 +85,15 @@ int main() {
 - before C++11, there is no memory order, just `volatile`;
 - after C++11, `memory_order_seq_cst` is better
 
+|                    | relaxed | acquire | release | acq_rel | seq_cst |
+|--------------------|---------|---------|---------|---------|---------|
+| load               | Y       | Y       | N       | N       | Y       |
+| store              | Y       | N       | Y       | N       | Y       |
+| exchange           | Y       | Y       | Y       | Y       | Y       |
+| compare_exchange_* | Y       | Y       | Y       | Y       | Y       |
+| fetch_*            | Y       | Y       | Y       | Y       | Y       |
+| fence              | Y       | Y       | Y       | Y       | Y       |
+
 ### memory_order_relaxed
 
 use cases:
