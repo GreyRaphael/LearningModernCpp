@@ -399,3 +399,65 @@ int main() {
     }
 }
 ```
+
+error example: when consumer2 meet `letf==1`, consumer2 notify the  producer, consumer1 which  meet `left!=1`  will continue consume the data twice, so you must use the above `versioning mechanism`
+
+```cpp
+#include <atomic>
+#include <chrono>
+#include <format>
+#include <iostream>
+#include <thread>
+#include <vector>
+
+std::atomic<bool> data_ready(false);
+std::atomic<int> consumers_left(0);
+int data = 0;
+const int NUM_CONSUMERS = 2;  // Number of consumers
+
+void producer() {
+    while (true) {
+        // Wait until data_ready is false before producing new data
+        while (data_ready.load(std::memory_order_acquire)) {
+            data_ready.wait(true, std::memory_order_acquire);
+        }
+
+        // Produce data
+        ++data;
+        std::cout << std::format("Producer: produced data {}\n", data);
+
+        // Set the number of consumers left
+        consumers_left.store(NUM_CONSUMERS, std::memory_order_release);
+
+        // Signal the consumers that data is ready
+        data_ready.store(true, std::memory_order_release);
+        // Notify all consumers
+        data_ready.notify_all();
+    }
+}
+
+void consumer(int id) {
+    while (true) {
+        // Wait until data_ready becomes true
+        while (!data_ready.load(std::memory_order_acquire)) {
+            data_ready.wait(false, std::memory_order_acquire);
+        }
+
+        // Consume data
+        std::cout << std::format("Consumer {}: consumed data {}\n", id, data);
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+        // Decrement the consumers_left counter
+        int left = consumers_left.fetch_sub(1, std::memory_order_acq_rel);
+        if (left == 1) {
+            // This was the last consumer
+            // Reset the data_ready flag
+            data_ready.store(false, std::memory_order_release);
+            // Notify the producer
+            data_ready.notify_one();
+        } else {
+            std::cout << std::format("consumer{} skip, left={}\n", id, left);
+        }
+    }
+}
+```
