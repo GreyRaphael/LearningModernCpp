@@ -241,7 +241,7 @@ while (data_ready.load(std::memory_order_acquire)) {
 data_ready.wait(true, std::memory_order_acquire);
 ```
 
-atomic SPSC with `wait`
+example: atomic SPSC with `wait`
 
 ```cpp
 #include <atomic>
@@ -257,7 +257,10 @@ int data = 0;
 void producer() {
     while (true) {
         // Wait until data_ready is false before producing new data
-        data_ready.wait(true, std::memory_order_acquire);
+        while (data_ready.load(std::memory_order_acquire)) {
+            // the while-loop is for spurious wakeup
+            data_ready.wait(true, std::memory_order_acquire);
+        }
 
         // Produce data
         ++data;
@@ -269,13 +272,16 @@ void producer() {
     }
 }
 
-void consumer(int id) {
+void consumer() {
     while (true) {
         // Wait until data_ready becomes true
-        data_ready.wait(false, std::memory_order_acquire);
+        while (!data_ready.load(std::memory_order_acquire)) {
+            // the while-loop is for spurious wakeup
+            data_ready.wait(false, std::memory_order_acquire);
+        }
 
         // Consume data
-        std::cout << std::format("thread-{:02d} consume data: {}\n", id, data);
+        std::cout << std::format("consume data: {}\n", data);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         // Reset the data_ready flag
@@ -287,6 +293,13 @@ void consumer(int id) {
 
 int main() {
     std::jthread producer_thread(producer);
-    std::jthread consumer_thread1(consumer, 1);
+    std::jthread consumer_thread(consumer);
+
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    producer_thread.detach();
+    consumer_thread.detach();
+    std::cout << "Main thread exiting.\n";
 }
 ```
+
+For SPMC mode, you should choose LockFreeRingBuffer mechanism
