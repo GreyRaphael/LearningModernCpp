@@ -162,21 +162,21 @@ void producer() {
         std::cout << std::format("produce data: {}\n", data);
 
         data_ready.store(true, std::memory_order_release);
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(400));
     }
 }
 
-void consumer(int id) {
+void consumer() {
     while (true) {
         auto flag = data_ready.load(std::memory_order_acquire);
         if (flag) {
             // Consume data
-            std::cout << std::format("thread-{:02d} consume data: {}\n", id, data);
+            std::cout << std::format("consume data: {}\n", data);
 
             // Reset the data_ready flag
             data_ready.store(false, std::memory_order_relaxed);
         } else {
-            std::cout << std::format("thread-{:02d} wait for data\n", id);
+            std::cout << "consumer wait data\n";
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
@@ -184,7 +184,12 @@ void consumer(int id) {
 
 int main() {
     std::jthread producer_thread(producer);
-    std::jthread consumer_thread1(consumer, 1);
+    std::jthread consumer_thread(consumer);
+
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    producer_thread.detach();
+    consumer_thread.detach();
+    std::cout << "Main thread exiting.\n";
 }
 ```
 
@@ -203,21 +208,21 @@ void producer() {
         std::cout << std::format("produce data: {}\n", data);
 
         data_ready.store(true, std::memory_order_release);
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        // no need explicitly wait
     }
 }
 
-void consumer(int id) {
+void consumer() {
     while (true) {
         auto flag = data_ready.load(std::memory_order_acquire);
         if (flag) {
             // Consume data
-            std::cout << std::format("thread-{:02d} consume data: {}\n", id, data);
+            std::cout << std::format("consume data: {}\n", data);
 
             // Reset the data_ready flag with release semantics
             data_ready.store(false, std::memory_order_release);
         } else {
-            std::cout << std::format("thread-{:02d} wait for data\n", id);
+            std::cout << "consumer wait data\n";
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
@@ -281,70 +286,5 @@ void consumer(int id) {
 int main() {
     std::jthread producer_thread(producer);
     std::jthread consumer_thread1(consumer, 1);
-}
-```
-
-atomic SPMC
-
-```cpp
-#include <atomic>
-#include <chrono>
-#include <format>
-#include <iostream>
-#include <thread>
-
-std::atomic<bool> data_ready(false);
-int data = 0;
-
-const int num_consumers = 2;
-std::atomic<int> consumers_remaining(0);
-
-void producer() {
-    while (true) {
-        // Wait until data_ready is false before producing new data
-        while (data_ready.load(std::memory_order_acquire)) {
-            data_ready.wait(true, std::memory_order_acquire);
-        }
-
-        // Reset consumers_remaining
-        consumers_remaining.store(num_consumers, std::memory_order_release);
-
-        // Produce data
-        ++data;
-        std::cout << std::format("produce data: {}\n", data);
-
-        // Signal the consumers that data is ready
-        data_ready.store(true, std::memory_order_release);
-        // Notify all consumers
-        data_ready.notify_all();
-    }
-}
-
-void consumer(int id) {
-    while (true) {
-        // Wait until data_ready becomes true
-        while (!data_ready.load(std::memory_order_acquire)) {
-            data_ready.wait(false, std::memory_order_acquire);
-        }
-
-        // Consume data
-        std::cout << std::format("thread-{:02d} consume data: {}\n", id, data);
-        std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-
-        // Decrement consumers_remaining
-        if (consumers_remaining.fetch_sub(1, std::memory_order_acq_rel) == 1) {
-            // Last consumer to consume, reset data_ready and notify producer
-            data_ready.store(false, std::memory_order_release);
-            data_ready.notify_one();
-        } else {
-            std::cout << std::format("thread-{:02d} wait for data_ready\n", id);
-        }
-    }
-}
-
-int main() {
-    std::jthread producer_thread(producer);
-    std::jthread consumer1_thread(consumer, 1);
-    std::jthread consumer2_thread(consumer, 2);
 }
 ```
