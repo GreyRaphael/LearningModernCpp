@@ -308,7 +308,7 @@ int main() {
 }
 ```
 
-For SPMC mode, you should choose LockFreeRingBuffer mechanism
+For SPMC mode, you should choose LockFreeRingBuffer mechanism, like [atomic_queue](https://github.com/max0x7ba/atomic_queue)
 
 SPMC with `atomic` by versioning mechanism
 - producer, `consumers_left.store(NUM_CONSUMERS, std::memory_order_release);` *happen before* the `acquire` in `consumers_left.fetch_sub(1, std::memory_order_acq_rel)`
