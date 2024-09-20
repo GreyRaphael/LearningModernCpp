@@ -139,7 +139,7 @@ int main() {
 1. Ensures that all memory reads and writes after the acquire operation are not moved before it.
 2. It prevents subsequent reads/writes in the current thread from being reordered before the acquire operation.
 
-atomic SPSC without `wait`
+example: atomic SPSC without `wait`
 
 why use `std::memory_order_relaxed` in consumer thread
 - reset `data_ready` to `false`: not need to synchronize any data with the producer, can make `flag` to `false` avoiding repeated consuming `data`
@@ -194,13 +194,15 @@ int main() {
 ```
 
 atomic SPSC with data_ready syncronization back to producer, `acquire-release` mode
+- producer `data_ready.store(true, std::memory_order_release)` *happen before* consumer `auto flag = data_ready.load(std::memory_order_acquire)`
+- consumer `data_ready.store(false, std::memory_order_release)` *happen before* producer `while (data_ready.load(std::memory_order_acquire))`
 
 ```cpp
 void producer() {
     while (true) {
         // Wait until data_ready is false
         while (data_ready.load(std::memory_order_acquire)) {
-            std::this_thread::yield();  // Avoid busy waiting
+            std::this_thread::yield();  // you can avoid busy waiting by sleep_for
         }
 
         // Produce data
@@ -232,7 +234,7 @@ void consumer() {
 ```cpp
 // Wait until data_ready is false
 while (data_ready.load(std::memory_order_acquire)) {
-    std::this_thread::yield();  // Avoid busy waiting
+    std::this_thread::yield();
 }
 
 // interesting, the above can be replaced by the following, not recommended
