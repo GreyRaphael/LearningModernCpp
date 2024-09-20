@@ -133,11 +133,16 @@ int main() {
 
 `memory_order_release`:
 1. Ensures that all memory reads and writes before the release operation are not moved after it.
-2. It prevents prior reads/writes in the current thread from being reordered after the release operation.
+2. but memory reads and writes after the release can be moved before it.
 
 `memory_order_acquire`:
 1. Ensures that all memory reads and writes after the acquire operation are not moved before it.
-2. It prevents subsequent reads/writes in the current thread from being reordered before the acquire operation.
+2. but memory reads and writes before the acquire can be moved after it.
+
+`memory_order_acq_rel`
+1. Combines the effects of both acquire and release semantics. Prevents reordering of previous memory operations after the release, Prevents reordering of subsequent memory operations before the acquire.
+2. Used in read-modify-write(RMW) operations (like `fetch_add`, `fetch_sub`) when you need both to acquire and release.
+3. behave like: `acquire` -> `RMW` -> `release`
 
 example: atomic SPSC without `wait`
 
@@ -305,6 +310,14 @@ int main() {
 For SPMC mode, you should choose LockFreeRingBuffer mechanism
 
 SPMC with `atomic` by versioning mechanism
+- producer, `consumers_left.store(NUM_CONSUMERS, std::memory_order_release);` *happen before* the `acquire` in `consumers_left.fetch_sub(1, std::memory_order_acq_rel)`
+- consumer, the `release` in `consumers_left.fetch_sub(1, std::memory_order_acq_rel)` *happen before* the `consumers_left.load(std::memory_order_acquire);`
+- producer, `data_version.fetch_add(1, std::memory_order_release);` *happen before* `data_version.load(std::memory_order_acquire)`
+
+why it should use `consumers_left.fetch_sub(1, std::memory_order_acq_rel)` instead of `memory_order_relaxed`, `memory_order_release`, `memory_order_acquire`
+- syncronization with producer, so it cannot be `memory_order_relaxed`
+- consume data must before `consumers_left.fetch_sub`, so it cannot be `memory_order_acquire`
+- notify must after `consumers_left.fetch_sub`, so it cannot be `memory_order_release`
 
 ```cpp
 #include <atomic>
