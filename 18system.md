@@ -314,6 +314,7 @@ SPMC with `atomic` by versioning mechanism
 #include <thread>
 #include <vector>
 
+// increments every time the producer produces new data
 std::atomic<int> data_version(0);
 std::atomic<int> consumers_left(0);
 int data = 0;
@@ -344,6 +345,7 @@ void producer() {
 }
 
 void consumer(int id) {
+    // Each consumer keeps track of the last data version it has consumed
     int last_consumed_version = 0;
 
     while (true) {
