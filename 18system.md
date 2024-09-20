@@ -303,3 +303,84 @@ int main() {
 ```
 
 For SPMC mode, you should choose LockFreeRingBuffer mechanism
+
+SPMC with `atomic` by versioning mechanism
+
+```cpp
+#include <atomic>
+#include <chrono>
+#include <format>
+#include <iostream>
+#include <thread>
+#include <vector>
+
+std::atomic<int> data_version(0);
+std::atomic<int> consumers_left(0);
+int data = 0;
+const int NUM_CONSUMERS = 3;  // Number of consumers
+
+void producer() {
+    while (true) {
+        // Wait until all consumers have consumed the previous data
+        int left = consumers_left.load(std::memory_order_acquire);
+        while (left != 0) {
+            consumers_left.wait(left, std::memory_order_acquire);
+            left = consumers_left.load(std::memory_order_acquire);
+        }
+
+        // Produce data
+        ++data;
+        std::cout << std::format("Producer: produced data {}\n", data);
+
+        // Set the number of consumers left
+        consumers_left.store(NUM_CONSUMERS, std::memory_order_release);
+
+        // Increment the data_version
+        data_version.fetch_add(1, std::memory_order_release);
+
+        // Notify all consumers
+        data_version.notify_all();
+    }
+}
+
+void consumer(int id) {
+    int last_consumed_version = 0;
+
+    while (true) {
+        // Wait until data_version > last_consumed_version
+        int current_version = data_version.load(std::memory_order_acquire);
+        while (current_version == last_consumed_version) {
+            data_version.wait(current_version, std::memory_order_acquire);
+            current_version = data_version.load(std::memory_order_acquire);
+        }
+
+        // Consume data
+        std::cout << std::format("Consumer {}: consumed data {}\n", id, data);
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+        // Update last_consumed_version
+        last_consumed_version = current_version;
+
+        // Decrement the consumers_left counter
+        int left = consumers_left.fetch_sub(1, std::memory_order_acq_rel);
+        if (left == 1) {
+            // This was the last consumer
+            // Notify the producer
+            consumers_left.notify_one();
+        }
+    }
+}
+
+int main() {
+    std::jthread prod_thread(producer);
+
+    std::vector<std::thread> consumer_threads;
+    for (int i = 0; i < NUM_CONSUMERS; ++i) {
+        consumer_threads.emplace_back(consumer, i + 1);
+    }
+
+    for (auto& t : consumer_threads) {
+        t.join();
+    }
+}
+```
