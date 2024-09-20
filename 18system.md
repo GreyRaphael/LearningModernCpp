@@ -5,6 +5,7 @@
   - [memory order](#memory-order)
     - [memory\_order\_relaxed](#memory_order_relaxed)
     - [memory\_order\_release and memory\_order\_acquire](#memory_order_release-and-memory_order_acquire)
+    - [`memory_order_seq_cst`](#memory_order_seq_cst)
 
 ## shared library and static library
 
@@ -461,3 +462,55 @@ void consumer(int id) {
     }
 }
 ```
+
+### `memory_order_seq_cst`
+
+`memory_order_seq_cst`: Provides a total sequential ordering of operations across all threads,  All threads see memory operations in the same order.
+- [ref1](https://www.codedump.info/post/20191214-cxx11-memory-model-1/)
+- [ref2](https://jamesbornholt.com/blog/memory-models/)
+
+sequential consistency requires
+1. 每个处理器的执行顺序和代码中的顺序（program order）一样。
+2. 所有处理器都只能看到一个单一的操作执行顺序。
+
+```cpp
+#include <atomic>
+#include <cassert>
+#include <iostream>
+#include <thread>
+
+std::atomic<int> x{0}, y{0};
+int r1 = 0, r2 = 0;
+
+void thread1() {
+    x.store(1, std::memory_order_seq_cst); // A
+    r1 = y.load(std::memory_order_seq_cst); // B
+    std::cout << "r1: " << r1 << '\n';
+}
+
+void thread2() {
+    y.store(1, std::memory_order_seq_cst); // C
+    r2 = x.load(std::memory_order_seq_cst); // D
+    std::cout << "r2: " << r2 << '\n';
+}
+
+int main() {
+    std::jthread t1(thread1);
+    std::jthread t2(thread2);
+
+    // With sequential consistency, at least one of the loads must see the other thread's store.
+    assert(!(r1 == 0 && r2 == 0));  // This assertion should always hold.
+}
+```
+
+1. 一个处理器内的执行顺序必须按照程序顺序(program order). 
+   - A *happen before* B
+   - C *happen before* D
+2. 如果出现`(r1 == 0 && r2 == 0)` 意味着
+   - B *happen before* C
+   - D *happen before* A
+3. 最终形成 A → B → C → D → A ...，违背sequential consistency
+
+以IM中的群聊消息作为例子说明顺序一致性的这两个要求。在这个例子中，群聊中的每个成员，相当于多核编程中的一个处理器，那么对照顺序一致性的两个要求就是：
+- 每个人自己发出去的消息，必然是和ta说话的顺序一致的。即用户A在群聊中依次说了消息1和消息2，在群聊天的时候也必然是先看到消息1然后再看到消息2，这就是前面顺序一致性的第一个要求。
+- 群聊中有多个用户参与聊天（多处理器），如果所有人看到的消息顺序都一样，那么就满足了前面顺序一致性的第二个要求了，但是这个顺序首先不能违背前面的第一个要求。
