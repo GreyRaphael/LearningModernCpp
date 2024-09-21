@@ -16,6 +16,7 @@
     - [with custom parallel algorithms by `std::async`](#with-custom-parallel-algorithms-by-stdasync)
   - [`std::jthread`](#stdjthread)
   - [latch, semaphore, barrier](#latch-semaphore-barrier)
+  - [thread local variable](#thread-local-variable)
 
 ## Basic Usage
 
@@ -1007,5 +1008,71 @@ int main() {
     }
 
     for (auto& t : threads) t.join();
+}
+```
+
+## thread local variable
+
+`thread_local` define variables that are unique to each thread. This means every thread has its own separate instance of the variable, ensuring thread safety without the need for explicit synchronization mechanisms like mutexes.
+- `thread_local` can be applied to *global variables*, *namespace-scope variables*, and *static local variables within functions*.
+- Variables with `thread_local` storage duration are initialized when a thread starts and destroyed when the thread ends.
+
+simple example
+
+```cpp
+#include <format>
+#include <iostream>
+#include <thread>
+
+// thread_local for global variable
+thread_local int global_value = 100;
+
+void increment_and_print(int id) {
+    global_value += id;
+    std::cout << std::format("thread-{} value={}\n", id, global_value);
+}
+
+int main() {
+    std::jthread t1(increment_and_print, 10);
+    std::jthread t2(increment_and_print, 20);
+}
+```
+
+```cpp
+#include <format>
+#include <iostream>
+#include <thread>
+
+void increment_and_print(int id) {
+    // thread_local for static local variable
+    thread_local static int func_counter = 1000;
+    func_counter += id;
+    std::cout << std::format("thread-{} value={}\n", id, func_counter);
+}
+
+int main() {
+    std::jthread t1(increment_and_print, 10);
+    std::jthread t2(increment_and_print, 20);
+}
+```
+
+```cpp
+#include <format>
+#include <iostream>
+#include <thread>
+
+namespace sp1 {
+// thread_local for namespace-scope variable
+thread_local int nsp_counter = 200;
+
+void increment_and_print(int id) {
+    nsp_counter += id;
+    std::cout << std::format("thread-{} value={}\n", id, nsp_counter);
+}
+}  // namespace sp1
+
+int main() {
+    std::jthread t1(sp1::increment_and_print, 10);
+    std::jthread t2(sp1::increment_and_print, 20);
 }
 ```
