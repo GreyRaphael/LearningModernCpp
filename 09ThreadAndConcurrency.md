@@ -1076,3 +1076,42 @@ int main() {
     std::jthread t2(sp1::increment_and_print, 20);
 }
 ```
+
+practical example: Per-Thread Logging
+
+```cpp
+#include <format>
+#include <iostream>
+#include <sstream>
+#include <thread>
+#include <vector>
+
+struct Logger {
+    Logger() { std::cout << "logger init\n"; }
+    ~Logger() { std::cout << "logger destroy\n"; }
+    void log(const std::string& message) {
+        std::ostringstream oss;
+        oss << std::this_thread::get_id();
+        std::cout << std::format("Thread-{}:{}\n", oss.str(), message);
+    }
+};
+
+thread_local Logger thread_logger;
+
+void log_messages() {
+    thread_logger.log("Starting thread ");
+    thread_logger.log("Ending thread ");
+}
+
+int main() {
+    std::vector<std::jthread> threads;
+    for (size_t i = 0; i < 3; ++i) {
+        threads.emplace_back(log_messages);
+    }
+}
+```
+
+Best Practices and Considerations
+- Minimize Usage: Overuse of thread_local can lead to increased memory consumption, especially if many threads are created.
+- Frequent creation and destruction of threads with thread_local variables can impact performance due to repeated initialization and destruction.
+- Understand when to use `static` (shared across threads) versus `thread_local` (unique per thread) storage.
