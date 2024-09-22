@@ -1,6 +1,7 @@
 # Threading and Concurrency
 
 - [Threading and Concurrency](#threading-and-concurrency)
+  - [Basic concepts](#basic-concepts)
   - [Basic Usage](#basic-usage)
   - [thread sleep \& yield](#thread-sleep--yield)
   - [`mutex`](#mutex)
@@ -17,6 +18,20 @@
   - [`std::jthread`](#stdjthread)
   - [latch, semaphore, barrier](#latch-semaphore-barrier)
   - [thread local variable](#thread-local-variable)
+
+## Basic concepts
+
+线程私有数据
+- 局部变量
+- 函数的参数
+- Thread Local Storage
+
+线程共享数据(进程所有)
+- 全局变量
+- heap data
+- 函数里的static变量
+- 程序代码
+- 打开的文件
 
 ## Basic Usage
 
