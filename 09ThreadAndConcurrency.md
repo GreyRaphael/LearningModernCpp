@@ -5,7 +5,7 @@
   - [Basic Usage](#basic-usage)
   - [thread sleep \& yield](#thread-sleep--yield)
   - [`mutex`](#mutex)
-  - [one writer \& multi-readers](#one-writer--multi-readers)
+  - [`std::shared_mutex`](#stdshared_mutex)
   - [Handling exceptions from thread functions](#handling-exceptions-from-thread-functions)
   - [`std::condition_variable`](#stdcondition_variable)
   - [Using promises and futures to return values from threads](#using-promises-and-futures-to-return-values-from-threads)
@@ -270,76 +270,83 @@ int main() {
 }
 ```
 
-## one writer & multi-readers
+## `std::shared_mutex`
 
-`std::shared_mutex`: used in scenarios when multiple readers can access the same resource at the same time without causing data races, while only one writer it allowed to do so. 
+allows multiple threads to simultaneously read (shared access) or exclusively write (unique access) to a shared resource.
 
-[official example](examples/ch09-shared-mutex.cc): <https://en.cppreference.com/w/cpp/thread/shared_mutex>
+Use std::shared_mutex when:
+- **Read-Heavy Workloads**: read operations are frequent and write operations are infrequent
+- **Shared Data Structures**: Multiple threads need to read shared data structures concurrently without causing data racing.
+- **Performance Optimization**: You want to improve performance by allowing concurrent reads while still ensuring exclusive writes.
+
+[cppreference example](examples/ch09-shared-mutex.cc)
+
+practical example
 
 ```cpp
-#include <chrono>
+#include <algorithm>
+#include <format>
 #include <iostream>
 #include <mutex>
 #include <shared_mutex>
-#include <syncstream>
 #include <thread>
 #include <vector>
 
-class ThreadSafeCounter {
-   public:
-    ThreadSafeCounter() = default;
-
-    // Multiple threads/readers can read the counter's value at the same time.
-    unsigned int get() const {
-        std::shared_lock lock(mutex_);
-        return value_;
-    }
-
-    // Only one thread/writer can increment/write the counter's value.
-    void increment() {
-        std::unique_lock lock(mutex_);
-        ++value_;
-    }
-
-    // Only one thread/writer can reset/write the counter's value.
-    void reset() {
-        std::unique_lock lock(mutex_);
-        value_ = 0;
-    }
-
-   private:
+class SharedData {
     mutable std::shared_mutex mutex_;
-    unsigned int value_{};
+    std::vector<int> data_;
+
+   public:
+    void add(int value) {
+        // write operation should be exclusive, must use unique_lock
+        std::unique_lock<std::shared_mutex> lock(mutex_);
+        data_.push_back(value);
+    }
+
+    bool contains(int value) const {
+        // read operation could be concurrent, can use shared_lock
+        std::shared_lock<std::shared_mutex> lock(mutex_);
+        return std::find(data_.begin(), data_.end(), value) != data_.end();
+    }
+
+    void print() const {
+        // read operation could be concurrent, can use shared_lock
+        std::shared_lock<std::shared_mutex> lock(mutex_);
+        for (const auto& val : data_) {
+            std::cout << val << " ";
+        }
+        std::cout << "\n";
+    }
 };
 
 int main() {
-    ThreadSafeCounter counter;
+    SharedData sharedData;
 
-    auto data_increment = [&counter]() {
-        for (int i{}; i < 10; ++i) {
-            counter.increment();
-            std::osyncstream(std::cout) << std::this_thread::get_id() << " write\n";
-            std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+    // Writer thread
+    std::jthread writer([&sharedData] {
+        for (int i = 0; i < 10; ++i) {
+            sharedData.add(i);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
-    };
-    auto data_print = [&counter]() {
-        int i = 0;
-        while (i < 30) {
-            std::osyncstream(std::cout) << std::this_thread::get_id() << " read " << counter.get() << '\n';
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-            ++i;
-        }
-    };
+    });
 
-    std::vector<std::thread> thread_vec;
-    thread_vec.emplace_back(data_increment);
-    for (unsigned i = 0; i < 3; ++i) {
-        thread_vec.emplace_back(data_print);
+    // Reader threads
+    std::vector<std::jthread> readers;
+    for (int i = 0; i < 3; ++i) {
+        readers.emplace_back([&sharedData, i] {
+            for (int j = 0; j < 10; ++j) {
+                if (sharedData.contains(j)) {
+                    std::cout << std::format("Reader {} found {}\n", i, j);
+                } else {
+                    std::cout << std::format("Reader {} didn't find {}\n", i, j);
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            }
+        });
     }
 
-    for (auto& t : thread_vec) {
-        t.join();
-    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    sharedData.print();
 }
 ```
 
