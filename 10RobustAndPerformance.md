@@ -11,6 +11,7 @@
   - [operator `<=>`](#operator-)
   - [`std::move`](#stdmove)
   - [`std::function` overhead](#stdfunction-overhead)
+  - [check default paramter](#check-default-paramter)
 
 ## exception
 
@@ -911,5 +912,41 @@ int main() {
     std::cout << "Direct sum: " << sum_lambda << " avg Time: "
               << std::chrono::duration_cast<std::chrono::nanoseconds>(end_direct - start_direct).count() / static_cast<double>(iterations)
               << "us\n";
+}
+```
+
+## check default paramter
+
+method1: use default_type
+
+```cpp
+#include <iostream>
+
+// Define a default marker type
+struct default_type {};
+
+// Helper to detect if a parameter is provided
+template <typename T>
+constexpr bool is_parameter_provided_v = !std::is_same_v<T, default_type>;
+
+// Primary foo function template with two parameters
+template <typename T1 = default_type, typename T2 = default_type>
+constexpr void foo(T1 x = T1{}, T2 y = T2{}) {
+    if constexpr (is_parameter_provided_v<T1> && is_parameter_provided_v<T2>) {
+        std::cout << "Both parameters provided: " << x << ", " << y << '\n';
+    } else if constexpr (is_parameter_provided_v<T1> && !is_parameter_provided_v<T2>) {
+        std::cout << "Only first parameter provided: " << x << '\n';
+    } else if constexpr (!is_parameter_provided_v<T1> && is_parameter_provided_v<T2>) {
+        std::cout << "Only second parameter provided: " << y << '\n';
+    } else {
+        std::cout << "Default parameters used\n";
+    }
+}
+
+int main() {
+    foo(42, 3.14);              // Outputs: Both parameters provided: 42, 3.14
+    foo(42);                    // Outputs: Only first parameter provided: 42
+    foo(default_type{}, 3.14);  // Only second parameter provided: 3.14
+    foo();                      // Outputs: Default parameters used
 }
 ```
