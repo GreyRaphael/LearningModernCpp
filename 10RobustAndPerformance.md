@@ -917,7 +917,7 @@ int main() {
 
 ## check default paramter
 
-method1: use default_type
+use default_type
 
 ```cpp
 #include <iostream>
