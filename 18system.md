@@ -6,6 +6,7 @@
     - [memory\_order\_relaxed](#memory_order_relaxed)
     - [memory\_order\_release and memory\_order\_acquire](#memory_order_release-and-memory_order_acquire)
     - [`memory_order_seq_cst`](#memory_order_seq_cst)
+  - [Gracefully shutdown](#gracefully-shutdown)
 
 ## shared library and static library
 
@@ -514,3 +515,36 @@ int main() {
 以IM中的群聊消息作为例子说明顺序一致性的这两个要求。在这个例子中，群聊中的每个成员，相当于多核编程中的一个处理器，那么对照顺序一致性的两个要求就是：
 - 每个人自己发出去的消息，必然是和ta说话的顺序一致的。即用户A在群聊中依次说了消息1和消息2，在群聊天的时候也必然是先看到消息1然后再看到消息2，这就是前面顺序一致性的第一个要求。
 - 群聊中有多个用户参与聊天（多处理器），如果所有人看到的消息顺序都一样，那么就满足了前面顺序一致性的第二个要求了，但是这个顺序首先不能违背前面的第一个要求。
+
+## Gracefully shutdown
+
+```cpp
+#include <csignal>
+#include <iostream>
+#include <atomic>
+#include <thread>
+#include <chrono>
+
+std::atomic<bool> running{true};
+
+void signal_handler(int signal) {
+    if (signal == SIGINT || signal == SIGTERM) {
+        running.store(false); // Safe flag modification
+    }
+}
+
+int main() {
+    std::signal(SIGINT, signal_handler);
+    std::signal(SIGTERM, signal_handler);
+
+    std::cout << "Application started. Press Ctrl+C to exit." << std::endl;
+
+    while (running.load()) {
+        // Simulate work
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    std::cout << "Graceful shutdown initiated." << std::endl;
+    // Perform cleanup if necessary
+}
+```
