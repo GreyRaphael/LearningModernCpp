@@ -12,6 +12,7 @@
   - [`std::move`](#stdmove)
   - [`std::function` overhead](#stdfunction-overhead)
   - [check default paramter](#check-default-paramter)
+  - [`weak_ptr`](#weak_ptr)
 
 ## exception
 
@@ -948,5 +949,121 @@ int main() {
     foo(42);                    // Outputs: Only first parameter provided: 42
     foo(default_type{}, 3.14);  // Only second parameter provided: 3.14
     foo();                      // Outputs: Default parameters used
+}
+```
+
+## `weak_ptr`
+
+`std::weak_ptr` provides a way to reference an object managed by `std::shared_ptr` without participating in the ownership of that object. It allows you to observe or access the object without affecting its lifetime. If all `std::shared_ptr` instances owning the object are destroyed, the object itself is destroyed, and the `std::weak_ptr` becomes expired.
+
+Why Use `std::weak_ptr`?
+- Avoiding Circular References: In data structures like graphs or trees where nodes may reference each other, using only `std::shared_ptr` can create cycles that prevent reference counts from reaching zero, thereby causing memory leaks. `std::weak_ptr` breaks these cycles by not contributing to the reference count.
+- Conditional Access: Sometimes, you want to access an object only if it still exists, without ensuring its lifetime. `std::weak_ptr` allows you to check if the object is still alive before using it.
+
+basic example
+
+```cpp
+#include <memory>
+#include <iostream>
+
+struct MyObject {
+    MyObject() { std::cout << "MyObject created.\n"; }
+    ~MyObject() { std::cout << "MyObject destroyed.\n"; }
+};
+
+int main() {
+    std::weak_ptr<MyObject> wp;
+    {
+        std::shared_ptr<MyObject> sp = std::make_shared<MyObject>();
+        wp = sp; // wp now references the object but doesn't own it
+        std::cout << "sp is alive.\n";
+    } // sp goes out of scope, object is destroyed
+    if (auto locked = wp.lock()) { // Attempt to get shared_ptr
+        std::cout << "Object is still alive.\n";
+    } else {
+        std::cout << "Object has been destroyed.\n";
+    }
+}
+```
+
+practical example: break circular reference
+
+```cpp
+#include <memory>
+#include <iostream>
+
+struct Child; // Forward declaration
+
+struct Parent {
+    std::shared_ptr<Child> child;
+    Parent() { std::cout << "Parent created.\n"; }
+    ~Parent() { std::cout << "Parent destroyed.\n"; }
+};
+
+struct Child {
+    std::weak_ptr<Parent> parent; // Use weak_ptr to prevent cycle
+    Child() { std::cout << "Child created.\n"; }
+    ~Child() { std::cout << "Child destroyed.\n"; }
+};
+
+int main() {
+    {
+        std::shared_ptr<Parent> p = std::make_shared<Parent>();
+        std::shared_ptr<Child> c = std::make_shared<Child>();
+        p->child = c;
+        c->parent = p; // No cycle, weak_ptr does not increase reference count
+    }
+    std::cout << "End of scope.\n";
+}
+```
+
+practical example: **Observer Pattern**
+
+```cpp
+#include <iostream>
+#include <memory>
+#include <vector>
+
+struct Subject;
+
+struct Observer {
+    std::weak_ptr<Subject> subject;
+
+    void observe() {
+        if (auto s = subject.lock()) {
+            std::cout << "Observing subject.\n";
+            // Interact with the subject
+        } else {
+            std::cout << "Subject no longer exists.\n";
+        }
+    }
+};
+
+struct Subject : std::enable_shared_from_this<Subject> {
+    std::vector<std::weak_ptr<Observer>> observers;
+
+    void addObserver(std::shared_ptr<Observer> obs) {
+        observers.push_back(obs);
+        obs->subject = shared_from_this(); // share this to obs, so need std::enable_shared_from_this
+    }
+
+    ~Subject() { std::cout << "Subject destroyed.\n"; }
+};
+
+int main() {
+    std::shared_ptr<Subject> subject = std::make_shared<Subject>();
+    std::shared_ptr<Observer> observer1 = std::make_shared<Observer>();
+    std::shared_ptr<Observer> observer2 = std::make_shared<Observer>();
+
+    subject->addObserver(observer1);
+    subject->addObserver(observer2);
+
+    observer1->observe();
+    observer2->observe();
+
+    subject.reset(); // Destroy the subject
+
+    observer1->observe();
+    observer2->observe();
 }
 ```
