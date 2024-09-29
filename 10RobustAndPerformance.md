@@ -1022,7 +1022,6 @@ practical example: **Observer Pattern**
 ```cpp
 #include <iostream>
 #include <memory>
-#include <vector>
 
 struct Subject;
 
@@ -1040,30 +1039,107 @@ struct Observer {
 };
 
 struct Subject : std::enable_shared_from_this<Subject> {
-    std::vector<std::weak_ptr<Observer>> observers;
-
-    void addObserver(std::shared_ptr<Observer> obs) {
-        observers.push_back(obs);
-        obs->subject = shared_from_this(); // share this to obs, so need std::enable_shared_from_this
+    void attach(std::shared_ptr<Observer> obs) {
+        obs->subject = shared_from_this();  // share this to obs, so need std::enable_shared_from_this
     }
 
     ~Subject() { std::cout << "Subject destroyed.\n"; }
 };
 
 int main() {
-    std::shared_ptr<Subject> subject = std::make_shared<Subject>();
-    std::shared_ptr<Observer> observer1 = std::make_shared<Observer>();
-    std::shared_ptr<Observer> observer2 = std::make_shared<Observer>();
+    auto subject = std::make_shared<Subject>();
+    auto observer1 = std::make_shared<Observer>();
+    auto observer2 = std::make_shared<Observer>();
 
-    subject->addObserver(observer1);
-    subject->addObserver(observer2);
-
-    observer1->observe();
-    observer2->observe();
-
-    subject.reset(); // Destroy the subject
+    subject->attach(observer1);
+    subject->attach(observer2);
 
     observer1->observe();
     observer2->observe();
+
+    subject.reset();  // Destroy the subject
+
+    observer1->observe();
+    observer2->observe();
+}
+```
+
+```cpp
+#include <format>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
+
+// Observer Interface
+class Observer {
+   public:
+    virtual ~Observer() = default;
+    virtual void update(int) = 0;
+};
+
+// Subject Class
+class Subject {
+    std::vector<std::weak_ptr<Observer>> observers;
+
+   public:
+    // Attach an observer
+    void attach(const std::shared_ptr<Observer>& observer) {
+        observers.emplace_back(observer);
+    }
+
+    // Detach expired observers using C++20's erase_if
+    void detachExpired() {
+        std::erase_if(observers, [](const std::weak_ptr<Observer>& wp) { return wp.expired(); });
+    }
+
+    // Notify all observers
+    void notify(int value) {
+        std::cout << std::format("notify all {}\n", value);
+        detachExpired();  // Clean up expired observers first
+
+        for (auto&& observer : observers) {
+            if (auto obs = observer.lock()) {
+                obs->update(value);
+            }
+        }
+    }
+};
+
+// Concrete Observer
+class ConcreteObserver : public Observer, public std::enable_shared_from_this<ConcreteObserver> {
+    std::string name_;
+
+   public:
+    ConcreteObserver(std::string name) : name_(std::move(name)) {}
+    // update method called by the subject
+    void update(int value) override {
+        std::cout << std::format("observer {} received {}\n", name_, value);
+    }
+
+    void subscribe(std::shared_ptr<Subject> subject) {
+        subject->attach(shared_from_this());
+    }
+};
+
+int main() {
+    // Create a subject & observers
+    auto subject = std::make_shared<Subject>();
+    auto observer1 = std::make_shared<ConcreteObserver>("A");
+    auto observer2 = std::make_shared<ConcreteObserver>("B");
+    auto observer3 = std::make_shared<ConcreteObserver>("C");
+
+    // Subscribe observers to the subject
+    observer1->subscribe(subject);
+    observer2->subscribe(subject);
+    observer3->subscribe(subject);
+
+    // 1st notify
+    subject->notify(100);
+
+    // Destroy observer1
+    observer1.reset();
+    // 2nd notify
+    subject->notify(200);
 }
 ```
