@@ -952,6 +952,20 @@ int main() {
 }
 ```
 
+use constexpr and default value
+
+```cpp
+constexpr int foo(int x = 10, double y = 3.14) {
+    return x + static_cast<int>(y);
+}
+
+int main() {
+    foo();           // Case 1
+    foo(11);         // Case 2
+    foo(100, 31.4);  // Case 3
+}
+```
+
 ## `weak_ptr`
 
 `std::weak_ptr` provides a way to reference an object managed by `std::shared_ptr` without participating in the ownership of that object. It allows you to observe or access the object without affecting its lifetime. If all `std::shared_ptr` instances owning the object are destroyed, the object itself is destroyed, and the `std::weak_ptr` becomes expired.
