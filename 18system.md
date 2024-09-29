@@ -7,6 +7,7 @@
     - [memory\_order\_release and memory\_order\_acquire](#memory_order_release-and-memory_order_acquire)
     - [`memory_order_seq_cst`](#memory_order_seq_cst)
   - [Gracefully shutdown](#gracefully-shutdown)
+  - [polymorphic memory allocators](#polymorphic-memory-allocators)
 
 ## shared library and static library
 
@@ -547,4 +548,78 @@ int main() {
     std::cout << "Graceful shutdown initiated." << std::endl;
     // Perform cleanup if necessary
 }
+```
+
+## polymorphic memory allocators
+
+```cpp
+#include <array>
+#include <cstdlib>
+#include <format>
+#include <iostream>
+#include <memory_resource>
+#include <vector>
+
+struct LoggingMemoryResource : std::pmr::memory_resource {
+    std::pmr::memory_resource* upstream;
+
+    LoggingMemoryResource(std::pmr::memory_resource* upstream_resource)
+        : upstream(upstream_resource) {}
+
+    void* do_allocate(size_t bytes, size_t alignment) override {
+        std::cout << "do_allocate: " << bytes << " bytes\n";
+        return upstream->allocate(bytes, alignment);
+    }
+
+    void do_deallocate(void* p, size_t bytes, size_t alignment) override {
+        std::cout << "do_deallocate: " << bytes << " bytes\n";
+        upstream->deallocate(p, bytes, alignment);
+    }
+
+    bool do_is_equal(const std::pmr::memory_resource& other) const noexcept override {
+        return this == &other;
+    }
+};
+
+int main() {
+    auto buffer = std::array<std::byte, 128>{};
+    auto fallback = std::pmr::new_delete_resource();
+    LoggingMemoryResource logging_resource{fallback};
+    auto resource = std::pmr::monotonic_buffer_resource{buffer.data(), buffer.size(), &logging_resource};
+
+    std::pmr::vector<long> unique_numbers{&resource};
+
+    for (long i = 0; i < 10; ++i) {
+        unique_numbers.emplace_back(i);
+        std::cout << std::format("insert i={} at {}\n", i, (void*)&unique_numbers[i]);
+    }
+    for (size_t i = 0; i < 10; ++i) {
+        std::cout << std::format("i={}, addr={}\n", i, (void*)&unique_numbers[i]);
+    }
+}
+```
+
+```bash
+insert i=0 at 0x7ffceff57820
+insert i=1 at 0x7ffceff57830
+insert i=2 at 0x7ffceff57848
+insert i=3 at 0x7ffceff57850
+insert i=4 at 0x7ffceff57878
+insert i=5 at 0x7ffceff57880
+insert i=6 at 0x7ffceff57888
+insert i=7 at 0x7ffceff57890 # 0~7 occupy 64 bytes, insert value on stack
+do_allocate: 256 bytes # trigger fallback, insert value on heap
+insert i=8 at 0x10109730
+insert i=9 at 0x10109738 # 8~9 insert value on heap
+i=0, addr=0x101096f0
+i=1, addr=0x101096f8
+i=2, addr=0x10109700
+i=3, addr=0x10109708
+i=4, addr=0x10109710
+i=5, addr=0x10109718
+i=6, addr=0x10109720
+i=7, addr=0x10109728 # 0~7 from stack to heap
+i=8, addr=0x10109730
+i=9, addr=0x10109738 # 8~9 remain on heap
+do_deallocate: 256 bytes
 ```
