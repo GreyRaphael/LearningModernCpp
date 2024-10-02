@@ -14,6 +14,7 @@
     - [`std::variant` for duck-typing polymorphism](#stdvariant-for-duck-typing-polymorphism)
     - [polymorphism by `std::variant` with concept](#polymorphism-by-stdvariant-with-concept)
   - [`std::tuple`](#stdtuple)
+  - [flexible array](#flexible-array)
 
 C++ Standard Library core initially sat three main pillars: **containers**, **algorithms**,
 and **iterators**
@@ -1387,5 +1388,68 @@ int main() {
     // transform tuple with return
     auto tp2 = transform_tuple(tp, [](const auto& x) { return x * 2; });
     printTupleApply(tp2);  // (80, 160, 240)
+}
+```
+
+## flexible array
+
+In C99, flexible array(zero-length array) member allow you to define a `struct` with an array member that doesn't have a specified size, enabling **variable-sized objects**.
+> it is always placed at the end of the `struct`.
+
+example: why it should be placed at the end of the `struct`?
+
+```cpp
+#include <cstdlib>
+#include <print>
+
+struct MyStruct1 {
+    int a[0];
+    int b[10];
+};
+
+struct MyStruct2 {
+    int b[10];
+    // size-zero array always be last field
+    int a[0];
+};
+
+int main(int argc, char const* argv[]) {
+    std::println("{}", sizeof(MyStruct1));  // 40
+    std::println("{}", sizeof(MyStruct2));  // 40
+
+    MyStruct1 m1;
+    m1.b[0] = 100;
+    // a pointered to field b
+    std::println("a={}", m1.a[0]);  // a=100
+
+    MyStruct2 m2;
+    m2.b[9] = 200;
+    // a pointered to field outside of the struct
+    std::println("b={}", m2.a[0]);  // b=296923720
+}
+```
+
+practical example of flexible array member
+
+```cpp
+#include <print>
+
+struct MyStruct {
+    size_t size;
+    int a[0];  // Zero-length array for variable-sized data
+};
+
+int main(int argc, char const* argv[]) {
+    // Usage
+    size_t n = 10;
+    auto ptr = malloc(sizeof(MyStruct) + n * sizeof(int));
+    auto obj = static_cast<MyStruct*>(ptr);
+
+    obj->size = n;
+    // Now, obj->a can be used as an array of 'n' integers
+    for (auto i = 0; i < n; ++i) {
+        obj->a[i] = i * 100;
+    }
+    std::println("{}", obj->a[9]);
 }
 ```
