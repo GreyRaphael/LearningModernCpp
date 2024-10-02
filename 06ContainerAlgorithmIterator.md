@@ -1264,6 +1264,30 @@ int main(int argc, char const* argv[]) {
 
 ## `std::tuple`
 
+print tuple elements by recursive template
+
+```cpp
+#include <cstddef>
+#include <functional>
+#include <print>
+#include <tuple>
+
+template <typename Tuple, typename Func, size_t Index = 0>
+void tuple_for_each(const Tuple& t, const Func& f) {
+    constexpr auto n = std::tuple_size_v<Tuple>;
+    if constexpr (Index < n) {
+        const auto& v = std::get<Index>(t);
+        std::invoke(f, v);
+        tuple_for_each<Tuple, Func, Index + 1>(t, f);
+    }
+}
+
+int main(int argc, char const* argv[]) {
+    auto tp = std::make_tuple("hello", 100, 3.14);
+    tuple_for_each(tp, [](auto const& e) { std::print("{}\t", e); });
+}
+```
+
 print tuple elements
 
 ```cpp
