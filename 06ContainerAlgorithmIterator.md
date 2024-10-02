@@ -914,6 +914,27 @@ int main() {
 }
 ```
 
+basic for lambda overload since c++20
+
+```cpp
+#include <print>
+
+template <class... Lambdas>
+struct Overloaded : Lambdas... {
+    using Lambdas::operator()...;
+    // For each lambda type in Lambdas, this statement brings its operator() into Overloaded.
+};
+
+int main(int argc, char const *argv[]) {
+    auto overloaded_lambdas = Overloaded{[](int v) { std::println("int: {}", v); },
+                                         [](bool v) { std::println("bool: {}", v); },
+                                         [](float v) { std::println("float: {}", v); }};
+
+    overloaded_lambdas(30031);
+    overloaded_lambdas(2.71828f);
+}
+```
+
 `std::variant` with struct and `std::visit`
 - method1: by lambda
 - method2: by struct operator(), recommended
