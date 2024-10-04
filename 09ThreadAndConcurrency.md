@@ -1253,6 +1253,8 @@ How It Works:
    1. The thread holding the lock calls `unlock()`, which clears the `is_locked_` flag.
    2. Clearing the flag signals other waiting threads that the lock is now available.
 
+[some ref](https://timur.audio/using-locks-in-real-time-audio-processing-safely)
+
 ```cpp
 #include <atomic>
 #include <iostream>
@@ -1263,9 +1265,7 @@ class SimpleMutex {
    public:
     auto lock() noexcept {
         while (is_locked_.test_and_set(std::memory_order_acquire)) {  // Attempt to set the flag
-            while (is_locked_.test(std::memory_order_relaxed)) {      // Busy-wait (spin) until the flag is cleared
-                std::this_thread::yield();                            // Yield to other threads
-            }
+            while (is_locked_.test(std::memory_order_relaxed));       // Busy-wait (spin) until the flag is cleared
         }
     }
 
