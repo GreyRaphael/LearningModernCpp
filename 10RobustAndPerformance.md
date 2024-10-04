@@ -13,6 +13,8 @@
   - [`std::function` overhead](#stdfunction-overhead)
   - [check default paramter](#check-default-paramter)
   - [`weak_ptr`](#weak_ptr)
+  - [lazy evaluation](#lazy-evaluation)
+    - [pipe operator](#pipe-operator)
 
 ## exception
 
@@ -1155,5 +1157,34 @@ int main() {
     observer1.reset();
     // 2nd notify
     subject->notify(200);
+}
+```
+
+## lazy evaluation
+
+### pipe operator
+
+```cpp
+#include <algorithm>
+#include <print>
+
+template <typename T>
+struct ContainsProxy {
+    const T& value_;
+};
+
+template <typename Range, typename T>
+auto operator|(const Range& r, const ContainsProxy<T>& proxy) {
+    const auto& v = proxy.value_;
+    return std::find(r.begin(), r.end(), v) != r.end();
+}
+
+template <typename T>
+auto contains(const T& v) { return ContainsProxy<T>{v}; }
+
+int main(int argc, char const* argv[]) {
+    const auto r = {-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5};
+    auto val = r | contains(5);
+    std::println("{}", val);
 }
 ```
