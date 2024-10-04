@@ -18,6 +18,7 @@
   - [`std::jthread`](#stdjthread)
   - [latch, semaphore, barrier](#latch-semaphore-barrier)
   - [thread local variable](#thread-local-variable)
+  - [lock\_guard vs scoped\_lock vs unique\_lock](#lock_guard-vs-scoped_lock-vs-unique_lock)
 
 ## Basic concepts
 
@@ -1137,3 +1138,74 @@ Best Practices and Considerations
 - Minimize Usage: Overuse of thread_local can lead to increased memory consumption, especially if many threads are created.
 - Frequent creation and destruction of threads with thread_local variables can impact performance due to repeated initialization and destruction.
 - Understand when to use `static` (shared across threads) versus `thread_local` (unique per thread) storage.
+
+## lock_guard vs scoped_lock vs unique_lock
+
+Best Practices:
+- Prefer `std::lock_guard` for simple, single-mutex scenarios.
+- Use `std::unique_lock` when you need advanced locking features.
+- Utilize `std::scoped_lock` when dealing with multiple mutexes to avoid deadlocks effortlessly.
+
+| Feature                | `std::lock_guard`                         | `std::unique_lock`                                   | `std::scoped_lock`                               |
+|------------------------|-------------------------------------------|-----------------------------------------------------|--------------------------------------------------|
+| **Mutexes Managed**    | Single mutex                              | Single mutex                                        | Multiple mutexes                                 |
+| **Flexibility**        | Minimal (lock on construction)            | High (defer, try, manual lock/unlock)               | Minimal (locks all provided mutexes at once)     |
+| **Movable/Copyable**   | Neither                                   | Movable but not copyable                            | Neither                                           |
+| **Locking Strategies** | Immediate lock                            | Immediate, deferred, try-lock, adopt-lock            | Simultaneous locking of multiple mutexes         |
+| **Use Cases**          | Simple scope-based locking                | Complex synchronization, condition variables        | Locking multiple mutexes safely and easily       |
+| **Overhead**           | Lowest                                     | Slightly higher due to added flexibility            | Comparable to `std::lock_guard` for multiple locks|
+
+```cpp
+// basic usage
+#include <cassert>
+#include <iostream>
+#include <mutex>
+#include <thread>
+
+auto counter = 0;  // Counter will be protected by counter_mutex
+auto counter_mutex = std::mutex{};
+
+void increment_counter1(int n) {
+    for (int i = 0; i < n; ++i) {
+        std::lock_guard<std::mutex> lock{counter_mutex};
+        ++counter;
+    }
+}
+void increment_counter2(int n) {
+    for (int i = 0; i < n; ++i) {
+        std::unique_lock<std::mutex> lock{counter_mutex};
+        ++counter;
+    }
+}
+
+void increment_counter3(int n) {
+    for (int i = 0; i < n; ++i) {
+        std::scoped_lock<std::mutex> lock{counter_mutex};
+        ++counter;
+    }
+}
+
+int main() {
+    constexpr auto n = int{10'000'000};
+    {
+        auto t1 = std::jthread{increment_counter1, n};
+        auto t2 = std::jthread{increment_counter1, n};
+    }
+    std::cout << counter << '\n';
+    assert(counter == (n * 2));
+
+    {
+        auto t1 = std::jthread{increment_counter2, n};
+        auto t2 = std::jthread{increment_counter2, n};
+    }
+    std::cout << counter << '\n';
+    assert(counter == (n * 4));
+
+    {
+        auto t1 = std::jthread{increment_counter3, n};
+        auto t2 = std::jthread{increment_counter3, n};
+    }
+    std::cout << counter << '\n';
+    assert(counter == (n * 6));
+}
+```
