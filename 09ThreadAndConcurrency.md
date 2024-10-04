@@ -1209,3 +1209,33 @@ int main() {
     assert(counter == (n * 6));
 }
 ```
+
+example: multiple mutex
+
+```cpp
+struct Account {
+    Account() {}
+    int balance_{0};
+    std::mutex m_{};
+};
+
+// by unique_lock
+void transfer_money(Account& from, Account& to, int amount) {
+    auto lock1 = std::unique_lock<std::mutex>{from.m_, std::defer_lock};
+    auto lock2 = std::unique_lock<std::mutex>{to.m_, std::defer_lock};
+    // Lock both unique_locks at the same time
+    std::lock(lock1, lock2);
+    from.balance_ -= amount;
+    to.balance_ += amount;
+}
+
+// recomended, by scoped_lock
+void transfer_money2(Account& from, Account& to, int amount) {
+    // Lock both mutexes simultaneously using std::scoped_lock
+    std::scoped_lock lock(from.m_, to.m_);
+
+    // Perform the transfer
+    from.balance_ -= amount;
+    to.balance_ += amount;
+}
+```
