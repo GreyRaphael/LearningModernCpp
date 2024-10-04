@@ -19,6 +19,7 @@
   - [latch, semaphore, barrier](#latch-semaphore-barrier)
   - [thread local variable](#thread-local-variable)
   - [lock\_guard vs scoped\_lock vs unique\_lock](#lock_guard-vs-scoped_lock-vs-unique_lock)
+  - [custom mutex by atomic](#custom-mutex-by-atomic)
 
 ## Basic concepts
 
@@ -1237,5 +1238,60 @@ void transfer_money2(Account& from, Account& to, int amount) {
     // Perform the transfer
     from.balance_ -= amount;
     to.balance_ += amount;
+}
+```
+
+## custom mutex by atomic
+
+How It Works:
+1. Lock Acquisition (`lock` method): 
+   1. A thread calling `lock()` will attempt to set the `is_locked_` flag.
+   2. If the flag was previously `false` (unlocked), `test_and_set()` sets it to `true` and the thread acquires the lock. the `lock()` method will return immediately.
+   3. If the flag was already `true` (locked by another thread), the thread enters a busy-wait loop, repeatedly checking the flag until it becomes false.
+   4. Once the flag is cleared, the thread tries to set it again to acquire the lock.
+2. Lock Release (`unlock` method): 
+   1. The thread holding the lock calls `unlock()`, which clears the `is_locked_` flag.
+   2. Clearing the flag signals other waiting threads that the lock is now available.
+
+```cpp
+#include <atomic>
+#include <iostream>
+#include <thread>
+
+class SimpleMutex {
+    std::atomic_flag is_locked_{};  // Cleared by default
+   public:
+    auto lock() noexcept {
+        while (is_locked_.test_and_set(std::memory_order_acquire)) {  // Attempt to set the flag
+            while (is_locked_.test(std::memory_order_relaxed)) {      // Busy-wait (spin) until the flag is cleared
+                std::this_thread::yield();                            // Yield to other threads
+            }
+        }
+    }
+
+    auto unlock() noexcept {
+        is_locked_.clear();  // Release the lock by clearing the flag
+    }
+};
+
+SimpleMutex mutex;
+int shared_resource = 0;
+
+void increment() {
+    for (int i = 0; i < 1000000; ++i) {
+        mutex.lock();
+        ++shared_resource;
+        mutex.unlock();
+    }
+}
+
+int main() {
+    std::thread t1(increment);
+    std::thread t2(increment);
+
+    t1.join();
+    t2.join();
+
+    std::cout << "Final value: " << shared_resource << std::endl;
 }
 ```
