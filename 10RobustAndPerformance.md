@@ -15,6 +15,7 @@
   - [`weak_ptr`](#weak_ptr)
   - [lazy evaluation](#lazy-evaluation)
     - [pipe operator](#pipe-operator)
+  - [Trivially Copyable Types](#trivially-copyable-types)
 
 ## exception
 
@@ -1188,3 +1189,19 @@ int main(int argc, char const* argv[]) {
     std::println("{}", val);
 }
 ```
+
+## Trivially Copyable Types
+
+> A **trivially copyable type** is a type that can be copied bitwise (e.g., using `memcpy`) without invoking any special copy constructors, destructors, or other member functions.
+
+features:
+- **Trivial Constructors and Destructors**. default constructors, copy constructors, move constructors, copy assignment operators, and move assignment operators that are all trivial. A trivial constructor or destructor does nothing beyond what the compiler *automatically generates* (e.g., no resource allocation or deallocation).
+- **No Virtual Functions or Base Classes**. The type does not have virtual functions or virtual base classes, ensuring that there are no hidden pointers or additional data structures that complicate the memory layout.
+- **No Non-Trivial Members**. All *non-static* data members must themselves be trivially copyable. If a member is not trivially copyable, the containing type also isn't.
+
+Key Point: *Static* members are not considered part of the instance's memory layout. They exist independently of any object instances and are shared across all instances of the class or struct.
+
+Why It Matters:
+- Performance: Bitwise copying is generally faster than invoking copy constructors, especially for large arrays or performance-critical applications.
+- Interoperability: Facilitates interaction with C APIs or hardware where data structures need to have a specific memory layout.
+- Serialization: Simplifies the process of serializing and deserializing data.
