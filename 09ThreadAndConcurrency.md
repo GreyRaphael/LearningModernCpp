@@ -20,6 +20,7 @@
   - [thread local variable](#thread-local-variable)
   - [lock\_guard vs scoped\_lock vs unique\_lock](#lock_guard-vs-scoped_lock-vs-unique_lock)
   - [custom mutex by atomic](#custom-mutex-by-atomic)
+  - [atomic shared\_ptr](#atomic-shared_ptr)
 
 ## Basic concepts
 
@@ -1293,5 +1294,103 @@ int main() {
     t2.join();
 
     std::cout << "Final value: " << shared_resource << std::endl;
+}
+```
+
+## atomic shared_ptr
+
+`std::atomic<std::shared_ptr<T>>` is introduced in C++20. 
+> The `std::atomic<std::shared_ptr<T>>` ensures that operations on the shared_ptr **itself** (like *loading* and *storing* pointers) are atomic. 
+
+```cpp
+#include <atomic>
+#include <memory>
+#include <print>
+#include <thread>
+
+struct MyData {
+    int value;
+    MyData(int v) : value(v) {}
+};
+
+int main() {
+    std::atomic<std::shared_ptr<MyData>> atomicPtr{std::make_shared<MyData>(42)};
+    std::println("ptr is lock-free: {}", atomicPtr.is_lock_free());  // false
+
+    // Thread 1 - reads the value
+    std::jthread reader([&atomicPtr] {
+        while (true) {
+            std::shared_ptr<MyData> localPtr = atomicPtr.load(std::memory_order_acquire);
+            if (localPtr) {
+                std::println("reader read {}", localPtr->value);
+            } else {
+                std::println("reader read nullptr");
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
+    });
+
+    // Thread 2 - updates the value
+    std::jthread writer([&atomicPtr] {
+        for (int i = 0; i < 10; ++i) {
+            auto newPtr = std::make_shared<MyData>(i);
+            atomicPtr.store(newPtr, std::memory_order_release);
+            // auto oldPtr = atomicPtr.exchange(std::make_shared<MyData>(i), std::memory_order_release);
+
+            std::println("writer write {}", newPtr->value);
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        }
+    });
+}
+```
+
+The `is_lock_free()` method returning `false` indicates that the atomic operations on `atomicPtr` are implemented using locks internally rather than being lock-free. Despite not being lock-free, these atomic operations still provide the necessary synchronization to prevent data races on the pointer itself.
+
+While the atomicity of `std::atomic<std::shared_ptr<T>>` ensures that the pointer itself is managed safely, it doesn't protect the *pointed-to object* from concurrent access.
+
+protect the `pointed-to object` by atomic
+
+```cpp
+#include <atomic>
+#include <chrono>
+#include <memory>
+#include <print>
+#include <thread>
+
+struct MyData {
+    std::atomic<int> value;  // Make the member atomic
+    MyData(int v) : value(v) {}
+};
+
+int main() {
+    // Initialize atomicPtr with a shared_ptr to MyData
+    std::atomic<std::shared_ptr<MyData>> atomicPtr{std::make_shared<MyData>(42)};
+    std::println("ptr is lock-free: {}", atomicPtr.is_lock_free());  // false
+
+    // Thread 1 - reads the value
+    std::jthread reader([&atomicPtr] {
+        while (true) {
+            std::shared_ptr<MyData> localPtr = atomicPtr.load(std::memory_order_acquire);
+            if (localPtr) {
+                int currentValue = localPtr->value.load(std::memory_order_acquire);
+                std::println("reader read {}", currentValue);
+            } else {
+                std::println("reader read nullptr");
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
+    });
+
+    // Thread 2 - updates the value
+    std::jthread writer([&atomicPtr] {
+        for (int i = 0; i < 10; ++i) {
+            std::shared_ptr<MyData> localPtr = atomicPtr.load(std::memory_order_acquire);
+            if (localPtr) {
+                localPtr->value.store(i + 1, std::memory_order_release);
+                std::println("writer modified value to {}", i + 1);
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        }
+    });
 }
 ```
