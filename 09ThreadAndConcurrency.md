@@ -21,6 +21,7 @@
   - [lock\_guard vs scoped\_lock vs unique\_lock](#lock_guard-vs-scoped_lock-vs-unique_lock)
   - [custom mutex by atomic](#custom-mutex-by-atomic)
   - [atomic shared\_ptr](#atomic-shared_ptr)
+  - [atomic\_ref](#atomic_ref)
 
 ## Basic concepts
 
@@ -1393,4 +1394,51 @@ int main() {
         }
     });
 }
+```
+
+## atomic_ref
+
+It's not possible to write `std::atomic<T&>`, but we can use `std::atomic_ref<T>` since C++20
+> perform atomic operations on existing non-atomic objects without changing its original type to an atomic type by by creating an atomic reference to them. 
+
+```cpp
+#include <atomic>
+#include <iostream>
+#include <thread>
+#include <vector>
+
+struct ExpensiveToCopy {
+    int counter{};
+};
+
+void count(ExpensiveToCopy& exp) {
+    std::vector<std::thread> v;
+    std::atomic_ref<int> counter{exp.counter};
+
+    for (int n = 0; n < 10; ++n) {
+        v.emplace_back([&counter] {
+            for (int i = 0; i < 1000; ++i) {
+                ++counter;
+            }
+        });
+    }
+
+    for (auto& t : v) t.join();
+}
+
+int main() {
+    ExpensiveToCopy exp;
+    count(exp);
+    std::cout << "exp.counter: " << exp.counter << '\n';
+}
+```
+
+why not define atomic in the struct?
+- Each access to the counter is synchronized, and synchronization is not for free. On the contrary, using a `std::atomic_ref<int>` counter lets you explicitly control when you need atomic access to the counter. Most of the time, you may only want to read the value of the counter. Consequently, defining it as an atomic is pessimization.
+- not modify the existing struct
+
+```cpp
+struct ExpensiveToCopy {
+    std::atomic<int> counter{};
+};
 ```
