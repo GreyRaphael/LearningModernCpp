@@ -1471,5 +1471,17 @@ int main(int argc, char const *argv[]) {
         auto product = std::reduce(std::execution::par, v.begin(), v.end(), 1, std::multiplies<int>{});
         std::println("product={}", product);
     }
+
+    std::vector<std::string> v2{"A", "B", "C", "D"};
+    {
+        // std::accumulate cannot be parallelized
+        auto concat = std::accumulate(v2.begin(), v2.end(), std::string{}, std::plus<std::string>{});
+        std::println("concat={}", concat); // ABCD
+    }
+    {
+        // std::reduce can be parallelized, but the order of vector not matter
+        auto concat = std::reduce(std::execution::par, v2.begin(), v2.end(), std::string{}, std::plus<std::string>{});
+        std::println("concat={}", concat); // maybe ABCD, ACDB, ....
+    }
 }
 ```
