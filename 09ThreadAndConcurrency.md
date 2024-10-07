@@ -1447,6 +1447,7 @@ struct ExpensiveToCopy {
 ## parallel policy
 
 `std::accumulate` vs `std::reduce`
+> when the provided algorithm is commutative, `std::reduce` is preferred.
 
 ```cpp
 #include <execution>
@@ -1456,7 +1457,7 @@ struct ExpensiveToCopy {
 #include <vector>
 
 int main(int argc, char const *argv[]) {
-    std::vector<int> v{1, 2, 3, 4};
+    std::vector<int> v{1, 2, 3, 4}; // sum & product is commutative
     {
         // std::accumulate cannot be parallelized
         auto sum = std::accumulate(v.begin(), v.end(), 0, std::plus<int>{});
@@ -1472,7 +1473,7 @@ int main(int argc, char const *argv[]) {
         std::println("product={}", product);
     }
 
-    std::vector<std::string> v2{"A", "B", "C", "D"};
+    std::vector<std::string> v2{"A", "B", "C", "D"}; // string concat is not commutative
     {
         // std::accumulate cannot be parallelized
         auto concat = std::accumulate(v2.begin(), v2.end(), std::string{}, std::plus<std::string>{});
