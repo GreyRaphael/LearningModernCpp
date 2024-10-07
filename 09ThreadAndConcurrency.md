@@ -1486,3 +1486,25 @@ int main(int argc, char const *argv[]) {
     }
 }
 ```
+
+there is the same problem in `std::for_each` like `std::accumulate`
+> By only accessing vector elements via the unique index i, we avoid introducing data races when mutating the strings in the vector, so we can use `std::execution::par`
+
+```cpp
+#include <execution>
+#include <print>
+#include <ranges>
+#include <vector>
+
+int main(int argc, char const *argv[]) {
+    auto v = std::vector<std::string>{"A", "B", "C"};
+    auto r = std::views::iota(size_t{0}, v.size());
+    std::for_each(std::execution::par, r.begin(), r.end(), [&v](size_t i) {
+        v[i] += std::to_string(i + 1);
+    });
+
+    for (auto &&e : v) {
+        std::println("{}", e);
+    }
+}
+```
