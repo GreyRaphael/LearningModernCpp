@@ -22,6 +22,7 @@
   - [custom mutex by atomic](#custom-mutex-by-atomic)
   - [atomic shared\_ptr](#atomic-shared_ptr)
   - [atomic\_ref](#atomic_ref)
+  - [parallel policy](#parallel-policy)
 
 ## Basic concepts
 
@@ -1441,4 +1442,34 @@ why not define atomic in the struct?
 struct ExpensiveToCopy {
     std::atomic<int> counter{};
 };
+```
+
+## parallel policy
+
+`std::accumulate` vs `std::reduce`
+
+```cpp
+#include <execution>
+#include <functional>
+#include <numeric>
+#include <print>
+#include <vector>
+
+int main(int argc, char const *argv[]) {
+    std::vector<int> v{1, 2, 3, 4};
+    {
+        // std::accumulate cannot be parallelized
+        auto sum = std::accumulate(v.begin(), v.end(), 0, std::plus<int>{});
+        std::println("sum={}", sum);
+        auto product = std::accumulate(v.begin(), v.end(), 1, std::multiplies<int>{});
+        std::println("product={}", product);
+    }
+    {
+        // std::reduce can be parallelized, but the order of vector not matter
+        auto sum = std::reduce(std::execution::par, v.begin(), v.end(), 0, std::plus<int>{});
+        std::println("sum={}", sum);
+        auto product = std::reduce(std::execution::par, v.begin(), v.end(), 1, std::multiplies<int>{});
+        std::println("product={}", product);
+    }
+}
 ```
