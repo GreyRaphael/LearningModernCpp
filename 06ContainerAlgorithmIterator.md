@@ -14,6 +14,7 @@
     - [`std::variant` for duck-typing polymorphism](#stdvariant-for-duck-typing-polymorphism)
     - [polymorphism by `std::variant` with concept](#polymorphism-by-stdvariant-with-concept)
   - [`std::tuple`](#stdtuple)
+  - [flexible array](#flexible-array)
 
 C++ Standard Library core initially sat three main pillars: **containers**, **algorithms**,
 and **iterators**
@@ -913,6 +914,27 @@ int main() {
 }
 ```
 
+basic for lambda overload since c++20
+
+```cpp
+#include <print>
+
+template <class... Lambdas>
+struct Overloaded : Lambdas... {
+    using Lambdas::operator()...;
+    // For each lambda type in Lambdas, this statement brings its operator() into Overloaded.
+};
+
+int main(int argc, char const *argv[]) {
+    auto overloaded_lambdas = Overloaded{[](int v) { std::println("int: {}", v); },
+                                         [](bool v) { std::println("bool: {}", v); },
+                                         [](float v) { std::println("float: {}", v); }};
+
+    overloaded_lambdas(30031);
+    overloaded_lambdas(2.71828f);
+}
+```
+
 `std::variant` with struct and `std::visit`
 - method1: by lambda
 - method2: by struct operator(), recommended
@@ -1263,129 +1285,218 @@ int main(int argc, char const* argv[]) {
 
 ## `std::tuple`
 
-print tuple elements
+print tuple elements by recursive template
 
 ```cpp
+#include <functional>
 #include <iostream>
+#include <tuple>
 
-template <typename TupleT, std::size_t... Is>
-void printTupleImp(const TupleT& tp, std::index_sequence<Is...>) {
-    size_t index = 0;
-    auto printElem = [&index](const auto& x) {
-        if (index++ > 0)
-            std::cout << ", ";
-        std::cout << x;
-    };
-
-    std::cout << "(";
-    (printElem(std::get<Is>(tp)), ...);
-    std::cout << ")";
+template <typename Tuple, typename Func, size_t Index = 0>
+void tuple_for_each(const Tuple& t, const Func& f) {
+    constexpr auto n = std::tuple_size_v<Tuple>;
+    if constexpr (Index < n) {
+        const auto& v = std::get<Index>(t);
+        std::invoke(f, v);
+        tuple_for_each<Tuple, Func, Index + 1>(t, f);
+    }
 }
 
-template <typename TupleT, std::size_t TupSize = std::tuple_size_v<TupleT>>
-void printTuple(const TupleT& tp) {
-    printTupleImp(tp, std::make_index_sequence<TupSize>{});
-}
-
-int main() {
-    std::tuple tp1{10, 20, "hello"};
-    printTuple(tp1); // (10, 20, hello)
-    std::tuple tp2{false, 12.2, 10, 'a', "good"};
-    printTuple(tp2); // (0, 12.2, 10, a, good)
+int main(int argc, char const* argv[]) {
+    auto tp = std::make_tuple("hello", 100, 3.14);
+    tuple_for_each(tp, [](auto const& e) { std::cout << e << '\t'; });
 }
 ```
 
-print tuple elements with index
+print tuple elements by `index_sequence`
 
 ```cpp
+#include <functional>
 #include <iostream>
+#include <tuple>
 
-template <typename TupleT, std::size_t... Is>
-void printTupleImp(const TupleT& tp, std::index_sequence<Is...>) {
-    auto printElem = [](const auto& x, size_t index) {
-        if (index > 0)
-            std::cout << ", ";
-        std::cout << index << ": " << x;
-    };
-
-    std::cout << "(";
-    (printElem(std::get<Is>(tp), Is), ...);
-    std::cout << ")";
+// Helper function to iterate using index_sequence
+template <typename Tuple, typename Func, std::size_t... Is>
+inline void tuple_for_each_impl(Tuple&& t, Func&& f, std::index_sequence<Is...>) {
+    (std::invoke(f, std::get<Is>(std::forward<Tuple>(t))), ...);
 }
 
-template <typename TupleT, std::size_t TupSize = std::tuple_size_v<TupleT>>
-void printTupleWithIndex(const TupleT& tp) {
-    printTupleImp(tp, std::make_index_sequence<TupSize>{});
+// Main tuple_for_each function
+template <typename Tuple, typename Func>
+inline void tuple_for_each(Tuple&& t, Func&& f) {
+    tuple_for_each_impl(
+        std::forward<Tuple>(t),
+        std::forward<Func>(f),
+        std::make_index_sequence<std::tuple_size_v<std::remove_cvref_t<Tuple>>>{});
 }
 
 int main() {
-    std::tuple tp1{10, 20, "hello"};
-    printTupleWithIndex(tp1); // (0: 10, 1: 20, 2: hello)
-    std::tuple tp2{false, 12.2, 10, 'a', "good"};
-    printTupleWithIndex(tp2); // (0: 0, 1: 12.2, 2: 10, 3: a, 4: good)
+    auto tp = std::make_tuple("hello", 100, 3.14);
+    tuple_for_each(tp, [](const auto& e) { std::cout << e << '\t'; });
+}
+```
+
+print tuple elements with index by `index_sequence`
+
+```cpp
+#include <functional>
+#include <iostream>
+#include <tuple>
+
+// Helper function to iterate using index_sequence
+template <typename Tuple, typename Func, std::size_t... Is>
+inline void tuple_for_each_impl(Tuple&& t, Func&& f, std::index_sequence<Is...>) {
+    // Pass both index and element to the lambda
+    (std::invoke(f, Is, std::get<Is>(std::forward<Tuple>(t))), ...);
+}
+
+// Main tuple_for_each function
+template <typename Tuple, typename Func>
+inline void tuple_for_each(Tuple&& t, Func&& f) {
+    tuple_for_each_impl(
+        std::forward<Tuple>(t),
+        std::forward<Func>(f),
+        std::make_index_sequence<std::tuple_size_v<std::remove_cvref_t<Tuple>>>{});
+}
+
+int main() {
+    auto tp = std::make_tuple("hello", 100, 3.14);
+
+    // Lambda now accepts index and element
+    tuple_for_each(tp, [](std::size_t index, const auto& element) {
+        std::cout << index << "\t" << element << "\n";
+    });
 }
 ```
 
 print tuple elements with `std::apply` & modify tuple elements with `std:apply`
+> tuple is mutable in C++
 
 ```cpp
+#include <functional>
 #include <iostream>
 #include <tuple>
 
-template <typename TupleT>
-void printTupleApply(const TupleT& tp) {
-    std::cout << "(";
-    std::apply([](const auto&... tupleArgs) {
-        size_t index = 0;
-        auto printElem = [&index](const auto& x) {
-            if (index++ > 0)
-                std::cout << ", ";
-            std::cout << x;
-        };
-
-        (printElem(tupleArgs), ...);
-    },
-               tp);
-    std::cout << ")";
-}
-
-// since c++20
-template <typename TupleT, typename Fn>
-void for_each_tuple1(TupleT&& tp, Fn&& fn) {
+// Optimized tuple_for_each using std::apply and fold expressions
+template <typename Tuple, typename Func>
+inline void tuple_for_each(Tuple&& t, Func&& f) {
     std::apply(
-        [&fn]<typename... T>(T&&... args) {
-            (fn(std::forward<T>(args)), ...);
+        [&](auto&&... args) {
+            (std::invoke(f, std::forward<decltype(args)>(args)), ...);
         },
-        std::forward<TupleT>(tp));
-}
-
-// c++17
-template <typename TupleT, typename Fn>
-void for_each_tuple2(TupleT&& tp, Fn&& fn) {
-    std::apply(
-        [&fn](auto&&... args) {
-            (fn(std::forward<decltype(args)>(args)), ...);
-        },
-        std::forward<TupleT>(tp));
-}
-
-template <typename TupleT, typename Fn>
-[[nodiscard]] auto transform_tuple(TupleT&& tp, Fn&& fn) {
-    return std::apply(
-        [&fn]<typename... T>(T&&... args) {
-            return std::make_tuple(fn(std::forward<T>(args))...);
-        },
-        std::forward<TupleT>(tp));
+        std::forward<Tuple>(t));  // std::forward<Tuple>(t) preserves the value category of t
 }
 
 int main() {
-    std::tuple tp{10, 20, 30.0};
-    printTupleApply(tp);  // (10, 20, 30)
-    for_each_tuple1(tp, [](auto&& x) { x *= 2; });
-    for_each_tuple2(tp, [](auto&& x) { x *= 2; });
-    printTupleApply(tp);  // (40, 80, 120)
-    // transform tuple with return
-    auto tp2 = transform_tuple(tp, [](const auto& x) { return x * 2; });
-    printTupleApply(tp2);  // (80, 160, 240)
+    {
+        auto tp = std::make_tuple("hello", 100, 3.14);
+        tuple_for_each(tp, [](const auto& e) { std::cout << e << '\t'; });
+        std::cout << '\n';
+    }
+    {
+        // inplace change the tuple
+        auto tp = std::make_tuple(20, 100, 3.14);
+        std::get<0>(tp) *= 2;  // tuple is mutable in C++
+        std::cout << std::get<0>(tp) << '\n';
+        tuple_for_each(tp, [](auto& e) { return e *= 2; });
+        tuple_for_each(tp, [](const auto& e) { std::cout << e << '\t'; });
+    }
+}
+```
+
+tuple_for_each not trigger copy
+
+```cpp
+#include <functional>
+#include <iostream>
+#include <tuple>
+
+struct NoCopy {
+    NoCopy() = default;
+    NoCopy(const NoCopy&) { std::cout << "Copy constructor called!\n"; }
+    NoCopy(NoCopy&&) noexcept = default;
+    NoCopy& operator=(const NoCopy&) {
+        std::cout << "Copy assignment called!\n";
+        return *this;
+    }
+    NoCopy& operator=(NoCopy&&) noexcept = default;
+};
+
+template <typename Tuple, typename Func>
+inline void tuple_for_each(Tuple&& t, Func&& f) {
+    std::apply(
+        [&](auto&&... args) {
+            (std::invoke(f, std::forward<decltype(args)>(args)), ...);
+        },
+        std::forward<Tuple>(t));
+}
+
+int main() {
+    auto tp = std::make_tuple(NoCopy{}, 100, 3.14);
+    // pass by reference, not trigger copy
+    tuple_for_each(tp, [](const auto& e) { /* std::print is omitted for brevity */ });
+}
+```
+
+## flexible array
+
+In C99, flexible array(zero-length array) member allow you to define a `struct` with an array member that doesn't have a specified size, enabling **variable-sized objects**.
+> it is always placed at the end of the `struct`.
+
+example: why it should be placed at the end of the `struct`?
+
+```cpp
+#include <cstdlib>
+#include <print>
+
+struct MyStruct1 {
+    int a[0];
+    int b[10];
+};
+
+struct MyStruct2 {
+    int b[10];
+    // size-zero array always be last field
+    int a[0];
+};
+
+int main(int argc, char const* argv[]) {
+    std::println("{}", sizeof(MyStruct1));  // 40
+    std::println("{}", sizeof(MyStruct2));  // 40
+
+    MyStruct1 m1;
+    m1.b[0] = 100;
+    // a pointered to field b
+    std::println("a={}", m1.a[0]);  // a=100
+
+    MyStruct2 m2;
+    m2.b[9] = 200;
+    // a pointered to field outside of the struct
+    std::println("b={}", m2.a[0]);  // b=296923720
+}
+```
+
+practical example of flexible array member
+
+```cpp
+#include <print>
+
+struct MyStruct {
+    size_t size;
+    int a[0];  // Zero-length array for variable-sized data
+};
+
+int main(int argc, char const* argv[]) {
+    // Usage
+    size_t n = 10;
+    auto ptr = malloc(sizeof(MyStruct) + n * sizeof(int));
+    auto obj = static_cast<MyStruct*>(ptr);
+
+    obj->size = n;
+    // Now, obj->a can be used as an array of 'n' integers
+    for (auto i = 0; i < n; ++i) {
+        obj->a[i] = i * 100;
+    }
+    std::println("{}", obj->a[9]);
 }
 ```

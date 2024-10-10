@@ -12,6 +12,10 @@
   - [`std::move`](#stdmove)
   - [`std::function` overhead](#stdfunction-overhead)
   - [check default paramter](#check-default-paramter)
+  - [`weak_ptr`](#weak_ptr)
+  - [lazy evaluation](#lazy-evaluation)
+    - [pipe operator](#pipe-operator)
+  - [Trivially Copyable Types](#trivially-copyable-types)
 
 ## exception
 
@@ -950,3 +954,254 @@ int main() {
     foo();                      // Outputs: Default parameters used
 }
 ```
+
+use constexpr and default value
+
+```cpp
+constexpr int foo(int x = 10, double y = 3.14) {
+    return x + static_cast<int>(y);
+}
+
+int main() {
+    foo();           // Case 1
+    foo(11);         // Case 2
+    foo(100, 31.4);  // Case 3
+}
+```
+
+## `weak_ptr`
+
+`std::weak_ptr` provides a way to reference an object managed by `std::shared_ptr` without participating in the ownership of that object. It allows you to observe or access the object without affecting its lifetime. If all `std::shared_ptr` instances owning the object are destroyed, the object itself is destroyed, and the `std::weak_ptr` becomes expired.
+
+Why Use `std::weak_ptr`?
+- Avoiding Circular References: In data structures like graphs or trees where nodes may reference each other, using only `std::shared_ptr` can create cycles that prevent reference counts from reaching zero, thereby causing memory leaks. `std::weak_ptr` breaks these cycles by not contributing to the reference count.
+- Conditional Access: Sometimes, you want to access an object only if it still exists, without ensuring its lifetime. `std::weak_ptr` allows you to check if the object is still alive before using it.
+
+basic example
+
+```cpp
+#include <memory>
+#include <iostream>
+
+struct MyObject {
+    MyObject() { std::cout << "MyObject created.\n"; }
+    ~MyObject() { std::cout << "MyObject destroyed.\n"; }
+};
+
+int main() {
+    std::weak_ptr<MyObject> wp;
+    {
+        std::shared_ptr<MyObject> sp = std::make_shared<MyObject>();
+        wp = sp; // wp now references the object but doesn't own it
+        std::cout << "sp is alive.\n";
+    } // sp goes out of scope, object is destroyed
+    if (auto locked = wp.lock()) { // Attempt to get shared_ptr
+        std::cout << "Object is still alive.\n";
+    } else {
+        std::cout << "Object has been destroyed.\n";
+    }
+}
+```
+
+practical example: break circular reference
+
+```cpp
+#include <memory>
+#include <iostream>
+
+struct Child; // Forward declaration
+
+struct Parent {
+    std::shared_ptr<Child> child;
+    Parent() { std::cout << "Parent created.\n"; }
+    ~Parent() { std::cout << "Parent destroyed.\n"; }
+};
+
+struct Child {
+    std::weak_ptr<Parent> parent; // Use weak_ptr to prevent cycle
+    Child() { std::cout << "Child created.\n"; }
+    ~Child() { std::cout << "Child destroyed.\n"; }
+};
+
+int main() {
+    {
+        std::shared_ptr<Parent> p = std::make_shared<Parent>();
+        std::shared_ptr<Child> c = std::make_shared<Child>();
+        p->child = c;
+        c->parent = p; // No cycle, weak_ptr does not increase reference count
+    }
+    std::cout << "End of scope.\n";
+}
+```
+
+practical example: **Observer Pattern**
+
+```cpp
+#include <iostream>
+#include <memory>
+
+struct Subject;
+
+struct Observer {
+    std::weak_ptr<Subject> subject;
+
+    void observe() {
+        if (auto s = subject.lock()) {
+            std::cout << "Observing subject.\n";
+            // Interact with the subject
+        } else {
+            std::cout << "Subject no longer exists.\n";
+        }
+    }
+};
+
+struct Subject : std::enable_shared_from_this<Subject> {
+    void attach(std::shared_ptr<Observer> obs) {
+        obs->subject = shared_from_this();  // share this to obs, so need std::enable_shared_from_this
+    }
+
+    ~Subject() { std::cout << "Subject destroyed.\n"; }
+};
+
+int main() {
+    auto subject = std::make_shared<Subject>();
+    auto observer1 = std::make_shared<Observer>();
+    auto observer2 = std::make_shared<Observer>();
+
+    subject->attach(observer1);
+    subject->attach(observer2);
+
+    observer1->observe();
+    observer2->observe();
+
+    subject.reset();  // Destroy the subject
+
+    observer1->observe();
+    observer2->observe();
+}
+```
+
+```cpp
+#include <format>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
+
+// Observer Interface
+class Observer {
+   public:
+    virtual ~Observer() = default;
+    virtual void update(int) = 0;
+};
+
+// Subject Class
+class Subject {
+    std::vector<std::weak_ptr<Observer>> observers;
+
+   public:
+    // Attach an observer
+    void attach(const std::shared_ptr<Observer>& observer) {
+        observers.emplace_back(observer);
+    }
+
+    // Detach expired observers using C++20's erase_if
+    void detachExpired() {
+        std::erase_if(observers, [](const std::weak_ptr<Observer>& wp) { return wp.expired(); });
+    }
+
+    // Notify all observers
+    void notify(int value) {
+        std::cout << std::format("notify all {}\n", value);
+        detachExpired();  // Clean up expired observers first
+
+        for (auto&& observer : observers) {
+            if (auto obs = observer.lock()) {
+                obs->update(value);
+            }
+        }
+    }
+};
+
+// Concrete Observer
+class ConcreteObserver : public Observer, public std::enable_shared_from_this<ConcreteObserver> {
+    std::string name_;
+
+   public:
+    ConcreteObserver(std::string name) : name_(std::move(name)) {}
+    // update method called by the subject
+    void update(int value) override {
+        std::cout << std::format("observer {} received {}\n", name_, value);
+    }
+
+    void subscribe(std::shared_ptr<Subject> subject) {
+        subject->attach(shared_from_this());
+    }
+};
+
+int main() {
+    // Create a subject & observers
+    auto subject = std::make_shared<Subject>();
+    auto observer1 = std::make_shared<ConcreteObserver>("A");
+    auto observer2 = std::make_shared<ConcreteObserver>("B");
+    auto observer3 = std::make_shared<ConcreteObserver>("C");
+
+    // Subscribe observers to the subject
+    observer1->subscribe(subject);
+    observer2->subscribe(subject);
+    observer3->subscribe(subject);
+
+    // 1st notify
+    subject->notify(100);
+
+    // Destroy observer1
+    observer1.reset();
+    // 2nd notify
+    subject->notify(200);
+}
+```
+
+## lazy evaluation
+
+### pipe operator
+
+```cpp
+#include <algorithm>
+#include <print>
+
+template <typename T>
+struct ContainsProxy {
+    const T& value_;
+};
+
+template <typename Range, typename T>
+auto operator|(const Range& r, const ContainsProxy<T>& proxy) {
+    const auto& v = proxy.value_;
+    return std::find(r.begin(), r.end(), v) != r.end();
+}
+
+template <typename T>
+auto contains(const T& v) { return ContainsProxy<T>{v}; }
+
+int main(int argc, char const* argv[]) {
+    const auto r = {-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5};
+    auto val = r | contains(5);
+    std::println("{}", val);
+}
+```
+
+## Trivially Copyable Types
+
+> A **trivially copyable type** is a type that can be copied bitwise (e.g., using `memcpy`) without invoking any special copy constructors, destructors, or other member functions.
+
+features:
+- **Trivial Constructors and Destructors**. default constructors, copy constructors, move constructors, copy assignment operators, and move assignment operators that are all trivial. A trivial constructor or destructor does nothing beyond what the compiler *automatically generates* (e.g., no resource allocation or deallocation).
+- **No Virtual Functions or Base Classes**. The type does not have virtual functions or virtual base classes, ensuring that there are no hidden pointers or additional data structures that complicate the memory layout.
+- **No Non-Trivial Members**. All *non-static* data members must themselves be trivially copyable. If a member is not trivially copyable, the containing type also isn't.
+
+Key Point: *Static* members are not considered part of the instance's memory layout. They exist independently of any object instances and are shared across all instances of the class or struct.
+
+Why It Matters:
+- Performance: Bitwise copying is generally faster than invoking copy constructors, especially for large arrays or performance-critical applications.
+- Interoperability: Facilitates interaction with C APIs or hardware where data structures need to have a specific memory layout.
+- Serialization: Simplifies the process of serializing and deserializing data.

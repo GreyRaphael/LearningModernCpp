@@ -18,6 +18,11 @@
   - [`std::jthread`](#stdjthread)
   - [latch, semaphore, barrier](#latch-semaphore-barrier)
   - [thread local variable](#thread-local-variable)
+  - [lock\_guard vs scoped\_lock vs unique\_lock](#lock_guard-vs-scoped_lock-vs-unique_lock)
+  - [custom mutex by atomic](#custom-mutex-by-atomic)
+  - [atomic shared\_ptr](#atomic-shared_ptr)
+  - [atomic\_ref](#atomic_ref)
+  - [parallel policy](#parallel-policy)
 
 ## Basic concepts
 
@@ -1137,3 +1142,369 @@ Best Practices and Considerations
 - Minimize Usage: Overuse of thread_local can lead to increased memory consumption, especially if many threads are created.
 - Frequent creation and destruction of threads with thread_local variables can impact performance due to repeated initialization and destruction.
 - Understand when to use `static` (shared across threads) versus `thread_local` (unique per thread) storage.
+
+## lock_guard vs scoped_lock vs unique_lock
+
+Best Practices:
+- Prefer `std::lock_guard` for simple, single-mutex scenarios.
+- Use `std::unique_lock` when you need advanced locking features.
+- Utilize `std::scoped_lock` when dealing with multiple mutexes to avoid deadlocks effortlessly.
+
+| Feature                | `std::lock_guard`                         | `std::unique_lock`                                   | `std::scoped_lock`                               |
+|------------------------|-------------------------------------------|-----------------------------------------------------|--------------------------------------------------|
+| **Mutexes Managed**    | Single mutex                              | Single mutex                                        | Multiple mutexes                                 |
+| **Flexibility**        | Minimal (lock on construction)            | High (defer, try, manual lock/unlock)               | Minimal (locks all provided mutexes at once)     |
+| **Movable/Copyable**   | Neither                                   | Movable but not copyable                            | Neither                                           |
+| **Locking Strategies** | Immediate lock                            | Immediate, deferred, try-lock, adopt-lock            | Simultaneous locking of multiple mutexes         |
+| **Use Cases**          | Simple scope-based locking                | Complex synchronization, condition variables        | Locking multiple mutexes safely and easily       |
+| **Overhead**           | Lowest                                     | Slightly higher due to added flexibility            | Comparable to `std::lock_guard` for multiple locks|
+
+```cpp
+// basic usage
+#include <cassert>
+#include <iostream>
+#include <mutex>
+#include <thread>
+
+auto counter = 0;  // Counter will be protected by counter_mutex
+auto counter_mutex = std::mutex{};
+
+void increment_counter1(int n) {
+    for (int i = 0; i < n; ++i) {
+        std::lock_guard<std::mutex> lock{counter_mutex};
+        ++counter;
+    }
+}
+void increment_counter2(int n) {
+    for (int i = 0; i < n; ++i) {
+        std::unique_lock<std::mutex> lock{counter_mutex};
+        ++counter;
+    }
+}
+
+void increment_counter3(int n) {
+    for (int i = 0; i < n; ++i) {
+        std::scoped_lock<std::mutex> lock{counter_mutex};
+        ++counter;
+    }
+}
+
+int main() {
+    constexpr auto n = int{10'000'000};
+    {
+        auto t1 = std::jthread{increment_counter1, n};
+        auto t2 = std::jthread{increment_counter1, n};
+    }
+    std::cout << counter << '\n';
+    assert(counter == (n * 2));
+
+    {
+        auto t1 = std::jthread{increment_counter2, n};
+        auto t2 = std::jthread{increment_counter2, n};
+    }
+    std::cout << counter << '\n';
+    assert(counter == (n * 4));
+
+    {
+        auto t1 = std::jthread{increment_counter3, n};
+        auto t2 = std::jthread{increment_counter3, n};
+    }
+    std::cout << counter << '\n';
+    assert(counter == (n * 6));
+}
+```
+
+example: multiple mutex
+
+```cpp
+struct Account {
+    Account() {}
+    int balance_{0};
+    std::mutex m_{};
+};
+
+// by unique_lock
+void transfer_money(Account& from, Account& to, int amount) {
+    auto lock1 = std::unique_lock<std::mutex>{from.m_, std::defer_lock};
+    auto lock2 = std::unique_lock<std::mutex>{to.m_, std::defer_lock};
+    // Lock both unique_locks at the same time
+    std::lock(lock1, lock2);
+    from.balance_ -= amount;
+    to.balance_ += amount;
+}
+
+// recomended, by scoped_lock
+void transfer_money2(Account& from, Account& to, int amount) {
+    // Lock both mutexes simultaneously using std::scoped_lock
+    std::scoped_lock lock(from.m_, to.m_);
+
+    // Perform the transfer
+    from.balance_ -= amount;
+    to.balance_ += amount;
+}
+```
+
+## custom mutex by atomic
+
+How It Works:
+1. Lock Acquisition (`lock` method): 
+   1. A thread calling `lock()` will attempt to set the `is_locked_` flag.
+   2. If the flag was previously `false` (unlocked), `test_and_set()` sets it to `true` and the thread acquires the lock. the `lock()` method will return immediately.
+   3. If the flag was already `true` (locked by another thread), the thread enters a busy-wait loop, repeatedly checking the flag until it becomes false.
+   4. Once the flag is cleared, the thread tries to set it again to acquire the lock.
+2. Lock Release (`unlock` method): 
+   1. The thread holding the lock calls `unlock()`, which clears the `is_locked_` flag.
+   2. Clearing the flag signals other waiting threads that the lock is now available.
+
+[some ref](https://timur.audio/using-locks-in-real-time-audio-processing-safely)
+
+```cpp
+#include <atomic>
+#include <iostream>
+#include <thread>
+
+class SimpleMutex {
+    std::atomic_flag is_locked_{};  // Cleared by default
+   public:
+    auto lock() noexcept {
+        while (is_locked_.test_and_set(std::memory_order_acquire)) {  // Attempt to set the flag
+            while (is_locked_.test(std::memory_order_relaxed));       // Busy-wait (spin) until the flag is cleared
+        }
+    }
+
+    auto unlock() noexcept {
+        is_locked_.clear();  // Release the lock by clearing the flag
+    }
+};
+
+SimpleMutex mutex;
+int shared_resource = 0;
+
+void increment() {
+    for (int i = 0; i < 1000000; ++i) {
+        mutex.lock();
+        ++shared_resource;
+        mutex.unlock();
+    }
+}
+
+int main() {
+    std::thread t1(increment);
+    std::thread t2(increment);
+
+    t1.join();
+    t2.join();
+
+    std::cout << "Final value: " << shared_resource << std::endl;
+}
+```
+
+## atomic shared_ptr
+
+`std::atomic<std::shared_ptr<T>>` is introduced in C++20. 
+> The `std::atomic<std::shared_ptr<T>>` ensures that operations on the shared_ptr **itself** (like *loading* and *storing* pointers) are atomic. 
+
+```cpp
+#include <atomic>
+#include <memory>
+#include <print>
+#include <thread>
+
+struct MyData {
+    int value;
+    MyData(int v) : value(v) {}
+};
+
+int main() {
+    std::atomic<std::shared_ptr<MyData>> atomicPtr{std::make_shared<MyData>(42)};
+    std::println("ptr is lock-free: {}", atomicPtr.is_lock_free());  // false
+
+    // Thread 1 - reads the value
+    std::jthread reader([&atomicPtr] {
+        while (true) {
+            std::shared_ptr<MyData> localPtr = atomicPtr.load(std::memory_order_acquire);
+            if (localPtr) {
+                std::println("reader read {}", localPtr->value);
+            } else {
+                std::println("reader read nullptr");
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
+    });
+
+    // Thread 2 - updates the value
+    std::jthread writer([&atomicPtr] {
+        for (int i = 0; i < 10; ++i) {
+            auto newPtr = std::make_shared<MyData>(i);
+            atomicPtr.store(newPtr, std::memory_order_release);
+            // auto oldPtr = atomicPtr.exchange(std::make_shared<MyData>(i), std::memory_order_release);
+
+            std::println("writer write {}", newPtr->value);
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        }
+    });
+}
+```
+
+The `is_lock_free()` method returning `false` indicates that the atomic operations on `atomicPtr` are implemented using locks internally rather than being lock-free. Despite not being lock-free, these atomic operations still provide the necessary synchronization to prevent data races on the pointer itself.
+
+While the atomicity of `std::atomic<std::shared_ptr<T>>` ensures that the pointer itself is managed safely, it doesn't protect the *pointed-to object* from concurrent access.
+
+protect the `pointed-to object` by atomic
+
+```cpp
+#include <atomic>
+#include <chrono>
+#include <memory>
+#include <print>
+#include <thread>
+
+struct MyData {
+    std::atomic<int> value;  // Make the member atomic
+    MyData(int v) : value(v) {}
+};
+
+int main() {
+    // Initialize atomicPtr with a shared_ptr to MyData
+    std::atomic<std::shared_ptr<MyData>> atomicPtr{std::make_shared<MyData>(42)};
+    std::println("ptr is lock-free: {}", atomicPtr.is_lock_free());  // false
+
+    // Thread 1 - reads the value
+    std::jthread reader([&atomicPtr] {
+        while (true) {
+            std::shared_ptr<MyData> localPtr = atomicPtr.load(std::memory_order_acquire);
+            if (localPtr) {
+                int currentValue = localPtr->value.load(std::memory_order_acquire);
+                std::println("reader read {}", currentValue);
+            } else {
+                std::println("reader read nullptr");
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
+    });
+
+    // Thread 2 - updates the value
+    std::jthread writer([&atomicPtr] {
+        for (int i = 0; i < 10; ++i) {
+            std::shared_ptr<MyData> localPtr = atomicPtr.load(std::memory_order_acquire);
+            if (localPtr) {
+                localPtr->value.store(i + 1, std::memory_order_release);
+                std::println("writer modified value to {}", i + 1);
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        }
+    });
+}
+```
+
+## atomic_ref
+
+It's not possible to write `std::atomic<T&>`, but we can use `std::atomic_ref<T>` since C++20
+> perform atomic operations on existing non-atomic objects without changing its original type to an atomic type by by creating an atomic reference to them. 
+
+```cpp
+#include <atomic>
+#include <iostream>
+#include <thread>
+#include <vector>
+
+struct ExpensiveToCopy {
+    int counter{};
+};
+
+void count(ExpensiveToCopy& exp) {
+    std::vector<std::thread> v;
+    std::atomic_ref<int> counter{exp.counter};
+
+    for (int n = 0; n < 10; ++n) {
+        v.emplace_back([&counter] {
+            for (int i = 0; i < 1000; ++i) {
+                ++counter;
+            }
+        });
+    }
+
+    for (auto& t : v) t.join();
+}
+
+int main() {
+    ExpensiveToCopy exp;
+    count(exp);
+    std::cout << "exp.counter: " << exp.counter << '\n';
+}
+```
+
+why not define atomic in the struct?
+- Each access to the counter is synchronized, and synchronization is not for free. On the contrary, using a `std::atomic_ref<int>` counter lets you explicitly control when you need atomic access to the counter. Most of the time, you may only want to read the value of the counter. Consequently, defining it as an atomic is pessimization.
+- not modify the existing struct
+
+```cpp
+struct ExpensiveToCopy {
+    std::atomic<int> counter{};
+};
+```
+
+## parallel policy
+
+`std::accumulate` vs `std::reduce`
+> when the provided algorithm is commutative, `std::reduce` is preferred.
+
+```cpp
+#include <execution>
+#include <functional>
+#include <numeric>
+#include <print>
+#include <vector>
+
+int main(int argc, char const *argv[]) {
+    std::vector<int> v{1, 2, 3, 4}; // sum & product is commutative
+    {
+        // std::accumulate cannot be parallelized
+        auto sum = std::accumulate(v.begin(), v.end(), 0, std::plus<int>{});
+        std::println("sum={}", sum);
+        auto product = std::accumulate(v.begin(), v.end(), 1, std::multiplies<int>{});
+        std::println("product={}", product);
+    }
+    {
+        // std::reduce can be parallelized, but the order of vector not matter
+        auto sum = std::reduce(std::execution::par, v.begin(), v.end(), 0, std::plus<int>{});
+        std::println("sum={}", sum);
+        auto product = std::reduce(std::execution::par, v.begin(), v.end(), 1, std::multiplies<int>{});
+        std::println("product={}", product);
+    }
+
+    std::vector<std::string> v2{"A", "B", "C", "D"}; // string concat is not commutative
+    {
+        // std::accumulate cannot be parallelized
+        auto concat = std::accumulate(v2.begin(), v2.end(), std::string{}, std::plus<std::string>{});
+        std::println("concat={}", concat); // ABCD
+    }
+    {
+        // std::reduce can be parallelized, but the order of vector not matter
+        auto concat = std::reduce(std::execution::par, v2.begin(), v2.end(), std::string{}, std::plus<std::string>{});
+        std::println("concat={}", concat); // maybe ABCD, ACDB, ....
+    }
+}
+```
+
+there is the same problem in `std::for_each` like `std::accumulate`
+> By only accessing vector elements via the unique index i, we avoid introducing data races when mutating the strings in the vector, so we can use `std::execution::par`
+
+```cpp
+#include <execution>
+#include <print>
+#include <ranges>
+#include <vector>
+
+int main(int argc, char const *argv[]) {
+    auto v = std::vector<std::string>{"A", "B", "C"};
+    auto r = std::views::iota(size_t{0}, v.size());
+    std::for_each(std::execution::par, r.begin(), r.end(), [&v](size_t i) {
+        v[i] += std::to_string(i + 1);
+    });
+
+    for (auto &&e : v) {
+        std::println("{}", e);
+    }
+}
+```
