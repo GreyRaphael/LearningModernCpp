@@ -285,6 +285,8 @@ Use std::shared_mutex when:
 - **Performance Optimization**: You want to improve performance by allowing concurrent reads while still ensuring exclusive writes.
 
 [cppreference example](examples/ch09-shared-mutex.cc)
+- If one thread has acquired the *exclusive lock*, no other threads can acquire the lock (including the shared).
+- If one thread has acquired the *shared lock*, no other thread can acquire the *exclusive lock*, but can acquire the *shared lock*.
 
 practical example
 
