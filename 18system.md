@@ -8,6 +8,7 @@
     - [`memory_order_seq_cst`](#memory_order_seq_cst)
   - [Gracefully shutdown](#gracefully-shutdown)
   - [polymorphic memory allocators](#polymorphic-memory-allocators)
+  - [endian](#endian)
 
 ## shared library and static library
 
@@ -670,4 +671,97 @@ i=7, addr=0x10109728 # 0~7 from stack to heap
 i=8, addr=0x10109730
 i=9, addr=0x10109738 # 8~9 remain on heap
 do_deallocate: 256 bytes
+```
+
+## endian
+
+Most modern systems use *little endian*, but *big endian* is still used in some specialized environments and network protocols
+
+Little Endian Platforms:
+- Intel x86/x86-64 (Windows, Linux, macOS on Intel processors)
+- ARM (ARM64, ARMel, ARMhf)
+- PowerPC (ppc64le, ppc64el)
+
+Big Endian Platforms:
+- PowerPC (ppc64)
+- SPARC
+- MIPS
+- Some older architectures and network protocols
+
+conversion by `std::byteswap`
+
+```cpp
+#include <fmt/format.h>
+#include <fmt/ranges.h>
+
+#include <cstdint>
+#include <cstring>
+#include <vector>
+
+struct MyStruct {
+    uint32_t field1;
+    uint16_t field2;
+    uint8_t field3;
+    char field4[8];
+};
+
+MyStruct toBigEndian(const MyStruct& input) {
+    MyStruct output;
+    output.field1 = std::byteswap(input.field1);
+    output.field2 = std::byteswap(input.field2);
+    output.field3 = input.field3;  // Since uint8_t is single byte, no need to swap
+    memcpy(output.field4, input.field4, 8);
+
+    return output;
+}
+
+template <typename T>
+std::vector<uint8_t> toBytes(const T& data) {
+    std::vector<uint8_t> bytes(sizeof(T));
+    std::memcpy(bytes.data(), &data, sizeof(T));
+    return bytes;
+}
+
+int main() {
+    MyStruct myStruct01 = {11, 12, 13, {'a', 'b'}};
+    auto myStruct02 = toBigEndian(myStruct01);
+
+    auto bytes01 = toBytes(myStruct01);
+    auto bytes02 = toBytes(myStruct02);
+
+    // Print bytes using fmt
+    fmt::print("Bytes: {:02X}\n", fmt::join(bytes01, " "));
+    fmt::print("Bytes: {:02X}\n", fmt::join(bytes02, " "));
+}
+```
+
+conversion by `boost::endian`
+
+```cpp
+#include <boost/endian/conversion.hpp>
+#include <cstring>
+
+struct MyData {
+    int id;
+    double value;
+    char msg[16];
+};
+
+MyData toBigEndian(const MyData& input) {
+    MyData output;
+
+    output.id = boost::endian::native_to_big(input.id);
+    boost::endian::native_to_big_inplace(reinterpret_cast<uint64_t&>(output.value));
+
+    std::memcpy(output.msg, input.msg, sizeof(input.msg));
+
+    return output;
+}
+
+int main() {
+    MyData data = {123, 456.789, "Hello, World!"};
+    MyData bigEndianData = toBigEndian(data);
+
+    fmt::print("ID: {0}, Value: {1}, Message: {2}\n", bigEndianData.id, bigEndianData.value, bigEndianData.msg);
+}
 ```
