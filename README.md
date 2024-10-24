@@ -33,6 +33,7 @@
   - [linux library usage](#linux-library-usage)
   - [windows library usage](#windows-library-usage)
 - [build clangd from source](#build-clangd-from-source)
+- [use git submodule](#use-git-submodule)
 
 ## Development Environment in WSL
 
@@ -1211,4 +1212,29 @@ make install
 
 vi .bashrc
 export PATH=$HOME/tools/bin:$PATH
+```
+
+## use git submodule
+
+```bash
+mkdir proj && cd proj
+git init # add .git directory
+
+git submodule add https://github.com/MengRao/fmtlog
+git submodule update --init --recursive
+# use vscode panel to change version to wanted
+
+# add CMakeLists.txt
+```
+
+```cmake
+cmake_minimum_required(VERSION 3.20)
+project(proj1 VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+add_executable(proj1 main.cpp)
+
+add_subdirectory(fmtlog)
+target_link_libraries(proj1 PRIVATE fmtlog-shared)
+target_link_libraries(proj1 PRIVATE fmt::fmt)
 ```
