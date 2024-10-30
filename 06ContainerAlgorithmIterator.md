@@ -15,6 +15,7 @@
     - [polymorphism by `std::variant` with concept](#polymorphism-by-stdvariant-with-concept)
   - [`std::tuple`](#stdtuple)
   - [flexible array](#flexible-array)
+  - [reserve vs resize](#reserve-vs-resize)
 
 C++ Standard Library core initially sat three main pillars: **containers**, **algorithms**,
 and **iterators**
@@ -1498,5 +1499,31 @@ int main(int argc, char const* argv[]) {
         obj->a[i] = i * 100;
     }
     std::println("{}", obj->a[9]);
+}
+```
+
+## reserve vs resize
+
+- `reserve` won't change size. use `reserse` and `push_back` or `emplace_back`
+- `resize` will change size
+
+```cpp
+#include <fmt/core.h>
+
+#include <optional>
+#include <vector>
+
+int main(int argc, char const *argv[]) {
+    std::optional<double> value{100};
+
+    fmt::println("{}", sizeof(value));        // 16 bytes, bool + 7 padding + double
+    std::vector<uint8_t> vec(sizeof(value));  // mustn't use .reserve, will change vec size; can use resize
+
+    memcpy(vec.data(), &value, sizeof(value));
+    fmt::println("{}", vec.size());
+
+    for (auto &&c : vec) {
+        fmt::println("{}", c);
+    }
 }
 ```
