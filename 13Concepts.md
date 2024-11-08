@@ -3,6 +3,7 @@
 - [C++20 Concepts](#c20-concepts)
   - [Simple constraint by Concepts](#simple-constraint-by-concepts)
   - [Concepts `requires` expr](#concepts-requires-expr)
+  - [concepts for polymorphism](#concepts-for-polymorphism)
 
 > A concept is a named set of constraints and a constraint is a requirement for a template argument. 
 
@@ -298,3 +299,273 @@ int main() {
 }
 ```
 
+## concepts for polymorphism
+
+simple example
+
+```cpp
+#include <fmt/core.h>
+#include <fmt/format.h>
+#include <concepts>
+
+// Define a concept for Drawable objects
+template <typename T>
+concept Drawable = requires(T t) {
+    { t.draw() } -> std::same_as<void>;
+};
+
+// Concrete implementation
+struct Circle {
+    void draw() const {
+        fmt::println("This is a circle!");
+    }
+};
+
+// Concrete implementation
+struct Rectangle {
+    void draw() const {
+        fmt::println("This is a Rectangle!");
+    }
+};
+
+// Corrected display function using concept-constrained parameter
+void display(Drawable auto const& obj) {  // Note the placement of 'Drawable' before 'auto'
+    obj.draw();
+}
+
+int main() {
+    Circle c;
+    display(c);
+    Rectangle r;
+    display(r);
+}
+```
+
+advanced example
+
+```cpp
+#include <fmt/core.h>
+#include <fmt/format.h>
+#include <concepts>
+#include <vector>
+
+// Define a concept for Drawable objects
+template <typename T>
+concept Drawable = requires(T t) {
+    { t.draw() } -> std::same_as<void>;
+};
+
+// ShapeContainer using type erasure with concepts
+class ShapeContainer {
+   public:
+    template <Drawable T>
+    void addShape(T shape) {
+        shapes.emplace_back(std::make_unique<Model<T>>(std::move(shape)));
+    }
+
+    void renderAll() const {
+        for (const auto& shape : shapes) {
+            shape->draw();
+        }
+    }
+
+   private:
+    struct Concept {
+        virtual void draw() const = 0;
+        virtual ~Concept() = default;
+    };
+
+    template <Drawable T>
+    struct Model : Concept {
+        Model(T shape) : shape_(std::move(shape)) {}
+        void draw() const override { shape_.draw(); }
+        T shape_;
+    };
+
+    std::vector<std::unique_ptr<Concept>> shapes;
+};
+
+// Concrete implementation
+struct Circle {
+    void draw() const {
+        fmt::println("This is a circle!");
+    }
+};
+
+// Concrete implementation
+struct Rectangle {
+    void draw() const {
+        fmt::println("This is a Rectangle!");
+    }
+};
+
+int main() {
+    ShapeContainer container;
+    container.addShape(Circle{});
+    container.addShape(Rectangle{});
+    container.renderAll();
+}
+```
+
+advanced example like proxy
+
+```cpp
+#include <fmt/core.h>
+
+#include <concepts>
+#include <memory>
+#include <vector>
+
+// Define a concept for Drawable objects
+template <typename T>
+concept Drawable = requires(T t) {
+    { t.draw() } -> std::same_as<void>;
+};
+
+// Proxy class for Drawable objects
+class ShapeProxy {
+   public:
+    // Constructor accepts any Drawable type
+    template <Drawable T>
+    ShapeProxy(T obj) : impl_(std::make_unique<Model<T>>(std::move(obj))) {}
+
+    // Copy constructor
+    ShapeProxy(const ShapeProxy& other) : impl_(other.impl_->clone()) {}
+
+    // Move constructor
+    ShapeProxy(ShapeProxy&&) noexcept = default;
+
+    // Copy assignment
+    ShapeProxy& operator=(const ShapeProxy& other) {
+        if (this != &other) {
+            impl_ = other.impl_->clone();
+        }
+        return *this;
+    }
+
+    // Move assignment
+    ShapeProxy& operator=(ShapeProxy&&) noexcept = default;
+
+    // Interface method
+    void draw() const {
+        impl_->draw();
+    }
+
+   private:
+    // Abstract base class for type erasure
+    struct Concept {
+        virtual ~Concept() = default;
+        virtual void draw() const = 0;
+        virtual std::unique_ptr<Concept> clone() const = 0;
+    };
+
+    // Template derived class to hold concrete objects
+    template <typename T>
+    struct Model : Concept {
+        Model(T obj) : data_(std::move(obj)) {}
+        void draw() const override {
+            data_.draw();
+        }
+        std::unique_ptr<Concept> clone() const override {
+            return std::make_unique<Model<T>>(*this);
+        }
+        T data_;
+    };
+
+    // Pointer to the abstract base class
+    std::unique_ptr<Concept> impl_;
+};
+
+// Concrete implementation
+struct Circle {
+    void draw() const {
+        fmt::println("This is a circle!");
+    }
+};
+
+// Concrete implementation
+struct Rectangle {
+    void draw() const {
+        fmt::println("This is a Rectangle!");
+    }
+};
+
+int main() {
+    std::vector<ShapeProxy> shapes;
+    // invoke move
+    shapes.emplace_back(Circle{});
+    shapes.emplace_back(Rectangle{});
+
+    // Draw all shapes
+    for (const auto& shape : shapes) {
+        shape.draw();
+    }
+
+    // Demonstrate copy and assignment
+    ShapeProxy shape1 = Circle();
+    ShapeProxy shape2 = Rectangle();
+
+    shape1.draw();  // Output: Drawing a Circle
+    shape2.draw();  // Output: Drawing a Square
+
+    // Copy shape1 to shape3
+    ShapeProxy shape3 = shape1;
+    shape3.draw();  // Output: Drawing a Circle
+
+    // Assign shape2 to shape1
+    shape1 = shape2;
+    shape1.draw();  // Output: Drawing a Square
+}
+```
+
+polymorphism with microsoft [proxy](https://github.com/microsoft/proxy)
+
+```cpp
+#include <fmt/core.h>
+#include <proxy/proxy.h>
+#include <vector>
+
+PRO_DEF_MEM_DISPATCH(MemDraw, Draw);
+PRO_DEF_MEM_DISPATCH(MemArea, Area);
+
+struct Drawable : pro::facade_builder 
+::add_convention<MemDraw, void()>
+::add_convention<MemArea, double() noexcept>
+::support_copy<pro::constraint_level::nontrivial>::build {};
+
+struct Rectangle {
+    Rectangle(double width, double height) : width_(width), height_(height) {}
+
+    void Draw() const {
+        fmt::println("Rectangle with width: {}, height: {}", width_, height_);
+    }
+    double Area() const noexcept { return width_ * height_; }
+
+    double width_;
+    double height_;
+};
+
+struct Circle {
+    Circle(double radius) : radius_(radius) {}
+    void Draw() const {
+        fmt::println("Rectangle with radius: {}", radius_);
+    }
+
+    double Area() const noexcept { return 3.14 * radius_ * radius_; }
+
+    double radius_;
+};
+
+int main() {
+    std::vector<pro::proxy<Drawable>> shapes;
+    auto p1 = pro::make_proxy<Drawable, Rectangle>(3, 5);
+    shapes.emplace_back(p1);
+    auto p2 = pro::make_proxy<Drawable, Circle>(10);
+    shapes.emplace_back(p2);
+
+    for (auto &&shape : shapes) {
+        shape->Draw();
+        fmt::println("area={}", shape->Area());
+    }
+}
+```
