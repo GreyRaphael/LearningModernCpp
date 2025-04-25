@@ -508,6 +508,30 @@ cmake -S . -B build \
 vcpkg install pybind11 --overlay-ports=${PWD}/overlays
 ```
 
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.20.0)
+
+# must come *before* project()
+set(CMAKE_TOOLCHAIN_FILE
+    "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+    CACHE STRING
+    "Vcpkg toolchain file")
+set(VCPKG_OVERLAY_PORTS ${CMAKE_SOURCE_DIR}/overlays CACHE STRING "Vcpkg skipped ports")
+
+project(proj1 VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 23)
+add_executable(proj1 main.cpp)
+target_include_directories(proj1 PRIVATE ctp)
+
+find_package(boost_dll CONFIG REQUIRED)
+target_link_libraries(proj1 PRIVATE Boost::dll)
+
+find_package(Python COMPONENTS Interpreter Development)
+find_package(pybind11 CONFIG)
+```
+
 ## by cython
 
 ```bash

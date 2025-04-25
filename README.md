@@ -1075,6 +1075,14 @@ sha512sum apache-thrift-0.20.0.tar.gz
 
 ## cmake
 
+```bash
+# 1. add CMakeLists.txt file
+# 2. cmake config
+cmake -S . -B build     # reads your manifest and toolchain
+# 3. build
+cmake --build build
+```
+
 ### use pthread in cmake
 
 ```cmake
