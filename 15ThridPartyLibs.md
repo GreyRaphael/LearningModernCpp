@@ -7,6 +7,7 @@
     - [pybind11 wheels with external libs](#pybind11-wheels-with-external-libs)
       - [preprepared libs](#preprepared-libs)
       - [use preprepared libs in pybind11 project](#use-preprepared-libs-in-pybind11-project)
+    - [pybind11 in vcpkg](#pybind11-in-vcpkg)
   - [by cython](#by-cython)
     - [cpp\_lib project](#cpp_lib-project)
     - [cython\_proj](#cython_proj)
@@ -467,6 +468,44 @@ setup(
 │   ├── libxxx.a
 │   └── xxx.h
 └── wrapped_source.cpp
+```
+
+### pybind11 in vcpkg
+
+skip python3 dependencies from vcpkg for pybind11, but use system python3
+
+```bash
+myproject/
+├─ overlays/
+│  └─ python3/
+│     ├ vcpkg.json
+│     └ portfile.cmake
+└─ CMakeLists.txt
+```
+
+```json
+// vcpkg.json
+{
+  "name": "python3",
+  "version": "3.0.0",
+  "port-version": 0
+}
+```
+
+```cmake
+# portfile.cmake
+# Tell vcpkg this is an “empty package”—nothing to build or install
+set(VCPKG_POLICY_EMPTY_PACKAGE enabled)
+```
+
+```bash
+# If you’re driving everything through CMake:
+cmake -S . -B build \
+  -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake \
+  -DVCPKG_OVERLAY_PORTS=${PWD}/overlays
+
+# Or if you’re manually invoking vcpkg:
+vcpkg install pybind11 --overlay-ports=${PWD}/overlays
 ```
 
 ## by cython
