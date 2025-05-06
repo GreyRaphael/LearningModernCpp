@@ -41,6 +41,8 @@
     - [zstd](#zstd)
   - [testing](#testing)
     - [gtest](#gtest)
+  - [yalantinglibs](#yalantinglibs)
+    - [websocket server \& client](#websocket-server--client)
 
 
 ## Code Organized by CMake
@@ -2469,5 +2471,182 @@ add_test(NAME OpsTest COMMAND ops_test)
 
 TEST(OpsTest, CheckFunction) {
     EXPECT_EQ(myadd(10, 20), 30);
+}
+```
+
+## yalantinglibs
+
+`vcpkg install yalantinglibs`
+
+### websocket server & client
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.24.0)
+project(proj1 VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+# set(YLT_ENABLE_PMR ON)
+# set(YLT_ENABLE_IO_URING ON)
+# set(YLT_ENABLE_FILE_IO_URING ON)
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-tree-slp-vectorize")
+
+add_executable(client client.cpp)
+add_executable(server server.cpp)
+
+include(FetchContent)
+FetchContent_Declare(
+    yalantinglibs
+    GIT_REPOSITORY https://github.com/alibaba/yalantinglibs.git
+    GIT_TAG main
+    GIT_SHALLOW 1
+)
+FetchContent_MakeAvailable(yalantinglibs)
+
+target_include_directories(client PRIVATE ${yalantinglibs_SOURCE_DIR}/include/ylt/thirdparty)
+target_include_directories(client PRIVATE ${yalantinglibs_SOURCE_DIR}/include/ylt/standalone)
+target_link_libraries(client PRIVATE yalantinglibs)
+
+target_include_directories(server PRIVATE ${yalantinglibs_SOURCE_DIR}/include/ylt/thirdparty)
+target_include_directories(server PRIVATE ${yalantinglibs_SOURCE_DIR}/include/ylt/standalone)
+target_link_libraries(server PRIVATE yalantinglibs)
+```
+
+```cpp
+// server.cpp
+#include <format>
+#include <iostream>
+#include <string>
+#include <ylt/coro_http/coro_http_server.hpp>
+
+using namespace coro_http;
+
+async_simple::coro::Lazy<void> handle_websocket(coro_http_request &req, coro_http_response &resp) {
+    assert(req.get_content_type() == content_type::websocket);
+    websocket_result result{};
+
+    while (true) {
+        result = co_await req.get_conn()->read_websocket();
+        if (result.ec) {
+            break;
+        }
+
+        if (result.type == ws_frame_type::WS_CLOSE_FRAME) {
+            std::cout << "close frame\n";
+            break;
+        }
+
+        if (result.type == ws_frame_type::WS_TEXT_FRAME || result.type == ws_frame_type::WS_BINARY_FRAME) {
+            // std::cout << result.data << "\n";
+        } else if (result.type == ws_frame_type::WS_PING_FRAME || result.type == ws_frame_type::WS_PONG_FRAME) {
+            continue;
+        } else {
+            break;
+        }
+
+        auto ec = co_await req.get_conn()->write_websocket(result.data);
+        if (ec) {
+            break;
+        }
+    }
+}
+
+int main(int argc, const char *argv[]) {
+    if (argc != 3) {
+        printf("usage: %s ADDRESS THREAD_NUMS\n", argv[0]);
+        return 1;
+    }
+    auto thread_num = std::stol(argv[2]);
+    coro_http_server server(/*thread_num*/ thread_num, /*address*/ argv[1], /*cpu_affinity*/ true);
+    server.set_http_handler<GET>("/ws_echo", handle_websocket);
+    auto r = server.sync_start();
+    std::cout << std::format("start server error, msg={}\n", r.message());
+}
+```
+
+```cpp
+// client.cpp
+#include <chrono>
+#include <cstdio>
+#include <format>
+#include <span>
+#include <ylt/coro_http/coro_http_client.hpp>
+#include <ylt/easylog.hpp>
+
+using namespace coro_http;
+
+async_simple::coro::Lazy<void> send_loop(coro_http_client& client, int N) {
+    for (auto i = 0; i < N; ++i) {
+        auto start = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+        // ELOGFMT(WARN, "send {}", start);
+        auto view = std::span<char>(reinterpret_cast<char*>(&start), sizeof(long));
+        co_await client.write_websocket(view, opcode::binary);
+        // sleep enough time to yield to other coroutines
+        co_await async_simple::coro::sleep(std::chrono::microseconds(10));
+    }
+}
+
+async_simple::coro::Lazy<void> recv_loop(coro_http_client& client, int N) {
+    long total = 0;
+    for (auto i = 0; i < N; ++i) {
+        auto resp = co_await client.read_websocket();
+        auto result = reinterpret_cast<long const*>(resp.resp_body.data());
+        auto end = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+        // ELOGFMT(WARN, "recv {} at {}, diff={}", *result, end, end - *result);
+        total += end - *result;
+    }
+    ELOGFMT(WARN, "round={}, avg latency={}", N, total / N);
+}
+
+async_simple::coro::Lazy<void> connect(coro_http_client& client, const char* address) {
+    auto r = co_await client.connect(std::format("ws://{}/ws_echo", address));
+    if (r.net_err) {
+        ELOGFMT(ERROR, "net error {}", r.net_err.message());
+        co_return;
+    }
+}
+
+async_simple::coro::Lazy<void> rw_websocket(coro_http_client& client, int N) {
+    long total = 0;
+    for (auto i = 0; i < N; ++i) {
+        auto start = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+        ELOGFMT(INFO, "sending--->{}", start);
+        auto view = std::span<char>(reinterpret_cast<char*>(&start), sizeof(long));
+        co_await client.write_websocket(view, opcode::binary);
+
+        auto resp = co_await client.read_websocket();
+        auto end = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+        auto result = reinterpret_cast<long const*>(resp.resp_body.data());
+        total += end - *result;
+        ELOGFMT(INFO, "receive===>{}", *result);
+    }
+    ELOGFMT(WARN, "round={}, avg latency={}", N, total / N);
+}
+
+int main(int argc, const char* argv[]) {
+    if (argc != 3) {
+        printf("usage: %s ADDRESS ROUNDS\n", argv[0]);
+        return 1;
+    }
+    auto rounds = atoi(argv[2]);
+
+    coro_http_client client;
+    async_simple::coro::syncAwait(connect(client, argv[1]));
+
+    // {
+    //     // send receive in the same function
+    //     // benchmark in beelink: round=1000000, avg latency=30991 ns
+    //     async_simple::coro::syncAwait(rw_websocket(client, rounds));
+    // }
+
+    {
+        // send receive in the different functions
+        // benchmark in beelink: round=1000000, avg latency=66632 ns
+        auto exec = coro_io::get_global_executor();
+        send_loop(client, rounds).via(exec).start([](auto&&) {});
+        recv_loop(client, rounds).via(exec).start([](auto&&) {});
+    }
+
+    getchar();
 }
 ```
