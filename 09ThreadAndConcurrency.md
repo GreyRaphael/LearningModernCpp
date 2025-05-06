@@ -21,6 +21,7 @@
   - [lock\_guard vs scoped\_lock vs unique\_lock](#lock_guard-vs-scoped_lock-vs-unique_lock)
   - [custom mutex by atomic](#custom-mutex-by-atomic)
   - [atomic shared\_ptr](#atomic-shared_ptr)
+  - [multithread with shared\_ptr](#multithread-with-shared_ptr)
   - [atomic\_ref](#atomic_ref)
   - [parallel policy](#parallel-policy)
 
@@ -1396,6 +1397,43 @@ int main() {
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
     });
+}
+```
+
+## multithread with shared_ptr
+
+- shared_ptr should be captured by value
+- shared_ptr caputred by reference if risky
+
+```cpp
+#include <memory>
+#include <print>
+#include <thread>
+
+#include "spsc.hpp"
+
+int main(int argc, char const *argv[]) {
+    auto ptr = std::make_shared<lockfree::SPSC<int, 16>>();
+
+    std::jthread producer{[ptr] {
+        for (auto i = 0; i < 10; ++i) {
+            while (!ptr->push(i)) {
+                std::println("full, cannot push");
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    }};
+
+    std::jthread consumer{[ptr] {
+        while (true) {
+            std::optional<int> value;
+            while (!(value = ptr->pop())) {
+                std::println("empty, cannot pop");
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            }
+            std::println("consumer got {}", value.value());
+        }
+    }};
 }
 ```
 
