@@ -2743,3 +2743,40 @@ int main(int, char **) {
     }
 }
 ```
+
+how to add struct_pack
+1. download and extract [struct_pack & struct_pack.hpp](https://github.com/alibaba/yalantinglibs/releases/tag/lts1.1.1)
+2. copy it to `third_party/iguana/ylt/`
+3. add `target_include_directories(proj1 PRIVATE ${CMAKE_SOURCE_DIR}/third_party/iguana)`
+
+```cpp
+#include <print>
+#include <string>
+#include <unordered_map>
+#include <ylt/struct_pack.hpp>
+
+using FeatureMap = std::unordered_map<std::string, double>;
+// // you can also use the following map
+// using FeatureMap = phmap::flat_hash_map<std::string, double>;
+
+struct Student {
+    int id;
+    std::string name;
+};
+
+int main(int, char **) {
+    FeatureMap map{
+        {"feature1", 101.1},
+        {"feature2", 201.1},
+        {"feature3", 301.1},
+    };
+
+    // serde binary
+    {
+        auto vec_u8 = struct_pack::serialize(map);
+        auto map_new = struct_pack::deserialize<FeatureMap>(vec_u8);
+        std::println("val={}", map_new->at("feature3"));
+    }
+}
+
+```
