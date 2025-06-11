@@ -43,6 +43,7 @@
     - [gtest](#gtest)
   - [yalantinglibs](#yalantinglibs)
     - [websocket server \& client](#websocket-server--client)
+  - [iguana serde and relection](#iguana-serde-and-relection)
 
 
 ## Code Organized by CMake
@@ -2648,5 +2649,97 @@ int main(int argc, const char* argv[]) {
     }
 
     getchar();
+}
+```
+
+## iguana serde and relection
+
+from/to json,xml,yaml,protobuf
+
+```bash
+.
+├── CMakeLists.txt
+├── main.cpp
+└── third_party
+    ├── frozen # download from https://github.com/qicosmos/iguana or `vcpkg add port fronzen`
+    └── iguana # download from https://github.com/qicosmos/iguana
+```
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.20)
+project(proj1 VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 23)
+add_executable(proj1 main.cpp)
+target_include_directories(proj1 PRIVATE ${CMAKE_SOURCE_DIR}/third_party)
+```
+
+```cpp
+// main.cpp
+#include <iguana/iguana.hpp>
+// #include <iguana/json_reader.hpp>
+// #include <iguana/json_writer.hpp>
+// #include <iguana/yaml_reader.hpp>
+// #include <iguana/yaml_writer.hpp>
+#include <print>
+#include <string>
+#include <unordered_map>
+
+using FeatureMap = std::unordered_map<std::string, double>;
+// // you can also use the following map
+// using FeatureMap = phmap::flat_hash_map<std::string, double>;
+
+struct Student {
+    int id;
+    std::string name;
+};
+
+template <typename T>
+inline void print_struct(T const *ptr) noexcept {
+    auto name = ylt::reflection::get_struct_name<T>();
+    std::print("========> {}, size={}\n\t", name, sizeof(T));
+    ylt::reflection::for_each(*ptr, [](auto &field, auto name, auto index) {
+        std::print("{}:{} | ", name, field);
+    });
+    std::println();
+}
+
+int main(int, char **) {
+    FeatureMap map{
+        {"feature1", 101.1},
+        {"feature2", 201.1},
+        {"feature3", 301.1},
+    };
+
+    // serde json
+    {
+        std::string ss_json;
+        iguana::to_json(map, ss_json);
+        std::println("reuslt is: {}", ss_json);
+
+        FeatureMap map_new{};
+        iguana::from_json(map_new, ss_json);
+        std::println("val={}", map_new.at("feature3"));
+    }
+
+    std::println("---------------------------");
+    // serde yaml
+    {
+        std::string ss_yaml;
+        iguana::to_yaml(map, ss_yaml);
+        std::println("reuslt is: {}", ss_yaml);
+
+        FeatureMap map_new{};
+        iguana::from_yaml(map_new, ss_yaml);
+        std::println("val={}", map_new.at("feature3"));
+    }
+
+    std::println("---------------------------");
+    // serde struct
+    {
+        Student stu{100, "Tom"};
+        print_struct(&stu);
+    }
 }
 ```
