@@ -20,6 +20,7 @@
     - [json deal with `NAN` \& `INFINITY`](#json-deal-with-nan--infinity)
   - [`zlib`](#zlib)
   - [`spdlog`](#spdlog)
+  - [`fmtlog`](#fmtlog)
   - [`fmt`](#fmt)
   - [`SQLite3`](#sqlite3)
   - [CLI11](#cli11)
@@ -1219,6 +1220,17 @@ int main(){
     SPDLOG_WARN("test warning");
     SPDLOG_ERROR("test error");
 }
+```
+
+## `fmtlog`
+
+> [fmtlog](https://github.com/MengRao/fmtlog)
+
+```bash
+# vcpkg install fmt
+# Just copy fmtlog.h and fmtlog-inl.h to your project
+# in fmtlog.h, #define FMT_HEADER_ONLY
+# in main.cpp, #include <fmtlog/fmtlog-inl.h>
 ```
 
 ## `fmt`
