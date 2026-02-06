@@ -2792,3 +2792,30 @@ int main(int, char **) {
 }
 
 ```
+
+vector to json/ json to vector
+
+```cpp
+struct person {
+    std::string name;
+    int age;
+};
+
+int main() {
+    std::vector<person> people{
+        person{"Tom", 3},
+        person{"Jerry", 4},
+    };
+    // vector to json
+    std::string ss;
+    iguana::to_json(people, ss);
+    std::println("{}", ss);
+    // json to vector
+    std::vector<person> people2;
+    iguana::from_json(people2, ss);
+    // iguana::from_json_file(people2, "config.json");
+    for (auto &&p : people2) {
+        std::println("{},{}", p.name, p.age);
+    }
+}
+```
