@@ -1224,13 +1224,41 @@ int main(){
 
 ## `fmtlog`
 
-> [fmtlog](https://github.com/MengRao/fmtlog)
+> [fmtlog](https://github.com/MengRao/fmtlog) most performant
 
 ```bash
-# vcpkg install fmt
+# simple header-only
+fmtlog
+│  fmtlog-inl.h
+│  fmtlog.h
+└─fmt
+    args.h
+    base.h
+    chrono.h
+    color.h
+    compile.h
+    core.h
+    format-inl.h
+    format.h
+    os.h
+    ostream.h
+    printf.h
+    ranges.h
+    std.h
+    xchar.h
+```
+
+```bash
 # Just copy fmtlog.h and fmtlog-inl.h to your project
 # in fmtlog.h, #define FMT_HEADER_ONLY
 # in main.cpp, #include <fmtlog/fmtlog-inl.h>
+```
+
+```cmake
+# in CMakeLists.txt for fmt lib
+if (MSVC)
+    add_compile_options(/utf-8)
+endif()
 ```
 
 ## `fmt`
