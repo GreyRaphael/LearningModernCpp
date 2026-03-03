@@ -2745,6 +2745,33 @@ inline void print_struct(T const *ptr) noexcept {
     std::println();
 }
 
+template <typename T>
+inline std::string struct2string(T const *ptr) noexcept {
+    if (!ptr) return "nullptr";
+
+    auto struct_name = ylt::reflection::get_struct_name<T>();
+    std::string result;
+
+    // 1. 预分配一些内存以提高性能（可选）
+    result.reserve(128);
+
+    // 2. 写入头部信息
+    std::format_to(std::back_inserter(result), "{}[size={}]", struct_name, sizeof(T));
+    result.push_back('(');
+
+    // 3. 遍历成员并追加到 string
+    ylt::reflection::for_each(*ptr, [&result](auto &field, auto field_name, auto index) {
+        // 使用 std::format_to 直接写入 result 的末尾
+        if (index > 0) {
+            result.append(", ");
+        }
+        std::format_to(std::back_inserter(result), "{}={}", field_name, field);
+    });
+    result.push_back(')');
+
+    return result;
+}
+
 int main(int, char **) {
     FeatureMap map{
         {"feature1", 101.1},
