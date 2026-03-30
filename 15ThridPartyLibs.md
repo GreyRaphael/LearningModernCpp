@@ -8,8 +8,9 @@
       - [preprepared libs](#preprepared-libs)
       - [use preprepared libs in pybind11 project](#use-preprepared-libs-in-pybind11-project)
     - [pybind11 in vcpkg](#pybind11-in-vcpkg)
+    - [pybind11 with uv](#pybind11-with-uv)
   - [nanobind](#nanobind)
-    - [python project with nanobind](#python-project-with-nanobind)
+    - [nanobind with uv](#nanobind-with-uv)
     - [cpp project with nanobind](#cpp-project-with-nanobind)
   - [by cython](#by-cython)
     - [cpp\_lib project](#cpp_lib-project)
@@ -539,38 +540,124 @@ find_package(Python COMPONENTS Interpreter Development)
 find_package(pybind11 CONFIG)
 ```
 
+### pybind11 with uv
+
+```bash
+pyproject.toml
+CMakeLists.txt
+main.cpp
+test.py
+```
+
+```toml
+# pyproject.toml
+[build-system]
+requires = ["scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "my_pymodule"
+version = "0.3.0"
+requires-python = ">=3.9"
+dependencies = [
+    "build>=1.4.2",
+    "pybind11>=3.0.2",
+    "scikit-build-core>=0.12.2",
+]
+
+[tool.scikit-build]
+# Setuptools-style build caching in a local directory
+build-dir = "build/{wheel_tag}"
+
+# for buld speed, can be ignored
+cmake.args = [
+    "-DCMAKE_C_COMPILER=clang",
+    "-DCMAKE_CXX_COMPILER=clang++",
+]
+```
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.15)
+project(${SKBUILD_PROJECT_NAME} LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+
+find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
+find_package(pybind11 CONFIG REQUIRED)
+
+# 创建扩展模块
+pybind11_add_module(${SKBUILD_PROJECT_NAME} main.cpp)
+
+# 安装规则（scikit-build-core 需要知道把编译好的文件放哪）
+install(TARGETS ${SKBUILD_PROJECT_NAME} DESTINATION .)
+```
+
+```cpp
+// main.cpp
+#include <pybind11/pybind11.h>
+
+int add(int i, int j) { return i + j; }
+int sub(int i, int j) { return i - j; }
+
+PYBIND11_MODULE(my_pymodule, m) {
+    m.doc() = "pybind11 example plugin";
+    m.def("add", [](int a, int b) { return a + b; }, "A function that adds two numbers");
+    m.def("sub", [](int a, int b) { return a - b -10; }, "A function that subs two numbers");
+    m.def("div", [](int a, int b) { return a / b; }, "A function that div two numbers");
+}
+```
+
+```bash
+uv add pybind11
+uv add build
+uv add scikit-build-core
+# install to project
+uv sync
+# generate whil
+uv build
+# test code
+uv run test.py
+# 修改代码重新安装
+uv pip install -e .
+```
+
+```py
+import my_pymodule
+
+print(my_pymodule.add(10, 20))
+```
+
+
 ## nanobind
 
 > nanobind与pybind11同一个作者, nanobind比pybind11更加轻量, 适合python abi library
 
 > nanobind only support python3.9+
 
-### python project with nanobind
+### nanobind with uv
 
 ```bash
 pyproject.toml
 CMakeLists.txt
 main.cpp
-```
-
-```bash
-# install nanobind with scikit-build
-pip install nanobind, scikit-build-core, build
-# run test
-pip install --no-build-isolation -e .
-# run build
-python -m build
+test.py
 ```
 
 ```toml
 [build-system]
-requires = ["scikit-build-core >= 0.10.0", "nanobind >= 2.0.0"]
+requires = ["scikit-build-core", "nanobind"]
 build-backend = "scikit_build_core.build"
 
 [project]
 name = "my_module"
 version = "0.2.0"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
+dependencies = [
+    "build>=1.4.2",
+    "nanobind>=2.12.0",
+    "scikit-build-core>=0.12.2",
+]
 
 [tool.scikit-build]
 # Setuptools-style build caching in a local directory
@@ -624,6 +711,28 @@ NB_MODULE(my_module, m) {
         return a / b;
     }, "A function that div two numbers");
 }
+```
+
+```bash
+uv add nanobind
+uv add build
+uv add scikit-build-core
+# install to project
+uv sync
+# generate whil
+uv build
+# test code
+uv run test.py
+# 修改代码重新安装
+uv pip install -e .
+```
+
+```py
+import my_module
+
+print(my_module.add(10, 20))
+print(my_module.sub(10, 20))
+print(my_module.div(100, 20))
 ```
 
 ### cpp project with nanobind
