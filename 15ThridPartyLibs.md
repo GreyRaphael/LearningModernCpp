@@ -543,6 +543,8 @@ find_package(pybind11 CONFIG)
 
 > nanobind与pybind11同一个作者, nanobind比pybind11更加轻量, 适合python abi library
 
+> nanobind only support python3.9+
+
 ### python project with nanobind
 
 ```bash
@@ -573,8 +575,8 @@ requires-python = ">=3.8"
 [tool.scikit-build]
 # Setuptools-style build caching in a local directory
 build-dir = "build/{wheel_tag}"
-# Build stable ABI wheels for CPython 3.8+
-wheel.py-api = "cp38"
+# Build stable ABI wheels for CPython 3.9+
+wheel.py-api = "cp39"
 
 # for buld speed, can be ignored
 cmake.args = [
