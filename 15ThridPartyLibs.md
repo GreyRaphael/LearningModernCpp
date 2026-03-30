@@ -8,6 +8,9 @@
       - [preprepared libs](#preprepared-libs)
       - [use preprepared libs in pybind11 project](#use-preprepared-libs-in-pybind11-project)
     - [pybind11 in vcpkg](#pybind11-in-vcpkg)
+  - [nanobind](#nanobind)
+    - [python project with nanobind](#python-project-with-nanobind)
+    - [cpp project with nanobind](#cpp-project-with-nanobind)
   - [by cython](#by-cython)
     - [cpp\_lib project](#cpp_lib-project)
     - [cython\_proj](#cython_proj)
@@ -534,6 +537,140 @@ target_link_libraries(proj1 PRIVATE Boost::dll)
 
 find_package(Python COMPONENTS Interpreter Development)
 find_package(pybind11 CONFIG)
+```
+
+## nanobind
+
+> nanobind与pybind11同一个作者, nanobind比pybind11更加轻量, 适合python abi library
+
+### python project with nanobind
+
+```bash
+pyproject.toml
+CMakeLists.txt
+main.cpp
+```
+
+```bash
+# install nanobind with scikit-build
+pip install nanobind, scikit-build-core
+# run build
+python -m build
+```
+
+```toml
+[build-system]
+requires = ["scikit-build-core >= 0.10.0", "nanobind >= 2.0.0"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "my_module"
+version = "0.2.0"
+requires-python = ">=3.8"
+
+[tool.scikit-build]
+# Setuptools-style build caching in a local directory
+build-dir = "build/{wheel_tag}"
+# Build stable ABI wheels for CPython 3.8+
+wheel.py-api = "cp38"
+
+# for buld speed, can be ignored
+cmake.args = [
+    "-DCMAKE_C_COMPILER=clang",
+    "-DCMAKE_CXX_COMPILER=clang++",
+]
+```
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.15...3.31)
+project(${SKBUILD_PROJECT_NAME} LANGUAGES CXX)
+
+find_package(Python REQUIRED COMPONENTS Interpreter Development.Module OPTIONAL_COMPONENTS Development.SABIModule)
+find_package(nanobind CONFIG REQUIRED)
+
+# 支持STABLE_ABI
+nanobind_add_module(${SKBUILD_PROJECT_NAME}
+    NB_STATIC STABLE_ABI LTO
+    main.cpp
+)
+
+# 不要使用默认的SUFFIX, cpython-312-x86_64-linux-gnu.so
+set_target_properties(${SKBUILD_PROJECT_NAME} 
+    PROPERTIES 
+    CXX_STANDARD 20
+    SUFFIX "${CMAKE_SHARED_MODULE_SUFFIX}"
+)
+# 打包*.so, *.pyd进入*.whl
+install(TARGETS ${SKBUILD_PROJECT_NAME} LIBRARY DESTINATION .)
+```
+
+```cpp
+#include <nanobind/nanobind.h>
+
+// 使用 NB_MODULE 定义模块
+NB_MODULE(my_module, m) {
+    m.def("add", [](int a, int b) {
+        return a + b;
+    }, "A function that adds two numbers");
+    m.def("sub", [](int a, int b) {
+        return a - b;
+    }, "A function that subs two numbers");
+    m.def("div", [](int a, int b) {
+        return a / b;
+    }, "A function that div two numbers");
+}
+```
+
+### cpp project with nanobind
+
+```bash
+CMakeLists.txt
+main.cpp
+```
+
+```bash
+# install nanobind with robinmap
+git submodule add https://github.com/wjakob/nanobind ext/nanobind
+git submodule update --init --recursive
+```
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.15...3.31)
+project(my_module LANGUAGES CXX)
+
+add_subdirectory(ext/nanobind)
+find_package(Python REQUIRED COMPONENTS Interpreter Development.Module OPTIONAL_COMPONENTS Development.SABIModule)
+
+nanobind_add_module(my_module
+    NB_STATIC STABLE_ABI LTO
+    main.cpp
+)
+
+set_target_properties(my_module 
+    PROPERTIES 
+    CXX_STANDARD 20
+    SUFFIX "${CMAKE_SHARED_MODULE_SUFFIX}"
+)
+install(TARGETS my_module LIBRARY DESTINATION .)
+```
+
+```cpp
+#include <nanobind/nanobind.h>
+
+// 使用 NB_MODULE 定义模块
+NB_MODULE(my_module, m) {
+    m.def("add", [](int a, int b) {
+        return a + b;
+    }, "A function that adds two numbers");
+    m.def("sub", [](int a, int b) {
+        return a - b;
+    }, "A function that subs two numbers");
+    m.def("div", [](int a, int b) {
+        return a / b;
+    }, "A function that div two numbers");
+}
 ```
 
 ## by cython
