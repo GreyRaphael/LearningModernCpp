@@ -553,7 +553,9 @@ main.cpp
 
 ```bash
 # install nanobind with scikit-build
-pip install nanobind, scikit-build-core
+pip install nanobind, scikit-build-core, build
+# run test
+pip install --no-build-isolation -e .
 # run build
 python -m build
 ```
