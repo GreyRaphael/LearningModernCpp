@@ -1204,22 +1204,61 @@ target_link_libraries(proj1 PRIVATE mylib)
 `clangd` is a tool in `clang-tools-extra`, and the build of `clang-tools-extra` dependends on `clang`
 
 download source like `llvm-project-15.0.7.src.tar.xz` from [release](https://github.com/llvm/llvm-project/releases)
+> redhat7 devtoolset-11支持编译到clang19
 
 ```bash
 wget https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.7/llvm-project-15.0.7.src.tar.xz
-tar -xvf *.xz
 
+tar -xvf *.xz
 cd llvm-project-15.0.7.src
 mkdir build && cd build
-cmake -G "Unix Makefiles" -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra" -DCMAKE_INSTALL_PREFIX=~/tools -DCMAKE_BUILD_TYPE=Release ../llvm
-make -j 16
-make install
+
+# or -G "Unix Makefiles"
+# DCMAKE_INSTALL_PREFIX 可以最后指定, 默认/usr/local
+# LLVM_BUILD_LLVM_DYLIB，LLVM_LINK_LLVM_DYLIB 选用动态链接节省空间，默认静态链接
+cmake -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra" \
+    -DLLVM_TARGETS_TO_BUILD="X86" \
+    -DLLVM_INCLUDE_TESTS=OFF \
+    -DLLVM_BUILD_LLVM_DYLIB=ON \
+    -DLLVM_LINK_LLVM_DYLIB=ON \
+    -DCMAKE_CXX_STANDARD=20 \
+    ../llvm
+
+cmake --build . -j 40
+# install alll
+cmake --install .
+# 安装时才指定路径
+cmake --install build --prefix "/your/custom/path"
+# # install clang,clang++,clangd
+# cmake --build . --target install-clang install-clang-resource-headers install-clangd
+# 安装文件为build/install_manifest.txt, 可以通过 sudo xargs rm < install_manifest.txt 卸载
 
 # check
 ~/tools/bin/clangd --version
 
 vi .bashrc
 export PATH=$HOME/tools/bin:$PATH
+```
+
+如果想分发给其他人使用，使用静态链接
+
+```bash
+cmake -G Ninja \
+    -DCMAKE_C_COMPILER=clang \
+    -DCMAKE_CXX_COMPILER=clang++ \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra" \
+    -DLLVM_TARGETS_TO_BUILD="X86" \
+    -DLLVM_INCLUDE_TESTS=OFF \
+    -DCMAKE_CXX_STANDARD=20 \
+    -DCMAKE_INSTALL_PREFIX=../llvm_dist \
+    ../llvm
+cmake --build . -j 8
+cmake --install .
+# distribution
+zip llvm_dist.zip llvm_dist/ -r
 ```
 
 ## use git submodule
