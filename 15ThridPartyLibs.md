@@ -3124,3 +3124,12 @@ int main() {
     }
 }
 ```
+
+## `dylib` and `boost-dll`
+
+[dylib](github.com/martin-olivier/dylib) 是一个轻量级且跨平台的 C++ 库，其核心作用是简化动态链接库（.so, .dll, .dylib）的加载与函数调用。
+> `boost-dll`没有dylib方便
+
+如果你曾经在 Windows 上用过 LoadLibrary/GetProcAddress，或者在 Linux 上用过 dlopen/dlsym，你就会知道原生 API 的语法非常繁琐且容易出错。dylib 的出现就是为了让这些操作变得“现代 C++ 化”。
+
+> 非常适合兼容不同版本的ctp dll
