@@ -283,6 +283,7 @@ cpp dev
 yum update
 
 yum install git ninja-build
+yum install rh-python38
 
 # install devtoolset
 yum install centos-release-scl-rh
