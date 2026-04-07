@@ -281,6 +281,9 @@ cpp dev
 
 ```bash
 yum update
+
+yum install git ninja-build
+
 # install devtoolset
 yum install centos-release-scl-rh
 yum install devtoolset-11
