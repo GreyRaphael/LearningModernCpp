@@ -3,6 +3,7 @@
 - [WSL](#wsl)
   - [prepare wsl1 images](#prepare-wsl1-images)
     - [prepare centos10 stream](#prepare-centos10-stream)
+    - [prepare centos7](#prepare-centos7)
   - [wsl basic cmds](#wsl-basic-cmds)
 
 ## prepare wsl1 images
@@ -111,8 +112,11 @@ set(VCPKG_BUILD_TYPE release)
 ```json
 // vscode setting.json
 {
+    "cmake.cmakePath": "/usr/bin/cmake",
+    "cmake.generator": "Ninja",
     "cmake.configureSettings": {
         "CMAKE_TOOLCHAIN_FILE": "${env:HOME}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "CMAKE_MAKE_PROGRAM": "/usr/bin/ninja",
     },
     "python.venvPath": "~/envs",
     "clangd.path": "clangd",
@@ -142,6 +146,14 @@ git proxy, just change file `vi ~/.gitconfig`, then `git config --global --list`
         email = grey@pku.edu.cn
 [http]
         proxy = http://127.0.0.1:2080
+```
+
+ssh public key
+
+```bash
+# genenrate ssh-key
+ssh-keygen -t ed25519 -C "your_email@example.com"
+cat .ssh/id_ed25519.pub
 ```
 
 for csc to use `git clone ssh@xxxx.git`, change `vi ~/.ssh/config`, [solution](https://github.com/orgs/community/discussions/55269#discussioncomment-5901262)
@@ -188,6 +200,79 @@ export all_proxy='socks5://127.0.0.1:2080'
 export ALL_PROXY='socks5://127.0.0.1:2080'
 
 source ~/set_proxy.txt
+```
+
+### prepare centos7
+
+generate centos7 `rootfs.tar.gz`
+
+```bash
+# clear proxy in host
+export http_proxy=""
+export https_proxy=""
+export HTTP_PROXY=""
+export HTTPS_PROXY=""
+
+docker pull centos:7
+docker run -it --name centos7_wsl_build centos:7 /bin/bash
+
+# change repo to aliyun
+curl -o /etc/yum.repos.d/CentOS-Base.repo HTTPS://mirrors.aliyun.com/repo/Centos-7.repo
+# add epel
+curl -o /etc/yum.repos.d/epel.repo HTTPS://mirrors.aliyun.com/repo/epel-7.repo
+
+yum update
+yum install -y net-tools iproute vi sudo passwd
+
+yum update
+yum clean all
+exit
+
+docker export centos7_wsl_build > centos7-rootfs.tar
+gzip centos7-rootfs.tar
+```
+
+prepare user
+
+```bash
+wsl --import CentOS7 D:\WSL\CentOS7 D:\WSL_Images\centos7-rootfs.tar
+# enter as root
+wsl -d CentOS7
+
+adduser tom
+passwd tom
+# delete old user
+userdel -r cauchy
+# add to sudoer
+usermod -aG wheel tom
+lid -g wheel
+# tom(uid=1000) 
+```
+
+cpp dev
+
+```bash
+yum update
+# install devtoolset
+yum install centos-release-scl-rh
+yum install devtoolset-11
+
+# temporary usage
+scl enable devtoolset-11 bash
+gcc --version
+g++ --version
+
+# permenantly usage
+mv /usr/bin/gcc /usr/bin/gcc-4.8.5
+ln -s /opt/rh/devtoolset-11/root/bin/gcc /usr/bin/gcc
+mv /usr/bin/g++ /usr/bin/g++-4.8.5
+ln -s /opt/rh/devtoolset-11/root/bin/g++ /usr/bin/g++
+gcc --version
+g++ --version
+# or vi .bashrc
+export PATH=/opt/rh/devtoolset-11/root/bin/:$PATH
+
+# centos7最大可以编译clang-19
 ```
 
 ## wsl basic cmds
