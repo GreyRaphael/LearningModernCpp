@@ -2,7 +2,8 @@
 
 - [WSL](#wsl)
   - [prepare wsl1 images](#prepare-wsl1-images)
-    - [prepare dev environment](#prepare-dev-environment)
+    - [prepare centos10 stream](#prepare-centos10-stream)
+  - [wsl in windows](#wsl-in-windows)
 
 ## prepare wsl1 images
 
@@ -10,6 +11,11 @@ how to prepare:
 1. docker: most recommended
 2. VMWare: not recommended
 3. `dnf --installroot`
+4. download from github
+
+### prepare centos10 stream
+
+generate centos10-stream rootfs.tar.gz
 
 ```bash
 # 1. pull image
@@ -36,28 +42,75 @@ wsl --import CentOS10 D:\WSL\CentOS10 D:\WSL_Images\centos10-stream-rootfs.tar.g
 wsl -d CentOS10
 ```
 
-### prepare dev environment
+prepare centos10-stream development environment
 
 ```bash
+# enter with root
 wsl -d CentOS10
-# add bash color
-vi .bashrc
-PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
-alias ll='ls -la'
 
 # add user
 adduser tom
+# # delte old user
+# userdel -r cauchy
 passwd tom
 # add to sudo
 usermod -aG wheel tom
-# change default user in windows Registry
-# Computer\HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Lxss\{} to decimal 1000
-
-# update in new user
-sudo dnf update
-# default python3.12
 
 # install cpp dev tools
 dnf install clang clang-tools-extra cmake git
 dnf --enablerepo=crb install ninja-build
+
+# optional: lastest gcc
+dnf search gcc-toolset
+dnf install gcc-toolset-15-gcc
+scl -l # list all
+scl enable gcc-toolset-15 bash
+
+wsl --terminate CentOS10
+# change default user in windows Registry
+# Computer\HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Lxss\{} to decimal 1000
+
+wsl -d CentOS10
+# update in new user
+sudo dnf update
+# default python3.12
+
+# add bash color
+vi .bashrc
+PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+alias ll='ls -la'
 ```
+
+vcpkg config
+
+```bash
+vi .bashrc
+
+export VCPKG_FORCE_SYSTEM_BINARIES=1
+export VCPKG_ROOT=$HOME/vcpkg
+export PATH=$VCPKG_ROOT:$PATH
+
+git clone https://github.com/microsoft/vcpkg
+./vcpkg/bootstrap-vcpkg.sh
+
+# vi vcpkg/scripts/buildsystems/vcpkg.cmake add to last line
+set(CMAKE_CXX_STANDARD 20)
+# vi vcpkg/triplets/x64-linux.cmake add to last line
+set(VCPKG_BUILD_TYPE release)
+```
+
+```json
+// vscode setting.json
+{
+    "cmake.configureSettings": {
+        "CMAKE_TOOLCHAIN_FILE": "${env:HOME}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+    },
+    "python.venvPath": "~/envs",
+    "clangd.path": "clangd",
+    "clangd.arguments": [
+        "--clang-tidy"
+    ],
+}
+```
+
+## wsl in windows
