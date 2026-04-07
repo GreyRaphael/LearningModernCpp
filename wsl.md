@@ -225,11 +225,13 @@ export HTTPS_PROXY=""
 docker pull centos:7
 docker run -it --name centos7_wsl_build centos:7 /bin/bash
 
+cd /etc/yum.repos.d/
+rm *repo
 # change repo to aliyun
 curl -o /etc/yum.repos.d/CentOS-Base.repo HTTPS://mirrors.aliyun.com/repo/Centos-7.repo
-# add epel
-curl -o /etc/yum.repos.d/epel.repo HTTPS://mirrors.aliyun.com/repo/epel-7.repo
 
+yum update
+yum instal epel-release
 yum update
 yum install -y net-tools iproute vi sudo passwd
 
