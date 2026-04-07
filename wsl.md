@@ -231,6 +231,7 @@ rm *repo
 curl -o /etc/yum.repos.d/CentOS-Base.repo HTTPS://mirrors.aliyun.com/repo/Centos-7.repo
 
 yum update
+# install epel
 yum instal epel-release
 yum update
 yum install -y net-tools iproute vi sudo passwd
@@ -241,6 +242,22 @@ exit
 
 docker export centos7_wsl_build > centos7-rootfs.tar
 gzip centos7-rootfs.tar
+```
+
+```bash
+# install scl source for devtoolset-11
+yum install centos-release-scl
+# edit /etc/yum.repos.d/CentOS-SCLo-scl-rh.repo
+[centos-sclo-rh]
+name=CentOS-7 - SCLo rh
+# edit here
+baseurl=https://mirrors.aliyun.com/centos/7/sclo/x86_64/rh/
+
+# edit /etc/yum.repos.d/CentOS-SCLo-scl.repo
+[centos-sclo-sclo]
+name=CentOS-7 - SCLo sclo
+# edit here
+baseurl=https://mirrors.aliyun.com/centos/7/sclo/x86_64/rh/
 ```
 
 prepare user
