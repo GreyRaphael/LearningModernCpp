@@ -43,6 +43,15 @@ wsl --import CentOS10 D:\WSL\CentOS10 D:\WSL_Images\centos10-stream-rootfs.tar.g
 wsl -d CentOS10
 ```
 
+docker cmds
+
+```bash
+# docker进入已经存在的容器(attach & interactivie)
+docker start -ai centos10_wsl_build
+# 如果容器已经在后台运行
+docker exec -it centos10_wsl_build /bin/bash
+```
+
 prepare centos10-stream development environment
 
 ```bash
