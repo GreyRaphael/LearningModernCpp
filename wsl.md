@@ -3,11 +3,11 @@
 - [WSL](#wsl)
   - [prepare wsl1 images](#prepare-wsl1-images)
     - [prepare centos10 stream](#prepare-centos10-stream)
-  - [wsl in windows](#wsl-in-windows)
+  - [wsl basic cmds](#wsl-basic-cmds)
 
 ## prepare wsl1 images
 
-how to prepare:
+how to prepare `rootfs.tar.gz`:
 1. docker: most recommended
 2. VMWare: not recommended
 3. `dnf --installroot`
@@ -15,7 +15,7 @@ how to prepare:
 
 ### prepare centos10 stream
 
-generate centos10-stream rootfs.tar.gz
+generate centos10-stream `rootfs.tar.gz` in docker
 
 ```bash
 # 1. pull image
@@ -55,16 +55,8 @@ adduser tom
 passwd tom
 # add to sudo
 usermod -aG wheel tom
-
-# install cpp dev tools
-dnf install clang clang-tools-extra cmake git
-dnf --enablerepo=crb install ninja-build
-
-# optional: lastest gcc
-dnf search gcc-toolset
-dnf install gcc-toolset-15-gcc
-scl -l # list all
-scl enable gcc-toolset-15 bash
+# check user
+su - tom
 
 wsl --terminate CentOS10
 # change default user in windows Registry
@@ -79,6 +71,23 @@ sudo dnf update
 vi .bashrc
 PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 alias ll='ls -la'
+
+# make softlink
+ln -s /mnt/c/Users/moris winhome
+```
+
+cpp dev environment
+
+```bash
+# install cpp dev tools
+dnf install clang clang-tools-extra cmake git
+dnf --enablerepo=crb install ninja-build
+
+# optional: lastest gcc
+dnf search gcc-toolset
+dnf install gcc-toolset-15-gcc
+scl -l # list all
+scl enable gcc-toolset-15 bash
 ```
 
 vcpkg config
@@ -113,4 +122,112 @@ set(VCPKG_BUILD_TYPE release)
 }
 ```
 
-## wsl in windows
+go, rust, python dev environment
+
+```bash
+# golang
+sudo dnf install golang
+# rust
+sudo dnf install rust cargo rust-src rustfmt
+# for python with uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+uv python list
+```
+
+git proxy, just change file `vi ~/.gitconfig`, then `git config --global --list`
+
+```bash
+[user]
+        name = csc_fedora_gewei
+        email = grey@pku.edu.cn
+[http]
+        proxy = http://127.0.0.1:2080
+```
+
+for csc to use `git clone ssh@xxxx.git`, change `vi ~/.ssh/config`, [solution](https://github.com/orgs/community/discussions/55269#discussioncomment-5901262)
+- problem1: *ssh - port 22: Resource temporarily unavailable*
+- problem2: *kex_exchange_identification: Connection closed by remote host*
+
+```bash
+sudo dnf install ncat
+which ncat
+
+vi ~/.ssh/config
+Host github.com
+  HostName 20.200.245.248
+  Port 443
+  #ProxyCommand nc -X connect -x 127.0.0.1:2080 %h %p
+  ProxyCommand ncat --proxy 127.0.0.1:2080 --proxy-type socks5 %h %p
+```
+
+optional: add dnf proxy
+
+```bash
+cat /etc/dnf/dnf.conf
+
+[main]
+gpgcheck=1
+installonly_limit=3
+clean_requirements_on_remove=True
+best=True
+skip_if_unavailable=False
+# add this line
+proxy=http://127.0.0.1:2080
+```
+
+bash proxy
+
+```bash
+# wsl open proxy in current shell
+vi ~/set_proxy.txt
+
+# ~/set_proxy.txt
+export http_proxy='http://127.0.0.1:2080'
+export https_proxy='http://127.0.0.1:2080'
+export all_proxy='socks5://127.0.0.1:2080'
+export ALL_PROXY='socks5://127.0.0.1:2080'
+
+source ~/set_proxy.txt
+```
+
+## wsl basic cmds
+
+```bash
+# update wsl itself, not distro
+wsl --update
+
+# set to wsl1
+wsl --set-default-version 1
+# set to wsl2
+wsl --set-default-version 2
+```
+
+wsl uninstall distro
+
+```powershell
+# help info
+wslconfig /h
+
+# uninstall linux
+wslconfig /u Debian
+wslconfig /u Ubuntu
+```
+
+wsl export & import
+
+```bash
+# help info
+wsl --help
+
+# show all WSL image names
+wsl -l -v
+
+# export WSL image to local file
+wsl --export Fedora38 "D:\BackUp\Fedora38.tar"
+
+# import local file to WSL image
+wsl --import Fedora38 D:\IDE\Fedora38 "D:\BackUp\Fedora38.tar"
+
+# shutdown
+wsl --shutdown
+```
