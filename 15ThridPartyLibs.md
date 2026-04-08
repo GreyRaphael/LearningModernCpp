@@ -49,6 +49,7 @@
   - [yalantinglibs](#yalantinglibs)
     - [websocket server \& client](#websocket-server--client)
   - [iguana serde and relection](#iguana-serde-and-relection)
+  - [`dylib` and `boost-dll`](#dylib-and-boost-dll)
 
 
 ## Code Organized by CMake
@@ -1515,6 +1516,37 @@ endif()
 
 [fmt](https://github.com/fmtlib/fmt) is an open-source formatting library providing a fast and safe alternative to C stdio and C++ iostreams.
 > [fmt cheat sheet](https://hackingcpp.com/cpp/libs/fmt.html)
+
+how to use header-only
+
+```bash
+CMakeLists.txt
+main.cpp
+```
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.20.0)
+project(proj_test VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 23)
+add_executable(proj_test main.cpp)
+
+target_include_directories(proj_test PRIVATE ${CMAKE_SOURCE_DIR}/third_party)
+# global macro
+target_compile_definitions(proj_test PRIVATE FMT_HEADER_ONLY=1)
+```
+
+```cpp
+// main.cpp
+#include <fmt/base.h>
+
+int main(int, char**) {
+    for (auto i = 0; i < 10; ++i) {
+        fmt::println("hello {}", i);
+    }
+}
+```
 
 ## `SQLite3`
 
