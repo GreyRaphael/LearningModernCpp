@@ -181,6 +181,17 @@ Host github.com
   ProxyCommand ncat --proxy 127.0.0.1:2080 --proxy-type socks5 %h %p
 ```
 
+对于win10的git使用代理
+
+```bash
+# %USERPROFILE%/.ssh/config
+# connect在git目录，如果是MinGit, 直接从github release重新下载一份放到环境变量即可
+Host Tencent
+  HostName xxx.xxx.xxx.xxx
+  User gewei
+  ProxyCommand connect -S 127.0.0.1:2080 %h %p
+```
+
 optional: add dnf proxy
 
 ```bash
