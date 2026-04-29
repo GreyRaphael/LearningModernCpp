@@ -181,7 +181,7 @@ Host github.com
   ProxyCommand ncat --proxy 127.0.0.1:2080 --proxy-type socks5 %h %p
 ```
 
-对于win10的git使用代理
+对于win10的ssh使用代理
 
 ```bash
 # %USERPROFILE%/.ssh/config
