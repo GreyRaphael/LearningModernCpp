@@ -5,6 +5,9 @@
     - [prepare centos10 stream](#prepare-centos10-stream)
     - [prepare centos7](#prepare-centos7)
   - [wsl basic cmds](#wsl-basic-cmds)
+  - [proxy script](#proxy-script)
+    - [wsl1](#wsl1)
+    - [wsl2](#wsl2)
 
 ## prepare wsl1 images
 
@@ -358,4 +361,101 @@ wsl --import Fedora38 D:\IDE\Fedora38 "D:\BackUp\Fedora38.tar"
 
 # shutdown
 wsl --shutdown
+```
+
+## proxy script
+
+```bash
+# how to use
+vi proxy.sh
+# paste the following bash
+
+# how to run
+# show status
+source proxy.sh
+source proxy.sh on
+source proxy.sh off
+```
+
+### wsl1
+
+```sh
+#!/bin/bash
+
+# 1. WSL1 与 Windows 共享网络栈，localhost 即宿主机
+PROXY_PORT=2080
+HOST_IP="127.0.0.1"
+
+# 2. 根据输入参数判断操作
+if [ "$1" = "on" ]; then
+    export http_proxy="http://${HOST_IP}:${PROXY_PORT}"
+    export https_proxy="http://${HOST_IP}:${PROXY_PORT}"
+    export all_proxy="socks5://${HOST_IP}:${PROXY_PORT}"
+    export no_proxy="localhost,127.0.0.1,::1,local"
+
+    echo -e "\033[32m[+] 代理已开启 (Proxy Enabled):\033[0m"
+    echo "    http_proxy  = $http_proxy"
+    echo "    https_proxy = $https_proxy"
+    echo "    all_proxy   = $all_proxy"
+
+elif [ "$1" = "off" ]; then
+    unset http_proxy
+    unset https_proxy
+    unset all_proxy
+    unset no_proxy
+    echo -e "\033[31m[-] 代理已关闭 (Proxy Disabled).\033[0m"
+
+else
+    echo "用法 (Usage): source $BASH_SOURCE [on|off]"
+    echo "----------------------------------------"
+    if [ -n "$http_proxy" ]; then
+        echo -e "当前状态: \033[32m已开启 (ON)\033[0m"
+        echo "http_proxy=$http_proxy"
+    else
+        echo -e "当前状态: \033[31m已关闭 (OFF)\033[0m"
+    fi
+fi
+```
+
+### wsl2
+
+```sh
+#!/bin/bash
+
+# 1. 动态获取 Windows 宿主机 IP
+PROXY_PORT=2080
+HOST_IP=$(ip route | grep default | awk '{print $3}')
+
+# 2. 根据输入参数判断操作
+if [ "$1" = "on" ]; then
+    # 开启代理
+    export http_proxy="http://${HOST_IP}:${PROXY_PORT}"
+    export https_proxy="http://${HOST_IP}:${PROXY_PORT}"
+    export all_proxy="socks5://${HOST_IP}:${PROXY_PORT}" # 顺便配置 socks5，很多 CLI 工具需要
+    export no_proxy="localhost,127.0.0.1,::1,local"     # 本地流量不走代理
+
+    echo -e "\033[32m[+] 代理已开启 (Proxy Enabled):\033[0m"
+    echo "    http_proxy  = $http_proxy"
+    echo "    https_proxy = $https_proxy"
+    echo "    all_proxy   = $all_proxy"
+
+elif [ "$1" = "off" ]; then
+    # 关闭代理
+    unset http_proxy
+    unset https_proxy
+    unset all_proxy
+    unset no_proxy
+    echo -e "\033[31m[-] 代理已关闭 (Proxy Disabled).\033[0m"
+
+else
+    # 未传参或参数错误，显示当前状态和用法
+    echo "用法 (Usage): source $BASH_SOURCE [on|off]"
+    echo "----------------------------------------"
+    if [ -n "$http_proxy" ]; then
+        echo -e "当前状态: \033[32m已开启 (ON)\033[0m"
+        echo "http_proxy=$http_proxy"
+    else
+        echo -e "当前状态: \033[31m已关闭 (OFF)\033[0m"
+    fi
+fi
 ```
